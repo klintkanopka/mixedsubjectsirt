@@ -23,6 +23,7 @@ fit_mixed_subjects_split(
   initial_pars = NULL,
   quadrature = NULL,
   common_predicted_weights = TRUE,
+  paired_missing = c("match_observed", "allow"),
   slope_lower = 1e-04,
   control = list(maxit = 500),
   ...
@@ -48,7 +49,10 @@ fit_mixed_subjects_split(
 
 - lambda:
 
-  Power-tuning parameter in `[0, 1]`.
+  Power-tuning parameter in `[0, 1]`. Supply a scalar for a fixed lambda
+  or a vector with one value per split for a precomputed
+  cross-fitted-lambda analysis. When a vector is supplied, the generated
+  term uses the split-size weighted mean lambda.
 
 - n_splits:
 
@@ -81,6 +85,12 @@ fit_mixed_subjects_split(
 
   Logical; if `TRUE`, reuse each held-out observed posterior weight
   matrix for its paired LLM responses.
+
+- paired_missing:
+
+  How to handle missingness when `common_predicted_weights = TRUE`. The
+  default, `"match_observed"`, requires `observed` and `predicted` to
+  have the same missingness pattern.
 
 - slope_lower:
 

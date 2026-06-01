@@ -26,7 +26,8 @@ final estimating equation exactly once."></head><body>
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
+    <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -65,6 +66,7 @@ final estimating equation exactly once.</p>
 <span>  initial_pars <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  quadrature <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  common_predicted_weights <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  paired_missing <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"match_observed"</span>, <span class="st">"allow"</span><span class="op">)</span>,</span>
 <span>  slope_lower <span class="op">=</span> <span class="fl">1e-04</span>,</span>
 <span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">500</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -91,7 +93,10 @@ the same item columns.</p></dd>
 
 
 <dt id="arg-lambda">lambda<a class="anchor" aria-label="anchor" href="#arg-lambda"></a></dt>
-<dd><p>Power-tuning parameter in <code>[0, 1]</code>.</p></dd>
+<dd><p>Power-tuning parameter in <code>[0, 1]</code>. Supply a scalar for a fixed
+lambda or a vector with one value per split for a precomputed
+cross-fitted-lambda analysis. When a vector is supplied, the generated term
+uses the split-size weighted mean lambda.</p></dd>
 
 
 <dt id="arg-n-splits">n_splits<a class="anchor" aria-label="anchor" href="#arg-n-splits"></a></dt>
@@ -124,6 +129,12 @@ sensitivity analyses.</p></dd>
 <dt id="arg-common-predicted-weights">common_predicted_weights<a class="anchor" aria-label="anchor" href="#arg-common-predicted-weights"></a></dt>
 <dd><p>Logical; if <code>TRUE</code>, reuse each held-out
 observed posterior weight matrix for its paired LLM responses.</p></dd>
+
+
+<dt id="arg-paired-missing">paired_missing<a class="anchor" aria-label="anchor" href="#arg-paired-missing"></a></dt>
+<dd><p>How to handle missingness when
+<code>common_predicted_weights = TRUE</code>. The default, <code>"match_observed"</code>, requires
+<code>observed</code> and <code>predicted</code> to have the same missingness pattern.</p></dd>
 
 
 <dt id="arg-slope-lower">slope_lower<a class="anchor" aria-label="anchor" href="#arg-slope-lower"></a></dt>

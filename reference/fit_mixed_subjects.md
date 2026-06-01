@@ -16,6 +16,7 @@ fit_mixed_subjects(
   initial_pars = NULL,
   quadrature = NULL,
   common_predicted_weights = TRUE,
+  paired_missing = c("match_observed", "allow"),
   slope_lower = 1e-04,
   control = list(maxit = 500),
   ...
@@ -60,6 +61,14 @@ fit_mixed_subjects(
 
   Logical; if `TRUE`, reuse the observed human posterior weights for
   `predicted`.
+
+- paired_missing:
+
+  How to handle missingness when `common_predicted_weights = TRUE`. The
+  default, `"match_observed"`, requires `observed` and `predicted` to
+  have the same missingness pattern so the paired LLM correction is
+  evaluated only where a human label is present. Use `"allow"` only for
+  explicit sensitivity analyses.
 
 - slope_lower:
 

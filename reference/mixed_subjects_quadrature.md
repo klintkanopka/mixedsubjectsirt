@@ -81,6 +81,6 @@ pars <- data.frame(a = c(1, 1.2), d = c(0, -0.5))
 resp <- matrix(c(1, 0, 0, 1), nrow = 2, byrow = TRUE)
 q <- mixed_subjects_quadrature(resp, item_pars = pars, N_quad = 5)
 names(q)
-#> [1] "quad"       "counts"     "weights"    "irt_pars"   "quadrature"
-#> [6] "theta"     
+#> [1] "quad"       "counts"     "weights"    "resp"       "irt_pars"  
+#> [6] "quadrature" "theta"     
 ```

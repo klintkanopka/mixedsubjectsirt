@@ -128,8 +128,8 @@ mixed_split
 #> mixedsubjectsirt 2PL fit
 #>   items:      8
 #>   lambda:     0.5
-#>   loss:       -6.05218e+23
-#>   convergence: 0 
+#>   loss:       -1.30052e+37
+#>   convergence: 52 
 #>   splits:     2
 ```
 
@@ -159,7 +159,7 @@ ggplot(estimates, aes(true_b, b, color = estimator)) +
 ![](mixed-subjects-workflow_files/figure-html/compare-1.png)
 
 The helper
-[`tune_lambda_grid()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_grid.md)
+[`diagnose_lambda_grid()`](http://klintkanopka.com/mixedsubjectsirt/reference/diagnose_lambda_grid.md)
 can be used for quick sensitivity checks over candidate lambda values.
 The summary reports the optimized mixed objective and the human
 expected-count loss, but final lambda selection should be tied to the
@@ -168,7 +168,7 @@ bootstrap/cross-validation plan.
 
 ``` r
 
-tuned <- tune_lambda_grid(
+tuned <- diagnose_lambda_grid(
   lambda_grid = c(0, 0.25, 0.5, 0.75),
   observed = observed,
   predicted = predicted,
@@ -184,4 +184,35 @@ tuned$summary
 #> 2   0.25  3.825618e+00  4.117991e+00           0
 #> 3   0.50  3.466565e+00  4.459876e+00           0
 #> 4   0.75 -3.167271e+36  1.168082e+37          52
+```
+
+## Tune lambda by ability risk
+
+For a target scoring population,
+[`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
+evaluates candidate calibrations using propagated ability-score risk.
+For each candidate lambda it fits item parameters, estimates the full
+sandwich covariance matrix for the item parameters, computes
+ability-score gradients, and summarizes the average `g' Sigma g` risk.
+
+``` r
+
+ability_tuned <- tune_lambda_ability(
+  lambda_grid = c(0, 0.5, 0.75),
+  observed = observed,
+  predicted = predicted,
+  generated = generated,
+  target_resp = observed,
+  initial_pars = human_start$pars,
+  n_quad = 11,
+  control = list(maxit = 200)
+)
+
+ability_tuned$summary
+#>   lambda mean_param_var mean_squared_error mean_total_risk convergence
+#> 1   0.00     0.01539735                 NA      0.01539735           0
+#> 2   0.50     0.14374115                 NA      0.14374115           0
+#> 3   0.75            NaN                 NA             NaN          52
+ability_tuned$best_lambda
+#> [1] 0
 ```

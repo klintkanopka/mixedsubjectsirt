@@ -18,7 +18,8 @@
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
+    <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -45,6 +46,27 @@
 
       <dl><dt>
 
+          <code><a href="ability_gradient.html">ability_gradient()</a></code>
+
+        </dt>
+        <dd>Gradient of ML ability scores with respect to item parameters</dd>
+
+        <dt>
+
+          <code><a href="ability_risk.html">ability_risk()</a></code>
+
+        </dt>
+        <dd>Propagated ability risk from item-parameter uncertainty</dd>
+
+        <dt>
+
+          <code><a href="diagnose_lambda_grid.html">diagnose_lambda_grid()</a></code>
+
+        </dt>
+        <dd>Diagnose lambda values over a grid</dd>
+
+        <dt>
+
           <code><a href="fit_2pl.html">fit_2pl()</a></code>
 
         </dt>
@@ -56,6 +78,13 @@
 
         </dt>
         <dd>Fit a mixed-subjects 2PL calibration</dd>
+
+        <dt>
+
+          <code><a href="fit_mixed_subjects_from_quadrature.html">fit_mixed_subjects_from_quadrature()</a></code>
+
+        </dt>
+        <dd>Fit from precomputed quadrature summaries</dd>
 
         <dt>
 
@@ -122,10 +151,31 @@
 
         <dt>
 
+          <code><a href="tune_lambda_ability.html">tune_lambda_ability()</a></code>
+
+        </dt>
+        <dd>Tune lambda by downstream ability risk</dd>
+
+        <dt>
+
+          <code><a href="tune_lambda_ability_crossfit.html">tune_lambda_ability_crossfit()</a></code>
+
+        </dt>
+        <dd>Cross-fit ability-risk lambda tuning</dd>
+
+        <dt>
+
           <code><a href="tune_lambda_grid.html">tune_lambda_grid()</a></code>
 
         </dt>
         <dd>Tune lambda over a grid</dd>
+
+        <dt>
+
+          <code><a href="vcov_mixed_subjects.html">vcov_mixed_subjects()</a></code>
+
+        </dt>
+        <dd>Sandwich covariance for a mixed-subjects fit</dd>
       </dl></div>
   </main></div>
 
