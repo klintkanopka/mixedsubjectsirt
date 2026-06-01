@@ -1,17 +1,25 @@
-# Converts an item response matrix into quadrature form and estimates a 2PL IRT model with parameters in slope-intercept form
+# Convert responses to quadrature form
 
-Converts an item response matrix into quadrature form and estimates a
-2PL IRT model with parameters in slope-intercept form
+Fits or accepts a 2PL model, computes posterior quadrature weights for
+each subject, and returns expected counts for mixed-subjects
+calibration. This is a lower-level helper; most analyses should call
+[`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
+or
+[`fit_mixed_subjects_split()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.md).
 
 ## Usage
 
 ``` r
 mixed_subjects_quadrature(
   resp,
-  N_quad = 10,
+  N_quad = 31,
   eps = 1e-15,
   iterlim = 1e+05,
-  irt_pars = NULL
+  irt_pars = NULL,
+  item_pars = NULL,
+  quadrature = NULL,
+  link_method = "mean_mean",
+  ...
 )
 ```
 
@@ -19,30 +27,60 @@ mixed_subjects_quadrature(
 
 - resp:
 
-  An item response matrix in wide form
+  A response matrix with rows for subjects and columns for items.
 
 - N_quad:
 
-  The number of quadrature points to compute. Higher numbers can induce
-  numerical errors
+  Number of quadrature nodes to compute. Kept for backward
+  compatibility; prefer `n_quad` in new code.
 
 - eps:
 
-  A tolerance for the minimum values
+  Retained for backward compatibility. Stable log computations are used
+  instead of probability clipping.
 
 - iterlim:
 
   Maximum number of Newton-Raphson iterations passed to
-  [`rmutil::gauss.hermite()`](https://rdrr.io/pkg/rmutil/man/gauss.hermite.html)
+  [`rmutil::gauss.hermite()`](https://rdrr.io/pkg/rmutil/man/gauss.hermite.html).
 
 - irt_pars:
 
-  IRT parameters from human calibration for rescaling parameters
-  estimated from predicted responses
+  Optional target item parameters for mean-mean linking. This argument
+  is kept for backward compatibility with earlier package versions.
+
+- item_pars:
+
+  Optional item parameters. If omitted, a 2PL model is fit to `resp`
+  using
+  [`fit_2pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md).
+
+- quadrature:
+
+  Optional quadrature grid with `theta` and `weight` columns.
+
+- link_method:
+
+  Linking method used when `irt_pars` is supplied.
+
+- ...:
+
+  Additional arguments passed to
+  [`fit_2pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md)
+  when `item_pars` is omitted.
 
 ## Value
 
-A list object with two components. `$quad` contains a dataframe with the
-expected sample sizes and number of correct responses at each quadrature
-point. `$irt_pars` contains the parameter estimates from the fitted IRT
-model that generated the expected counts
+A list with `quad`, `counts`, `weights`, `irt_pars`, `quadrature`, and
+`theta`.
+
+## Examples
+
+``` r
+pars <- data.frame(a = c(1, 1.2), d = c(0, -0.5))
+resp <- matrix(c(1, 0, 0, 1), nrow = 2, byrow = TRUE)
+q <- mixed_subjects_quadrature(resp, item_pars = pars, N_quad = 5)
+names(q)
+#> [1] "quad"       "counts"     "weights"    "irt_pars"   "quadrature"
+#> [6] "theta"     
+```

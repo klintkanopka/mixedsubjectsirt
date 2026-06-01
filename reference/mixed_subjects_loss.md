@@ -1,7 +1,8 @@
-# Loss function for parameter estimation. Generally not called directly by users.
+# Mixed-subjects objective function
 
-Loss function for parameter estimation. Generally not called directly by
-users.
+Evaluates the rectified mixed-subjects loss for 2PL item parameters. The
+parameter vector must contain all discriminations first, followed by all
+intercepts. The response probability is `plogis(d + a * theta)`.
 
 ## Usage
 
@@ -13,24 +14,43 @@ mixed_subjects_loss(pars, q_observed, q_predicted, q_llm, lambda = 0)
 
 - pars:
 
-  A vector of item parameters in slope-intercept form. Passed with
-  discriminations first, location second, in item order.
+  Numeric vector of item parameters: all discriminations `a` followed by
+  all intercepts `d`.
 
 - q_observed:
 
-  A quadrature object constructed from running mixed_subjects_quadrature
-  on LLM-generated item responses
+  Quadrature summary for observed human responses, usually returned by
+  [`mixed_subjects_quadrature()`](http://klintkanopka.com/mixedsubjectsirt/reference/mixed_subjects_quadrature.md).
 
 - q_predicted:
 
-  A quadrature object constructed from running mixed_subjects_quadrature
-  on predicted item responses for the human calibration sample
+  Quadrature summary for LLM responses/predictions on the same labeled
+  human subjects.
+
+- q_llm:
+
+  Quadrature summary for generated or unlabeled LLM responses.
 
 - lambda:
 
-  The power tuning parameter. Takes values between 0 and 1. When lambda
-  is zero, disregards predicted data completely
+  Power-tuning parameter in `[0, 1]`.
 
 ## Value
 
-Loss for the mixed subjects estimator at the values of `pars`
+A scalar loss.
+
+## Details
+
+The objective is
+`L_observed(pars) + lambda * (L_generated(pars) - L_predicted(pars))`.
+Setting `lambda = 0` gives the human-only expected-count objective.
+
+## Examples
+
+``` r
+pars <- data.frame(a = c(1, 1.2), d = c(0, -0.5))
+resp <- matrix(c(1, 0, 0, 1), nrow = 2, byrow = TRUE)
+q <- mixed_subjects_quadrature(resp, item_pars = pars, N_quad = 5)
+mixed_subjects_loss(c(pars$a, pars$d), q, q, q, lambda = 0.5)
+#> [1] 1.639302
+```

@@ -8,5 +8,6 @@ LLM-generated item responses in psychometric calibration studies.
 You can install the development version of mixedsubjectsirt like so:
 
 ``` r
+
 devtools::install_github('klintkanopka/mixedsubjectsirt')
 ```
