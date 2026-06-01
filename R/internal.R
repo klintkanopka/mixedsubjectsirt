@@ -218,6 +218,7 @@ build_quadrature_summary <- function(resp, item_pars, quadrature, weights = NULL
     quad = counts_to_quad(counts),
     counts = counts,
     weights = weights,
+    resp = resp,
     irt_pars = standardize_item_pars(item_pars, n_items = ncol(resp),
                                      item_names = colnames(resp)),
     quadrature = quadrature,
@@ -323,6 +324,48 @@ validate_lambda <- function(lambda) {
   lambda
 }
 
+validate_lambda_vector <- function(lambda, n = NULL) {
+  if (!is.numeric(lambda) || length(lambda) == 0 ||
+      any(!is.finite(lambda)) || any(lambda < 0) || any(lambda > 1)) {
+    stop("lambda must contain finite values between 0 and 1.", call. = FALSE)
+  }
+  if (!is.null(n) && !(length(lambda) %in% c(1, n))) {
+    stop("lambda must be a scalar or have length equal to the number of splits.",
+         call. = FALSE)
+  }
+  lambda
+}
+
+check_paired_missingness <- function(observed, predicted,
+                                     paired_missing = c("match_observed", "allow"),
+                                     common_predicted_weights = TRUE) {
+  paired_missing <- match.arg(paired_missing)
+
+  if (!isTRUE(common_predicted_weights) || paired_missing == "allow") {
+    return(paired_missing)
+  }
+
+  observed_missing <- is.na(observed)
+  predicted_missing <- is.na(predicted)
+
+  if (!identical(observed_missing, predicted_missing)) {
+    extra_predicted <- sum(!predicted_missing & observed_missing)
+    missing_predicted <- sum(predicted_missing & !observed_missing)
+
+    stop(
+      "When common_predicted_weights = TRUE and paired_missing = ",
+      "'match_observed', observed and predicted must have the same ",
+      "missingness pattern. Found ", extra_predicted,
+      " predicted values without observed human labels and ",
+      missing_predicted, " missing predicted values with observed human labels. ",
+      "Use paired_missing = 'allow' only for an explicit sensitivity analysis.",
+      call. = FALSE
+    )
+  }
+
+  paired_missing
+}
+
 fit_from_counts <- function(counts_observed, counts_predicted, counts_generated,
                             initial_pars, lambda, slope_lower = 1e-4,
                             control = list(maxit = 500)) {
@@ -380,6 +423,104 @@ fit_from_counts <- function(counts_observed, counts_predicted, counts_generated,
     convergence = opt$convergence,
     message = opt$message,
     optimizer = opt
+  )
+}
+
+fit_from_count_components <- function(counts_observed, counts_predicted,
+                                      counts_generated, initial_pars,
+                                      lambda, component_weights = NULL,
+                                      slope_lower = 1e-4,
+                                      control = list(maxit = 500)) {
+  if (!is.list(counts_predicted) || is.null(counts_predicted[[1]]$N)) {
+    counts_predicted <- list(counts_predicted)
+  }
+  check_counts_compatible(c(list(counts_observed, counts_generated),
+                            counts_predicted))
+
+  lambda <- validate_lambda_vector(lambda, n = length(counts_predicted))
+  if (length(lambda) == 1) {
+    lambda <- rep(lambda, length(counts_predicted))
+  }
+
+  if (is.null(component_weights)) {
+    component_n <- vapply(counts_predicted, `[[`, numeric(1), "n")
+    component_weights <- component_n / sum(component_n)
+  }
+  if (!is.numeric(component_weights) ||
+      length(component_weights) != length(counts_predicted) ||
+      any(!is.finite(component_weights)) ||
+      any(component_weights < 0) ||
+      sum(component_weights) <= 0) {
+    stop("component_weights must be non-negative finite values matching ",
+         "counts_predicted.", call. = FALSE)
+  }
+  component_weights <- component_weights / sum(component_weights)
+  lambda_generated <- sum(component_weights * lambda)
+
+  item_names <- counts_observed$item_names
+  initial_pars <- standardize_item_pars(
+    initial_pars,
+    n_items = length(item_names),
+    item_names = item_names
+  )
+
+  objective <- function(par) {
+    item_pars <- item_pars_from_vector(par, item_names)
+    predicted_loss <- 0
+    for (i in seq_along(counts_predicted)) {
+      predicted_loss <- predicted_loss +
+        component_weights[i] * lambda[i] *
+        loss_expected_counts(counts_predicted[[i]], item_pars)
+    }
+
+    loss_expected_counts(counts_observed, item_pars) +
+      lambda_generated * loss_expected_counts(counts_generated, item_pars) -
+      predicted_loss
+  }
+
+  gradient <- function(par) {
+    item_pars <- item_pars_from_vector(par, item_names)
+    predicted_grad <- rep(0, length(par))
+    for (i in seq_along(counts_predicted)) {
+      predicted_grad <- predicted_grad +
+        component_weights[i] * lambda[i] *
+        gradient_expected_counts(counts_predicted[[i]], item_pars)
+    }
+
+    gradient_expected_counts(counts_observed, item_pars) +
+      lambda_generated * gradient_expected_counts(counts_generated, item_pars) -
+      predicted_grad
+  }
+
+  start <- vector_from_item_pars(initial_pars)
+  if (is.null(slope_lower)) {
+    lower <- rep(-Inf, length(start))
+  } else {
+    lower <- c(rep(slope_lower, length(item_names)), rep(-Inf, length(item_names)))
+    start[seq_along(item_names)] <- pmax(start[seq_along(item_names)], slope_lower)
+  }
+
+  control <- utils::modifyList(list(maxit = 500), control)
+  opt <- stats::optim(
+    par = start,
+    fn = objective,
+    gr = gradient,
+    method = "L-BFGS-B",
+    lower = lower,
+    upper = rep(Inf, length(start)),
+    control = control
+  )
+
+  list(
+    item_pars = item_pars_from_vector(opt$par, item_names),
+    par = opt$par,
+    value = opt$value,
+    convergence = opt$convergence,
+    message = opt$message,
+    optimizer = opt,
+    lambda = lambda,
+    lambda_generated = lambda_generated,
+    component_weights = component_weights
   )
 }
 

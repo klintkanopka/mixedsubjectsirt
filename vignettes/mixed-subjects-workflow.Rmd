@@ -148,13 +148,13 @@ ggplot(estimates, aes(true_b, b, color = estimator)) +
   theme_minimal()
 ```
 
-The helper `tune_lambda_grid()` can be used for quick sensitivity checks over
+The helper `diagnose_lambda_grid()` can be used for quick sensitivity checks over
 candidate lambda values. The summary reports the optimized mixed objective and
 the human expected-count loss, but final lambda selection should be tied to the
 study's inferential target or evaluated with a bootstrap/cross-validation plan.
 
 ```{r tune}
-tuned <- tune_lambda_grid(
+tuned <- diagnose_lambda_grid(
   lambda_grid = c(0, 0.25, 0.5, 0.75),
   observed = observed,
   predicted = predicted,
@@ -165,4 +165,28 @@ tuned <- tune_lambda_grid(
 )
 
 tuned$summary
+```
+
+## Tune lambda by ability risk
+
+For a target scoring population, `tune_lambda_ability()` evaluates candidate
+calibrations using propagated ability-score risk. For each candidate lambda it
+fits item parameters, estimates the full sandwich covariance matrix for the item
+parameters, computes ability-score gradients, and summarizes the average
+`g' Sigma g` risk.
+
+```{r ability-risk}
+ability_tuned <- tune_lambda_ability(
+  lambda_grid = c(0, 0.5, 0.75),
+  observed = observed,
+  predicted = predicted,
+  generated = generated,
+  target_resp = observed,
+  initial_pars = human_start$pars,
+  n_quad = 11,
+  control = list(maxit = 200)
+)
+
+ability_tuned$summary
+ability_tuned$best_lambda
 ```

@@ -24,26 +24,11 @@ tune_lambda_grid(
 \item{...}{Additional arguments passed to the selected fitting function.}
 }
 \value{
-A list with \code{summary}, \code{best_lambda_by_observed_loss}, and all fitted
-model objects.
+A list returned by \code{\link[=diagnose_lambda_grid]{diagnose_lambda_grid()}}. For backward
+compatibility, the list also contains \code{best_lambda_by_observed_loss}.
 }
 \description{
-Fits \code{\link[=fit_mixed_subjects]{fit_mixed_subjects()}} or \code{\link[=fit_mixed_subjects_split]{fit_mixed_subjects_split()}} over a set of
-candidate lambda values. The returned summary reports the fitted
-mixed-subjects objective and the observed human expected-count loss for each
-candidate. These diagnostics are not a replacement for a study-specific
-validation or bootstrap procedure, but they are useful for sensitivity checks.
-}
-\examples{
-set.seed(3)
-pars <- data.frame(a = c(1, 1.2, 0.9), d = c(0, -0.5, 0.3))
-observed <- simulate_2pl(rnorm(30), pars)
-predicted <- observed
-generated <- simulate_2pl(rnorm(80), pars)
-tuned <- tune_lambda_grid(
-  c(0, 0.5),
-  observed, predicted, generated,
-  initial_pars = pars, n_quad = 5, control = list(maxit = 30)
-)
-tuned$summary
+\code{tune_lambda_grid()} is retained as a backward-compatible wrapper for
+\code{\link[=diagnose_lambda_grid]{diagnose_lambda_grid()}}. It emits a warning because the grid output is a
+sensitivity diagnostic, not a statistically valid PPI++ tuning rule.
 }

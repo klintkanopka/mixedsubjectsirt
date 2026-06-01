@@ -13,6 +13,7 @@ fit_mixed_subjects(
   initial_pars = NULL,
   quadrature = NULL,
   common_predicted_weights = TRUE,
+  paired_missing = c("match_observed", "allow"),
   slope_lower = 1e-04,
   control = list(maxit = 500),
   ...
@@ -39,6 +40,12 @@ is fit to \code{observed}.}
 
 \item{common_predicted_weights}{Logical; if \code{TRUE}, reuse the observed human
 posterior weights for \code{predicted}.}
+
+\item{paired_missing}{How to handle missingness when
+\code{common_predicted_weights = TRUE}. The default, \code{"match_observed"}, requires
+\code{observed} and \code{predicted} to have the same missingness pattern so the paired
+LLM correction is evaluated only where a human label is present. Use
+\code{"allow"} only for explicit sensitivity analyses.}
 
 \item{slope_lower}{Lower bound for discrimination parameters during
 optimization. Use \code{NULL} for no lower bound.}

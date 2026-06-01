@@ -68,6 +68,11 @@ mixed_subjects_loss <- function(pars, q_observed, q_predicted, q_llm,
 #' @param quadrature Optional quadrature grid with `theta` and `weight` columns.
 #' @param common_predicted_weights Logical; if `TRUE`, reuse the observed human
 #'   posterior weights for `predicted`.
+#' @param paired_missing How to handle missingness when
+#'   `common_predicted_weights = TRUE`. The default, `"match_observed"`, requires
+#'   `observed` and `predicted` to have the same missingness pattern so the paired
+#'   LLM correction is evaluated only where a human label is present. Use
+#'   `"allow"` only for explicit sensitivity analyses.
 #' @param slope_lower Lower bound for discrimination parameters during
 #'   optimization. Use `NULL` for no lower bound.
 #' @param control Control list passed to [stats::optim()].
@@ -94,6 +99,7 @@ fit_mixed_subjects <- function(observed, predicted, generated, lambda = 1,
                                n_quad = 31, initial_pars = NULL,
                                quadrature = NULL,
                                common_predicted_weights = TRUE,
+                               paired_missing = c("match_observed", "allow"),
                                slope_lower = 1e-4,
                                control = list(maxit = 500), ...) {
   lambda <- validate_lambda(lambda)
@@ -110,6 +116,12 @@ fit_mixed_subjects <- function(observed, predicted, generated, lambda = 1,
     stop("observed and predicted must have the same number of rows.",
          call. = FALSE)
   }
+  paired_missing <- check_paired_missingness(
+    observed = observed,
+    predicted = predicted,
+    paired_missing = paired_missing,
+    common_predicted_weights = common_predicted_weights
+  )
 
   quadrature <- check_quadrature(quadrature, n_quad = n_quad)
   if (is.null(initial_pars)) {
@@ -160,6 +172,89 @@ fit_mixed_subjects <- function(observed, predicted, generated, lambda = 1,
       q_predicted = q_predicted,
       q_generated = q_generated,
       common_predicted_weights = common_predicted_weights,
+      paired_missing = paired_missing,
+      split = NULL,
+      call = match.call()
+    )
+  )
+  class(out) <- "mixedsubjects_fit"
+  out
+}
+
+#' Fit from precomputed quadrature summaries
+#'
+#' Fits the mixed-subjects 2PL objective from quadrature/count summaries rather
+#' than raw response matrices. This lower-level interface is useful when the
+#' human, paired LLM, and generated LLM summaries have already been linked onto a
+#' common scale outside the package.
+#'
+#' @param q_observed Quadrature summary for observed human responses. Usually
+#'   returned by [mixed_subjects_quadrature()], but a raw counts object returned
+#'   by [summarize_expected_counts()] is also accepted.
+#' @param q_predicted Quadrature summary for paired LLM responses/predictions on
+#'   the labeled human rows.
+#' @param q_generated Quadrature summary for generated or unlabeled LLM
+#'   responses.
+#' @param lambda Power-tuning parameter in `[0, 1]`.
+#' @param initial_pars Starting item parameters in slope-intercept form. If
+#'   omitted, `q_observed$irt_pars` is used when available.
+#' @param slope_lower Lower bound for discrimination parameters during
+#'   optimization. Use `NULL` for no lower bound.
+#' @param control Control list passed to [stats::optim()].
+#'
+#' @return An object of class `"mixedsubjects_fit"`.
+#' @export
+#'
+#' @examples
+#' pars <- data.frame(a = c(1, 1.2), d = c(0, -0.5))
+#' resp <- matrix(c(1, 0, 0, 1), nrow = 2, byrow = TRUE)
+#' q <- mixed_subjects_quadrature(resp, item_pars = pars, N_quad = 5)
+#' fit_mixed_subjects_from_quadrature(q, q, q, lambda = 0.5)$item_pars
+fit_mixed_subjects_from_quadrature <- function(q_observed, q_predicted,
+                                               q_generated, lambda = 1,
+                                               initial_pars = NULL,
+                                               slope_lower = 1e-4,
+                                               control = list(maxit = 500)) {
+  counts_observed <- q_to_counts(q_observed, "q_observed")
+  counts_predicted <- q_to_counts(q_predicted, "q_predicted")
+  counts_generated <- q_to_counts(q_generated, "q_generated")
+  check_counts_compatible(list(counts_observed, counts_predicted, counts_generated))
+
+  if (is.null(initial_pars)) {
+    if (is.list(q_observed) && !is.null(q_observed$irt_pars)) {
+      initial_pars <- q_observed$irt_pars
+    } else {
+      stop("initial_pars is required when q_observed does not contain irt_pars.",
+           call. = FALSE)
+    }
+  }
+
+  fit <- fit_from_counts(
+    counts_observed = counts_observed,
+    counts_predicted = counts_predicted,
+    counts_generated = counts_generated,
+    initial_pars = initial_pars,
+    lambda = lambda,
+    slope_lower = slope_lower,
+    control = control
+  )
+
+  out <- c(
+    fit,
+    list(
+      lambda = lambda,
+      initial_pars = standardize_item_pars(
+        initial_pars,
+        n_items = counts_observed$n_items,
+        item_names = counts_observed$item_names
+      ),
+      initial_model = NULL,
+      quadrature = if (is.list(q_observed)) q_observed$quadrature else NULL,
+      q_observed = q_observed,
+      q_predicted = q_predicted,
+      q_generated = q_generated,
+      common_predicted_weights = NA,
+      paired_missing = NA,
       split = NULL,
       call = match.call()
     )
@@ -185,7 +280,10 @@ fit_mixed_subjects <- function(observed, predicted, generated, lambda = 1,
 #'   `observed`.
 #' @param generated Generated or unlabeled LLM responses or probabilities for
 #'   the same item columns.
-#' @param lambda Power-tuning parameter in `[0, 1]`.
+#' @param lambda Power-tuning parameter in `[0, 1]`. Supply a scalar for a fixed
+#'   lambda or a vector with one value per split for a precomputed
+#'   cross-fitted-lambda analysis. When a vector is supplied, the generated term
+#'   uses the split-size weighted mean lambda.
 #' @param n_splits Number of sample splits.
 #' @param split_id Optional integer vector assigning each observed row to a
 #'   split. If omitted, splits are sampled at random.
@@ -197,6 +295,9 @@ fit_mixed_subjects <- function(observed, predicted, generated, lambda = 1,
 #' @param quadrature Optional quadrature grid with `theta` and `weight` columns.
 #' @param common_predicted_weights Logical; if `TRUE`, reuse each held-out
 #'   observed posterior weight matrix for its paired LLM responses.
+#' @param paired_missing How to handle missingness when
+#'   `common_predicted_weights = TRUE`. The default, `"match_observed"`, requires
+#'   `observed` and `predicted` to have the same missingness pattern.
 #' @param slope_lower Lower bound for discrimination parameters during
 #'   optimization. Use `NULL` for no lower bound.
 #' @param control Control list passed to [stats::optim()].
@@ -225,9 +326,10 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
                                      n_quad = 31, initial_pars = NULL,
                                      quadrature = NULL,
                                      common_predicted_weights = TRUE,
+                                     paired_missing = c("match_observed", "allow"),
                                      slope_lower = 1e-4,
                                      control = list(maxit = 500), ...) {
-  lambda <- validate_lambda(lambda)
+  lambda <- validate_lambda_vector(lambda)
   observed <- validate_response_matrix(observed, "observed",
                                        allow_fractional = FALSE)
   predicted <- validate_response_matrix(predicted, "predicted",
@@ -241,6 +343,12 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
     stop("observed and predicted must have the same number of rows.",
          call. = FALSE)
   }
+  paired_missing <- check_paired_missingness(
+    observed = observed,
+    predicted = predicted,
+    paired_missing = paired_missing,
+    common_predicted_weights = common_predicted_weights
+  )
 
   if (is.null(split_id)) {
     split_id <- make_split_id(nrow(observed), n_splits, seed = seed)
@@ -254,6 +362,12 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
 
   quadrature <- check_quadrature(quadrature, n_quad = n_quad)
   split_values <- sort(unique(split_id))
+  lambda <- validate_lambda_vector(lambda, n = length(split_values))
+  lambda_by_split <- if (length(lambda) == 1) {
+    rep(lambda, length(split_values))
+  } else {
+    lambda
+  }
 
   observed_counts <- vector("list", length(split_values))
   predicted_counts <- vector("list", length(split_values))
@@ -310,15 +424,22 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
   counts_generated <- combine_counts(generated_counts, mode = "mean")
   initial_average <- average_item_pars(fold_initial_pars)
 
-  fit <- fit_from_counts(
+  component_weights <- vapply(predicted_counts, `[[`, numeric(1), "n")
+  component_weights <- component_weights / sum(component_weights)
+
+  fit <- fit_from_count_components(
     counts_observed = counts_observed,
-    counts_predicted = counts_predicted,
+    counts_predicted = predicted_counts,
     counts_generated = counts_generated,
     initial_pars = initial_average,
-    lambda = lambda,
+    lambda = lambda_by_split,
+    component_weights = component_weights,
     slope_lower = slope_lower,
     control = control
   )
+  lambda_generated <- fit$lambda_generated
+  fit$lambda <- NULL
+  fit$lambda_generated <- NULL
 
   q_observed <- list(
     quad = counts_to_quad(counts_observed),
@@ -349,6 +470,8 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
     fit,
     list(
       lambda = lambda,
+      lambda_by_split = lambda_by_split,
+      lambda_generated = lambda_generated,
       initial_pars = initial_average,
       initial_model = NULL,
       quadrature = quadrature,
@@ -356,9 +479,11 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
       q_predicted = q_predicted,
       q_generated = q_generated,
       common_predicted_weights = common_predicted_weights,
+      paired_missing = paired_missing,
       split = list(
         n_splits = n_splits,
         split_id = split_id,
+        lambda_by_split = lambda_by_split,
         fold_initial_pars = fold_initial_pars,
         fold_models = fold_models
       ),
@@ -369,13 +494,13 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
   out
 }
 
-#' Tune lambda over a grid
+#' Diagnose lambda values over a grid
 #'
 #' Fits [fit_mixed_subjects()] or [fit_mixed_subjects_split()] over a set of
 #' candidate lambda values. The returned summary reports the fitted
 #' mixed-subjects objective and the observed human expected-count loss for each
-#' candidate. These diagnostics are not a replacement for a study-specific
-#' validation or bootstrap procedure, but they are useful for sensitivity checks.
+#' candidate. This is a sensitivity diagnostic, not a statistically valid PPI++
+#' tuning rule.
 #'
 #' @param lambda_grid Numeric vector of lambda values in `[0, 1]`.
 #' @param observed,predicted,generated Response matrices passed to
@@ -383,7 +508,7 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
 #' @param split Logical; if `TRUE`, call [fit_mixed_subjects_split()].
 #' @param ... Additional arguments passed to the selected fitting function.
 #'
-#' @return A list with `summary`, `best_lambda_by_observed_loss`, and all fitted
+#' @return A list with `summary`, `lowest_observed_loss_lambda`, and all fitted
 #'   model objects.
 #' @export
 #'
@@ -393,14 +518,14 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
 #' observed <- simulate_2pl(rnorm(30), pars)
 #' predicted <- observed
 #' generated <- simulate_2pl(rnorm(80), pars)
-#' tuned <- tune_lambda_grid(
+#' tuned <- diagnose_lambda_grid(
 #'   c(0, 0.5),
 #'   observed, predicted, generated,
 #'   initial_pars = pars, n_quad = 5, control = list(maxit = 30)
 #' )
 #' tuned$summary
-tune_lambda_grid <- function(lambda_grid, observed, predicted, generated,
-                             split = FALSE, ...) {
+diagnose_lambda_grid <- function(lambda_grid, observed, predicted, generated,
+                                 split = FALSE, ...) {
   if (!is.numeric(lambda_grid) || length(lambda_grid) == 0) {
     stop("lambda_grid must be a non-empty numeric vector.", call. = FALSE)
   }
@@ -445,9 +570,42 @@ tune_lambda_grid <- function(lambda_grid, observed, predicted, generated,
   summary <- do.call(rbind, rows)
   list(
     summary = summary,
-    best_lambda_by_observed_loss = summary$lambda[which.min(summary$observed_loss)],
+    lowest_observed_loss_lambda = summary$lambda[which.min(summary$observed_loss)],
     fits = fits
   )
+}
+
+#' Tune lambda over a grid
+#'
+#' @description
+#' `tune_lambda_grid()` is retained as a backward-compatible wrapper for
+#' [diagnose_lambda_grid()]. It emits a warning because the grid output is a
+#' sensitivity diagnostic, not a statistically valid PPI++ tuning rule.
+#'
+#' @inheritParams diagnose_lambda_grid
+#'
+#' @return A list returned by [diagnose_lambda_grid()]. For backward
+#'   compatibility, the list also contains `best_lambda_by_observed_loss`.
+#' @export
+tune_lambda_grid <- function(lambda_grid, observed, predicted, generated,
+                             split = FALSE, ...) {
+  warning(
+    "tune_lambda_grid() is a diagnostic sensitivity helper, not a valid ",
+    "PPI++ tuning rule. Prefer diagnose_lambda_grid() or a study-specific ",
+    "cross-fitted tuning procedure.",
+    call. = FALSE
+  )
+
+  out <- diagnose_lambda_grid(
+    lambda_grid = lambda_grid,
+    observed = observed,
+    predicted = predicted,
+    generated = generated,
+    split = split,
+    ...
+  )
+  out$best_lambda_by_observed_loss <- out$lowest_observed_loss_lambda
+  out
 }
 
 #' @export
@@ -455,6 +613,9 @@ print.mixedsubjects_fit <- function(x, ...) {
   cat("mixedsubjectsirt 2PL fit\n")
   cat("  items:      ", nrow(x$item_pars), "\n", sep = "")
   cat("  lambda:     ", x$lambda, "\n", sep = "")
+  if (!is.null(x$lambda_by_split) && length(unique(x$lambda_by_split)) > 1) {
+    cat("  lambda bar: ", signif(x$lambda_generated, 6), "\n", sep = "")
+  }
   cat("  loss:       ", signif(x$value, 6), "\n", sep = "")
   cat("  convergence:", x$convergence, "\n")
   if (!is.null(x$split)) {

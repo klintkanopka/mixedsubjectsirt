@@ -1,0 +1,244 @@
+---
+title: "Choosing Lambda in Mixed-Subjects IRT"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Choosing Lambda in Mixed-Subjects IRT}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+```
+
+The mixed-subjects estimator fits a 2PL calibration by minimizing
+
+```{r objective, echo = FALSE, results = "asis"}
+cat("`L_human + lambda * (L_generated - L_paired_llm)`")
+```
+
+The tuning parameter `lambda` controls how strongly generated LLM responses are
+used after subtracting the paired LLM correction. Setting `lambda = 0` gives the
+human-only expected-count calibration. Larger values use more information from
+the generated response sample, but they can also amplify LLM bias when the
+paired correction is weak.
+
+This vignette distinguishes three package workflows:
+
+- `diagnose_lambda_grid()`: a sensitivity diagnostic. It is not a valid final
+  tuning rule.
+- `tune_lambda_ability()`: chooses a lambda by minimizing propagated
+  ability-score risk on a target scoring population.
+- `tune_lambda_ability_crossfit()`: estimates lambda out of sample by fold, then
+  fits the final split-sample estimator with fold-specific lambdas.
+
+## Example data
+
+The example uses simulated human responses, paired LLM responses for the same
+human rows, and additional generated LLM responses. In an applied project,
+replace these matrices with your study data.
+
+```{r data}
+library(mixedsubjectsirt)
+
+set.seed(2027)
+
+n_human <- 120
+n_generated <- 350
+n_items <- 5
+
+human_pars <- data.frame(
+  item = paste0("Item", seq_len(n_items)),
+  a = c(0.8, 1.0, 1.2, 1.35, 1.55),
+  d = c(-0.8, -0.3, 0.1, 0.45, 0.9)
+)
+human_pars$b <- -human_pars$d / human_pars$a
+
+llm_pars <- human_pars
+llm_pars$a <- pmax(0.35, 0.9 * human_pars$a)
+llm_pars$d <- human_pars$d + 0.25
+llm_pars$b <- -llm_pars$d / llm_pars$a
+
+theta_human <- rnorm(n_human)
+observed <- simulate_2pl(theta_human, human_pars)
+predicted <- simulate_2pl(theta_human, llm_pars)
+generated <- simulate_2pl(rnorm(n_generated), llm_pars)
+
+lambda_grid <- c(0, 0.25, 0.5, 0.75, 1)
+```
+
+The examples below use `human_pars` as `initial_pars` so the vignette runs
+quickly. In a real package workflow, a typical starting point is
+`initial_pars = fit_2pl(observed)$pars`.
+
+## Fixed Lambda
+
+When `lambda` is fixed by design, call `fit_mixed_subjects()` directly.
+
+```{r fixed-lambda}
+fixed_fit <- fit_mixed_subjects(
+  observed = observed,
+  predicted = predicted,
+  generated = generated,
+  lambda = 0.5,
+  initial_pars = human_pars,
+  n_quad = 7,
+  control = list(maxit = 100)
+)
+
+fixed_fit$item_pars
+```
+
+Use this route when a simulation study, design analysis, or preregistered plan
+already specifies `lambda`.
+
+## Sensitivity Diagnostics
+
+`diagnose_lambda_grid()` fits candidate lambda values and reports the mixed
+objective and the observed-human expected-count loss. This is useful for seeing
+how sensitive the fitted calibration is to lambda.
+
+```{r diagnostic}
+diagnostic <- diagnose_lambda_grid(
+  lambda_grid = lambda_grid,
+  observed = observed,
+  predicted = predicted,
+  generated = generated,
+  initial_pars = human_pars,
+  n_quad = 7,
+  control = list(maxit = 100)
+)
+
+diagnostic$summary
+diagnostic$lowest_observed_loss_lambda
+```
+
+The value in `lowest_observed_loss_lambda` is not a final PPI++ tuning rule. It
+is the lambda with the smallest observed-human expected-count loss after fitting.
+That criterion can overfit the labeled sample and is not the same as minimizing
+downstream ability-score uncertainty.
+
+## Ability-Risk Tuning
+
+For scoring applications, `tune_lambda_ability()` targets the quantity
+
+```{r risk-formula, echo = FALSE, results = "asis"}
+cat("`mean(g_i' Sigma_lambda g_i)`")
+```
+
+where `Sigma_lambda` is the full sandwich covariance matrix of the item
+parameters and `g_i` is the gradient of the estimated ability score for response
+pattern `i` with respect to those item parameters.
+
+```{r ability-tuning}
+ability_tuned <- tune_lambda_ability(
+  lambda_grid = lambda_grid,
+  observed = observed,
+  predicted = predicted,
+  generated = generated,
+  target_resp = observed,
+  initial_pars = human_pars,
+  n_quad = 7,
+  control = list(maxit = 100)
+)
+
+ability_tuned$summary
+ability_tuned$best_lambda
+```
+
+The selected calibration is available as `ability_tuned$best_fit`.
+
+```{r ability-fit}
+ability_tuned$best_fit$item_pars
+```
+
+You can also inspect the covariance and ability-risk components directly.
+
+```{r covariance-risk}
+Sigma <- vcov(ability_tuned$best_fit)
+dim(Sigma)
+
+risk <- ability_risk(
+  resp = observed,
+  fit_or_pars = ability_tuned$best_fit,
+  vcov = Sigma
+)
+
+risk$summary
+```
+
+In simulation studies, pass `theta_true` to include squared ability-estimation
+error in addition to propagated item-parameter uncertainty.
+
+```{r ability-tuning-truth}
+ability_tuned_with_truth <- tune_lambda_ability(
+  lambda_grid = lambda_grid,
+  observed = observed,
+  predicted = predicted,
+  generated = generated,
+  target_resp = observed,
+  theta_true = theta_human,
+  initial_pars = human_pars,
+  n_quad = 7,
+  control = list(maxit = 100)
+)
+
+ability_tuned_with_truth$summary
+```
+
+For real data, `theta_true` is normally unavailable. The default risk is then
+the propagated calibration component, `g_i' Sigma_lambda g_i`.
+
+## Cross-Fitted Ability-Risk Tuning
+
+`tune_lambda_ability()` uses the same labeled responses to tune and fit. That is
+useful for prototyping, but final finite-sample analyses should avoid using a
+fold's labels to tune the lambda applied to that fold's paired correction.
+
+`tune_lambda_ability_crossfit()` estimates lambda on training folds and then
+fits the final split-sample estimator with the resulting fold-specific lambdas.
+
+```{r crossfit}
+split_id <- rep(1:2, length.out = nrow(observed))
+
+crossfit_tuned <- tune_lambda_ability_crossfit(
+  lambda_grid = c(0, 0.5, 1),
+  observed = observed,
+  predicted = predicted,
+  generated = generated,
+  split_id = split_id,
+  initial_pars = human_pars,
+  n_quad = 7,
+  control = list(maxit = 100)
+)
+
+crossfit_tuned$lambda_by_split
+crossfit_tuned$final_fit
+```
+
+The final fit stores both the fold-specific lambdas and their split-size
+weighted mean for the generated term.
+
+```{r crossfit-fit}
+crossfit_tuned$final_fit$split$lambda_by_split
+crossfit_tuned$final_fit$lambda_generated
+```
+
+## Choosing a Procedure
+
+Use a fixed lambda when the value is determined by design or by a simulation
+study. Use `diagnose_lambda_grid()` to understand sensitivity, not to make a
+final inferential choice. Use `tune_lambda_ability()` when the practical target
+is ability scoring and you want the lambda that minimizes propagated scoring
+risk on a chosen target population. Use `tune_lambda_ability_crossfit()` for the
+same target when finite-sample adaptivity matters and you want lambda estimated
+out of sample.
+
+The target population matters. `target_resp = observed` tunes for the observed
+human response patterns. In operational scoring, you may prefer a larger target
+matrix representing the population that will actually be scored.

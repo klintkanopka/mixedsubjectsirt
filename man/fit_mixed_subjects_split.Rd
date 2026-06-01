@@ -16,6 +16,7 @@ fit_mixed_subjects_split(
   initial_pars = NULL,
   quadrature = NULL,
   common_predicted_weights = TRUE,
+  paired_missing = c("match_observed", "allow"),
   slope_lower = 1e-04,
   control = list(maxit = 500),
   ...
@@ -31,7 +32,10 @@ items. Values must be binary when \code{initial_pars} is omitted.}
 \item{generated}{Generated or unlabeled LLM responses or probabilities for
 the same item columns.}
 
-\item{lambda}{Power-tuning parameter in \verb{[0, 1]}.}
+\item{lambda}{Power-tuning parameter in \verb{[0, 1]}. Supply a scalar for a fixed
+lambda or a vector with one value per split for a precomputed
+cross-fitted-lambda analysis. When a vector is supplied, the generated term
+uses the split-size weighted mean lambda.}
 
 \item{n_splits}{Number of sample splits.}
 
@@ -50,6 +54,10 @@ sensitivity analyses.}
 
 \item{common_predicted_weights}{Logical; if \code{TRUE}, reuse each held-out
 observed posterior weight matrix for its paired LLM responses.}
+
+\item{paired_missing}{How to handle missingness when
+\code{common_predicted_weights = TRUE}. The default, \code{"match_observed"}, requires
+\code{observed} and \code{predicted} to have the same missingness pattern.}
 
 \item{slope_lower}{Lower bound for discrimination parameters during
 optimization. Use \code{NULL} for no lower bound.}
