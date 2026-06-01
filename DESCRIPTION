@@ -1,6 +1,6 @@
 Package: mixedsubjectsirt
 Title: Item Response Theory Calibration with a Mixed Subjects Design
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R:
     person("Klint", "Kanopka", , "klint.kanopka@nyu.edu", role = c("aut", "cre"))
 Description: Allows the integration of LLM-generated item responses into psychometric calibration studies.
@@ -9,7 +9,13 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports:
-    dplyr,
     mirt,
     rmutil
+Suggests:
+    ggplot2,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+Config/testthat/edition: 3
 URL: http://klintkanopka.com/mixedsubjectsirt/
