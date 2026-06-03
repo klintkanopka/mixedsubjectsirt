@@ -10,16 +10,34 @@ responses are used after subtracting the paired LLM correction. Setting
 values use more information from the generated response sample, but they
 can also amplify LLM bias when the paired correction is weak.
 
-This vignette distinguishes three package workflows:
+This vignette distinguishes four package workflows:
 
 - [`diagnose_lambda_grid()`](http://klintkanopka.com/mixedsubjectsirt/reference/diagnose_lambda_grid.md):
   a sensitivity diagnostic. It is not a valid final tuning rule.
+- `tune_lambda_ppi_score()`: returns the PPI++ Proposition 2 plug-in
+  estimate, the $`\lambda`$ that minimises the *trace of the
+  item-parameter covariance matrix* $`\text{Tr}(\Sigma_\gamma)`$. **This
+  is a theoretical diagnostic.** For psychometric applications, use
+  [`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
+  instead.
 - [`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md):
-  chooses a lambda by minimizing propagated ability-score risk on a
-  target scoring population.
+  chooses a lambda by minimizing propagated *ability-score risk*
+  $`\mathbb{E}[g' \Sigma_\gamma g]`$ on a target scoring population.
+  **This is the recommended practical criterion** for IRT applications
+  where accurate test scoring is the goal.
 - [`tune_lambda_ability_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_crossfit.md):
   estimates lambda out of sample by fold, then fits the final
   split-sample estimator with fold-specific lambdas.
+
+**The two lambda objectives.** The PPI++ score objective minimises
+item-parameter estimation efficiency ($`\text{Tr}(\Sigma_\gamma)`$). The
+ability-risk objective minimises downstream scoring accuracy
+($`\mathbb{E}[g' \Sigma_\gamma g]`$). These are different quantities and
+generally select different $`\lambda`$ values. Because the practical
+goal in psychometrics is accurate ability scoring, not item-parameter
+precision,
+[`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
+is the recommended default.
 
 ## Example data
 
@@ -125,6 +143,47 @@ The value in `lowest_observed_loss_lambda` is not a final PPI++ tuning
 rule. It is the lambda with the smallest observed-human expected-count
 loss after fitting. That criterion can overfit the labeled sample and is
 not the same as minimizing downstream ability-score uncertainty.
+
+## PPI++ Score Tuning (Theoretical Diagnostic)
+
+`tune_lambda_ppi_score()` implements the closed-form plug-in estimator
+from Proposition 2 of Angelopoulos, Duchi and Zrnic (2023). It returns
+the $`\lambda`$ that minimises the trace of the item-parameter
+asymptotic covariance matrix $`\text{Tr}(\Sigma_\gamma)`$.
+
+This objective measures **item-parameter estimation efficiency** and is
+suitable for method validation and theoretical analysis. For
+psychometric applications where accurate test scoring is the goal, use
+[`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
+instead — it directly minimises the propagated ability-score risk
+$`\mathbb{E}[g' \Sigma_\gamma g]`$.
+
+The function uses the **same** human posterior weights for both the
+human and paired-LLM score vectors. This symmetry satisfies the PPI++
+unbiasedness condition.
+
+``` r
+
+ppi_score <- tune_lambda_ppi_score(
+  observed    = observed,
+  predicted   = predicted,
+  item_pars   = human_pars,
+  n_generated = nrow(generated),
+  n_quad      = 7
+)
+
+cat("PPI++ score lambda (minimises Tr(Sigma_gamma)):", round(ppi_score$lambda, 3), "\n")
+#> PPI++ score lambda (minimises Tr(Sigma_gamma)): 0
+cat("  r = n/N =", round(ppi_score$r, 3),
+    "  => N/(n+N) upper bound =", round(1/(1 + ppi_score$r), 3), "\n")
+#>   r = n/N = 0.343   => N/(n+N) upper bound = 0.745
+```
+
+The PPI++ lambda is typically lower than the upper bound $`N/(n+N)`$
+because the paired predictions are stochastic (independent draws from
+the LLM, not exact copies of the human responses). For exact predictions
+(`predicted = observed`), the formula recovers
+$`\lambda^* \approx N/(n+N)`$.
 
 ## Ability-Risk Tuning
 
@@ -276,19 +335,29 @@ crossfit_tuned$final_fit$lambda_generated
 
 ## Choosing a Procedure
 
+| Procedure | Objective | When to use |
+|----|----|----|
+| [`diagnose_lambda_grid()`](http://klintkanopka.com/mixedsubjectsirt/reference/diagnose_lambda_grid.md) | Sensitivity diagnostic | Exploratory analysis only — not a valid tuning rule |
+| `tune_lambda_ppi_score()` | Minimises $`\text{Tr}(\Sigma_\gamma)`$ (item-parameter variance) | Method validation; theoretical benchmarking |
+| [`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md) | Minimises $`\mathbb{E}[g' \Sigma_\gamma g]`$ (ability-score risk) | **Recommended default** for psychometric applications |
+| [`tune_lambda_ability_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_crossfit.md) | Same as above, cross-fitted | Final analyses requiring out-of-sample lambda estimation |
+
 Use a fixed lambda when the value is determined by design or by a
 simulation study. Use
 [`diagnose_lambda_grid()`](http://klintkanopka.com/mixedsubjectsirt/reference/diagnose_lambda_grid.md)
 to understand sensitivity, not to make a final inferential choice. Use
+`tune_lambda_ppi_score()` to inspect the theoretical PPI++ optimum as a
+method diagnostic — note that this minimises item-parameter variance,
+not scoring accuracy. **Use
 [`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
-when the practical target is ability scoring and you want the lambda
+when the practical target is ability scoring** and you want the lambda
 that minimizes propagated scoring risk on a chosen target population.
 Use
 [`tune_lambda_ability_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_crossfit.md)
 for the same target when finite-sample adaptivity matters and you want
 lambda estimated out of sample.
 
-The target population matters. `target_resp = observed` tunes for the
-observed human response patterns. In operational scoring, you may prefer
-a larger target matrix representing the population that will actually be
-scored.
+The target population matters for ability-risk tuning.
+`target_resp = observed` tunes for the observed human response patterns.
+In operational scoring, you may prefer a larger target matrix
+representing the population that will actually be scored.

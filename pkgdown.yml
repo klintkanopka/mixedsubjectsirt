@@ -3,8 +3,9 @@ pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   lambda-tuning: lambda-tuning.html
+  linking-comparison: linking-comparison.html
   mixed-subjects-workflow: mixed-subjects-workflow.html
-last_built: 2026-06-01T19:55Z
+last_built: 2026-06-03T20:51Z
 urls:
   reference: http://klintkanopka.com/mixedsubjectsirt/reference
   article: http://klintkanopka.com/mixedsubjectsirt/articles
