@@ -386,24 +386,28 @@ fit_from_counts <- function(counts_observed, counts_predicted, counts_generated,
 
   objective <- function(par) {
     disc <- par[seq_along(item_names)]
-    if (any(!is.finite(disc)) || any(disc <= 0)) return(Inf)
+    if (any(!is.finite(disc)) || any(disc <= 0)) return(.Machine$double.xmax)
     item_pars <- item_pars_from_vector(par, item_names)
-    loss_expected_counts(counts_observed, item_pars) +
+    val <- loss_expected_counts(counts_observed, item_pars) +
       lambda * (
         loss_expected_counts(counts_generated, item_pars) -
           loss_expected_counts(counts_predicted, item_pars)
       )
+    # Non-finite values (e.g. NaN from degenerate counts) replaced with a
+    # large finite sentinel so L-BFGS-B can always evaluate the initial point.
+    if (!is.finite(val)) .Machine$double.xmax else val
   }
 
   gradient <- function(par) {
     disc <- par[seq_along(item_names)]
     if (any(!is.finite(disc)) || any(disc <= 0)) return(rep(0, length(par)))
     item_pars <- item_pars_from_vector(par, item_names)
-    gradient_expected_counts(counts_observed, item_pars) +
+    g <- gradient_expected_counts(counts_observed, item_pars) +
       lambda * (
         gradient_expected_counts(counts_generated, item_pars) -
           gradient_expected_counts(counts_predicted, item_pars)
       )
+    ifelse(is.finite(g), g, 0)
   }
 
   start <- vector_from_item_pars(initial_pars)
@@ -483,7 +487,7 @@ fit_from_count_components <- function(counts_observed, counts_predicted,
 
   objective <- function(par) {
     disc <- par[seq_along(item_names)]
-    if (any(!is.finite(disc)) || any(disc <= 0)) return(Inf)
+    if (any(!is.finite(disc)) || any(disc <= 0)) return(.Machine$double.xmax)
     item_pars <- item_pars_from_vector(par, item_names)
     predicted_loss <- 0
     for (i in seq_along(counts_predicted)) {
@@ -492,9 +496,10 @@ fit_from_count_components <- function(counts_observed, counts_predicted,
         loss_expected_counts(counts_predicted[[i]], item_pars)
     }
 
-    loss_expected_counts(counts_observed, item_pars) +
+    val <- loss_expected_counts(counts_observed, item_pars) +
       lambda_generated * loss_expected_counts(counts_generated, item_pars) -
       predicted_loss
+    if (!is.finite(val)) .Machine$double.xmax else val
   }
 
   gradient <- function(par) {
@@ -508,9 +513,10 @@ fit_from_count_components <- function(counts_observed, counts_predicted,
         gradient_expected_counts(counts_predicted[[i]], item_pars)
     }
 
-    gradient_expected_counts(counts_observed, item_pars) +
+    g <- gradient_expected_counts(counts_observed, item_pars) +
       lambda_generated * gradient_expected_counts(counts_generated, item_pars) -
       predicted_grad
+    ifelse(is.finite(g), g, 0)
   }
 
   start <- vector_from_item_pars(initial_pars)

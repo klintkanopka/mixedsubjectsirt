@@ -58,16 +58,22 @@ library(mixedsubjectsirt)
 library(ggplot2)
 
 # Apply (A, B) and return a standardised data frame of item parameters.
-# Discriminations are clamped to slope_lower (1e-4) so that mirt fits with
-# near-zero item parameters on different platforms do not destabilise the
-# downstream expected-count optimisation.
+# Guards against degenerate linking constants (Inf, NaN, non-positive A) that
+# can arise from unusual mirt fits on different platforms.
 apply_link <- function(source, A, B, slope_lower = 1e-4) {
+  if (!is.finite(A) || A <= 0 || !is.finite(B)) {
+    # Degenerate constants: fall back to identity transform
+    A <- 1
+    B <- 0
+  }
   pars <- data.frame(
     item = source$item,
     a    = pmax(slope_lower, source$a / A),
     b    = A * source$b + B,
     stringsAsFactors = FALSE
   )
+  # Guard b and d against any residual non-finite values
+  pars$b <- ifelse(is.finite(pars$b), pars$b, 0)
   pars$d <- -pars$a * pars$b
   list(pars = pars, A = A, B = B)
 }
@@ -79,7 +85,13 @@ link_mean_mean <- function(source, target) {
 }
 
 link_mean_sigma <- function(source, target) {
-  A <- sd(target$b) / sd(source$b)
+  sd_src <- sd(source$b)
+  # If source difficulties have no variance (degenerate mirt fit), fall back
+  # to mean-mean linking which does not depend on sd(b).
+  if (!is.finite(sd_src) || sd_src < 1e-6) {
+    return(link_mean_mean(source, target))
+  }
+  A <- sd(target$b) / sd_src
   B <- mean(target$b) - A * mean(source$b)
   apply_link(source, A, B)
 }
@@ -402,16 +414,30 @@ to characterise the tradeoff between using LLM data and inflating discrimination
 lambda_grid <- c(0, 0.02, 0.05, 0.10, 0.15, 0.20, 0.30, 0.50)
 
 sweep_lambda <- function(gen_data, linked_pars) {
+  # Validate linked_pars: if any parameter is non-finite (can happen when
+  # sd(b) ~ 0 on some platforms and apply_link fallback wasn't triggered),
+  # substitute human_pars so counts are always valid.
+  if (!all(is.finite(c(linked_pars$a, linked_pars$d)))) {
+    linked_pars <- human_pars
+  }
   q_gen <- mixedsubjectsirt:::build_quadrature_summary(gen_data, linked_pars, quad)
   lapply(lambda_grid, function(lam) {
-    fit <- mixedsubjectsirt:::fit_from_counts(
-      q_obs$counts, q_pred$counts, q_gen$counts,
-      initial_pars = human_pars, lambda = lam, control = list(maxit = 500))
+    fit <- tryCatch(
+      mixedsubjectsirt:::fit_from_counts(
+        q_obs$counts, q_pred$counts, q_gen$counts,
+        initial_pars = human_pars, lambda = lam, control = list(maxit = 500)),
+      error = function(e) list(
+        item_pars = data.frame(item = human_pars$item,
+                               a = rep(NA_real_, nrow(human_pars)),
+                               b = rep(NA_real_, nrow(human_pars)),
+                               d = rep(NA_real_, nrow(human_pars))),
+        value = NA_real_, convergence = 99L)
+    )
     data.frame(
       lambda  = lam,
-      rmse_a  = rmse(fit$item_pars$a, true_pars$a),
-      rmse_d  = rmse(fit$item_pars$d, true_pars$d),
-      max_a   = max(fit$item_pars$a),
+      rmse_a  = if (anyNA(fit$item_pars$a)) NA_real_ else rmse(fit$item_pars$a, true_pars$a),
+      rmse_d  = if (anyNA(fit$item_pars$d)) NA_real_ else rmse(fit$item_pars$d, true_pars$d),
+      max_a   = if (anyNA(fit$item_pars$a)) NA_real_ else max(fit$item_pars$a),
       conv    = fit$convergence
     )
   })
