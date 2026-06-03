@@ -380,7 +380,13 @@ fit_from_counts <- function(counts_observed, counts_predicted, counts_generated,
     item_names = item_names
   )
 
+  # Minimum allowed discrimination — used to guard against floating-point
+  # boundary violations that can occur with L-BFGS-B on some platforms.
+  disc_min <- if (!is.null(slope_lower)) slope_lower else .Machine$double.eps * 1e4
+
   objective <- function(par) {
+    disc <- par[seq_along(item_names)]
+    if (any(!is.finite(disc)) || any(disc <= 0)) return(Inf)
     item_pars <- item_pars_from_vector(par, item_names)
     loss_expected_counts(counts_observed, item_pars) +
       lambda * (
@@ -390,6 +396,8 @@ fit_from_counts <- function(counts_observed, counts_predicted, counts_generated,
   }
 
   gradient <- function(par) {
+    disc <- par[seq_along(item_names)]
+    if (any(!is.finite(disc)) || any(disc <= 0)) return(rep(0, length(par)))
     item_pars <- item_pars_from_vector(par, item_names)
     gradient_expected_counts(counts_observed, item_pars) +
       lambda * (
@@ -474,6 +482,8 @@ fit_from_count_components <- function(counts_observed, counts_predicted,
   )
 
   objective <- function(par) {
+    disc <- par[seq_along(item_names)]
+    if (any(!is.finite(disc)) || any(disc <= 0)) return(Inf)
     item_pars <- item_pars_from_vector(par, item_names)
     predicted_loss <- 0
     for (i in seq_along(counts_predicted)) {
@@ -488,6 +498,8 @@ fit_from_count_components <- function(counts_observed, counts_predicted,
   }
 
   gradient <- function(par) {
+    disc <- par[seq_along(item_names)]
+    if (any(!is.finite(disc)) || any(disc <= 0)) return(rep(0, length(par)))
     item_pars <- item_pars_from_vector(par, item_names)
     predicted_grad <- rep(0, length(par))
     for (i in seq_along(counts_predicted)) {

@@ -57,11 +57,14 @@ $a^\dagger = a/A$ and $b^\dagger = Ab + B$ (equivalently $d^\dagger = d - (a/A)B
 library(mixedsubjectsirt)
 library(ggplot2)
 
-# Apply (A, B) and return a standardised data frame of item parameters
-apply_link <- function(source, A, B) {
+# Apply (A, B) and return a standardised data frame of item parameters.
+# Discriminations are clamped to slope_lower (1e-4) so that mirt fits with
+# near-zero item parameters on different platforms do not destabilise the
+# downstream expected-count optimisation.
+apply_link <- function(source, A, B, slope_lower = 1e-4) {
   pars <- data.frame(
     item = source$item,
-    a    = source$a / A,
+    a    = pmax(slope_lower, source$a / A),
     b    = A * source$b + B,
     stringsAsFactors = FALSE
   )
