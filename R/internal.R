@@ -368,6 +368,7 @@ check_paired_missingness <- function(observed, predicted,
 
 fit_from_counts <- function(counts_observed, counts_predicted, counts_generated,
                             initial_pars, lambda, slope_lower = 1e-4,
+                            slope_upper = NULL,
                             control = list(maxit = 500)) {
   check_counts_compatible(list(counts_observed, counts_predicted, counts_generated))
   lambda <- validate_lambda(lambda)
@@ -405,6 +406,13 @@ fit_from_counts <- function(counts_observed, counts_predicted, counts_generated,
     start[seq_along(item_names)] <- pmax(start[seq_along(item_names)], slope_lower)
   }
 
+  if (is.null(slope_upper)) {
+    upper <- rep(Inf, length(start))
+  } else {
+    upper <- c(rep(slope_upper, length(item_names)), rep(Inf, length(item_names)))
+    start[seq_along(item_names)] <- pmin(start[seq_along(item_names)], slope_upper)
+  }
+
   control <- utils::modifyList(list(maxit = 500), control)
   opt <- stats::optim(
     par = start,
@@ -412,7 +420,7 @@ fit_from_counts <- function(counts_observed, counts_predicted, counts_generated,
     gr = gradient,
     method = "L-BFGS-B",
     lower = lower,
-    upper = rep(Inf, length(start)),
+    upper = upper,
     control = control
   )
 
@@ -430,6 +438,7 @@ fit_from_count_components <- function(counts_observed, counts_predicted,
                                       counts_generated, initial_pars,
                                       lambda, component_weights = NULL,
                                       slope_lower = 1e-4,
+                                      slope_upper = NULL,
                                       control = list(maxit = 500)) {
   if (!is.list(counts_predicted) || is.null(counts_predicted[[1]]$N)) {
     counts_predicted <- list(counts_predicted)
@@ -500,6 +509,13 @@ fit_from_count_components <- function(counts_observed, counts_predicted,
     start[seq_along(item_names)] <- pmax(start[seq_along(item_names)], slope_lower)
   }
 
+  if (is.null(slope_upper)) {
+    upper <- rep(Inf, length(start))
+  } else {
+    upper <- c(rep(slope_upper, length(item_names)), rep(Inf, length(item_names)))
+    start[seq_along(item_names)] <- pmin(start[seq_along(item_names)], slope_upper)
+  }
+
   control <- utils::modifyList(list(maxit = 500), control)
   opt <- stats::optim(
     par = start,
@@ -507,7 +523,7 @@ fit_from_count_components <- function(counts_observed, counts_predicted,
     gr = gradient,
     method = "L-BFGS-B",
     lower = lower,
-    upper = rep(Inf, length(start)),
+    upper = upper,
     control = control
   )
 

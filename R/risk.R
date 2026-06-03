@@ -363,11 +363,117 @@ ability_risk <- function(resp, fit_or_pars, vcov = NULL, theta_true = NULL,
   )
 }
 
+#' Plug-in PPI++ optimal tuning parameter
+#'
+#' Implements the closed-form estimator from Proposition 2 of Angelopoulos,
+#' Duchi and Zrnic (2023) for the lambda that minimises the trace of the
+#' asymptotic item-parameter covariance matrix `Tr(Sigma_gamma)`.
+#'
+#' **This is the item-parameter variance objective, not the psychometric
+#' scoring objective.** For IRT applications where accurate ability scoring
+#' is the goal, use [tune_lambda_ability()] or [tune_lambda_ability_crossfit()]
+#' instead. Those functions directly minimise the propagated ability-score
+#' risk `E[g' Sigma_gamma g]` — the quantity that matters for test scoring —
+#' rather than item-parameter estimation efficiency. `tune_lambda_ppi_score()`
+#' is provided as a theoretical diagnostic and to facilitate method validation.
+#'
+#' The formula uses the **same** human posterior weights for both the human and
+#' paired-LLM score vectors. This symmetry is required for the PPI++
+#' unbiasedness condition `E[grad_gen] = E[grad_pred]` at the true parameters.
+#'
+#' @param observed Human response matrix.
+#' @param predicted Paired LLM responses for the same rows as `observed`.
+#' @param item_pars Item parameters in slope-intercept form at which to
+#'   evaluate the score vectors. Typically the human 2PL MLE from [fit_2pl()].
+#' @param n_generated Number of generated (unpaired) LLM subjects, used to
+#'   compute `r = n / n_generated`.
+#' @param quadrature Optional quadrature grid. If omitted, a standard-normal
+#'   grid with `n_quad` nodes is created.
+#' @param n_quad Number of quadrature nodes when `quadrature` is omitted.
+#'
+#' @return A list with elements `lambda` (the plug-in estimate, clipped to
+#'   \[0, 1\]), `n`, `n_generated`, `r`, and the intermediate matrices `C_hf`
+#'   (cross-covariance of human and paired-LLM score vectors) and `V_f`
+#'   (variance of paired-LLM score vectors).
+#' @export
+#'
+#' @examples
+#' set.seed(1)
+#' pars <- data.frame(a = c(1, 1.2, 0.9), d = c(0, -0.5, 0.3))
+#' observed <- simulate_2pl(rnorm(40), pars)
+#' predicted <- observed
+#' tune_lambda_ppi_score(observed, predicted, pars, n_generated = 100, n_quad = 7)$lambda
+tune_lambda_ppi_score <- function(observed, predicted, item_pars, n_generated,
+                                   quadrature = NULL, n_quad = 31) {
+  observed  <- validate_response_matrix(observed,  "observed",
+                                        allow_fractional = FALSE)
+  predicted <- validate_response_matrix(predicted, "predicted",
+                                        allow_fractional = TRUE)
+  check_same_items(observed, predicted, "observed", "predicted")
+  if (nrow(observed) != nrow(predicted)) {
+    stop("observed and predicted must have the same number of rows.",
+         call. = FALSE)
+  }
+  if (!is.numeric(n_generated) || length(n_generated) != 1 ||
+      !is.finite(n_generated) || n_generated <= 0) {
+    stop("n_generated must be a single positive finite number.", call. = FALSE)
+  }
+
+  item_pars <- standardize_item_pars(item_pars, n_items = ncol(observed),
+                                      item_names = colnames(observed))
+  quadrature <- check_quadrature(quadrature, n_quad = n_quad)
+
+  # Compute human posterior weights from observed responses. The SAME weights
+  # are used for both score vectors so that the cross-covariance C_hf correctly
+  # represents the PPI++ correction variance, satisfying the unbiasedness
+  # condition E[grad_gen] = E[grad_pred] at the true item parameters.
+  weights <- posterior_weights_2pl(observed, item_pars, quadrature = quadrature)
+
+  S_h <- person_scores_2pl(observed,  weights, item_pars)
+  S_f <- person_scores_2pl(predicted, weights, item_pars)
+
+  n <- nrow(observed)
+  r <- n / n_generated
+
+  counts <- summarize_expected_counts(observed, weights)
+  H      <- avg_hessian_counts(counts, item_pars)
+  H_inv  <- stable_inverse(H)
+
+  mu_h <- colMeans(S_h)
+  mu_f <- colMeans(S_f)
+  C_hf <- t(S_h - mu_h) %*% (S_f - mu_f) / (n - 1)
+  V_f  <- t(S_f - mu_f) %*% (S_f - mu_f) / (n - 1)
+
+  # Proposition 2, Angelopoulos, Duchi & Zrnic (2023):
+  # lambda* = Tr(H^{-1}(C_hf + C_hf')H^{-1}) / (2(1+r) Tr(H^{-1} V_f H^{-1}))
+  sym_cov     <- C_hf + t(C_hf)
+  numerator   <- sum(diag(H_inv %*% sym_cov   %*% H_inv))
+  denominator <- 2 * (1 + r) * sum(diag(H_inv %*% V_f %*% H_inv))
+
+  lambda <- if (denominator <= 0) 0 else max(0, min(1, numerator / denominator))
+
+  list(
+    lambda      = lambda,
+    n           = n,
+    n_generated = n_generated,
+    r           = r,
+    C_hf        = C_hf,
+    V_f         = V_f
+  )
+}
+
 #' Tune lambda by downstream ability risk
 #'
 #' Fits candidate mixed-subjects calibrations, estimates the item-parameter
 #' sandwich covariance for each, and chooses the lambda minimizing average
 #' propagated ability risk on a target response matrix.
+#'
+#' This function minimises `E[g' Sigma_gamma g]` — the propagated ability-score
+#' risk — which is the appropriate objective for IRT applications where accurate
+#' test scoring is the goal. This differs from [tune_lambda_ppi_score()], which
+#' minimises the trace of the item-parameter covariance matrix `Tr(Sigma_gamma)`
+#' (the PPI++ theoretical objective). The two criteria generally yield different
+#' lambda values; ability-score risk is the recommended practical criterion.
 #'
 #' @param lambda_grid Numeric vector of candidate lambda values in `[0, 1]`.
 #' @param observed,predicted,generated Response matrices passed to
@@ -396,6 +502,8 @@ ability_risk <- function(resp, fit_or_pars, vcov = NULL, theta_true = NULL,
 #'   initial_pars = pars, n_quad = 5, control = list(maxit = 30)
 #' )
 #' tuned$best_lambda
+#' @seealso [tune_lambda_ppi_score()] for the PPI++ theoretical lambda that
+#'   minimises the trace of the item-parameter covariance matrix.
 tune_lambda_ability <- function(lambda_grid, observed, predicted, generated,
                                 target_resp = NULL, theta_true = NULL,
                                 n_quad = 31, initial_pars = NULL,

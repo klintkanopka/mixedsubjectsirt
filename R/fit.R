@@ -101,6 +101,7 @@ fit_mixed_subjects <- function(observed, predicted, generated, lambda = 1,
                                common_predicted_weights = TRUE,
                                paired_missing = c("match_observed", "allow"),
                                slope_lower = 1e-4,
+                               slope_upper = NULL,
                                control = list(maxit = 500), ...) {
   lambda <- validate_lambda(lambda)
   observed <- validate_response_matrix(observed, "observed",
@@ -158,6 +159,7 @@ fit_mixed_subjects <- function(observed, predicted, generated, lambda = 1,
     initial_pars = initial_pars,
     lambda = lambda,
     slope_lower = slope_lower,
+    slope_upper = slope_upper,
     control = control
   )
 
@@ -214,6 +216,7 @@ fit_mixed_subjects_from_quadrature <- function(q_observed, q_predicted,
                                                q_generated, lambda = 1,
                                                initial_pars = NULL,
                                                slope_lower = 1e-4,
+                                               slope_upper = NULL,
                                                control = list(maxit = 500)) {
   counts_observed <- q_to_counts(q_observed, "q_observed")
   counts_predicted <- q_to_counts(q_predicted, "q_predicted")
@@ -236,6 +239,7 @@ fit_mixed_subjects_from_quadrature <- function(q_observed, q_predicted,
     initial_pars = initial_pars,
     lambda = lambda,
     slope_lower = slope_lower,
+    slope_upper = slope_upper,
     control = control
   )
 
@@ -328,6 +332,7 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
                                      common_predicted_weights = TRUE,
                                      paired_missing = c("match_observed", "allow"),
                                      slope_lower = 1e-4,
+                                     slope_upper = NULL,
                                      control = list(maxit = 500), ...) {
   lambda <- validate_lambda_vector(lambda)
   observed <- validate_response_matrix(observed, "observed",
@@ -435,6 +440,7 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
     lambda = lambda_by_split,
     component_weights = component_weights,
     slope_lower = slope_lower,
+    slope_upper = slope_upper,
     control = control
   )
   lambda_generated <- fit$lambda_generated
@@ -608,6 +614,196 @@ tune_lambda_grid <- function(lambda_grid, observed, predicted, generated,
   out
 }
 
+#' Fit a mixed-subjects 2PL calibration with iterative EM
+#'
+#' Extends [fit_mixed_subjects()] by iterating the E-step and M-step until
+#' convergence rather than fixing posterior quadrature weights at the initial
+#' parameter estimates. At every iteration the posterior weights for all three
+#' datasets (observed, predicted, generated) are recomputed using the same
+#' current item parameters. This keeps the posteriors internally consistent and
+#' avoids the asymmetry between `L_pred` and `L_gen` that arises when frozen
+#' human-MLE weights are applied to LLM data with different item parameters.
+#'
+#' **Note on lambda selection.** This function accepts a fixed `lambda`. For
+#' psychometric applications where accurate ability scoring is the goal, select
+#' `lambda` with [tune_lambda_ability()] rather than [tune_lambda_ppi_score()].
+#' The PPI++ score objective minimises the trace of the item-parameter
+#' covariance matrix; [tune_lambda_ability()] minimises the propagated
+#' ability-score risk `g' Sigma g`, which is the quantity that matters for
+#' downstream test scoring.
+#'
+#' @param observed Human response matrix.
+#' @param predicted LLM responses or probabilities for the same rows as
+#'   `observed`.
+#' @param generated Generated or unlabeled LLM responses.
+#' @param lambda Power-tuning parameter in `[0, 1]`.
+#' @param n_quad Number of standard-normal quadrature nodes.
+#' @param initial_pars Optional starting item parameters. If omitted, a 2PL
+#'   model is fit to `observed`.
+#' @param quadrature Optional quadrature grid.
+#' @param common_predicted_weights Logical; if `TRUE`, reuse observed posterior
+#'   weights for `predicted` at each iteration.
+#' @param paired_missing Missingness check passed to [fit_mixed_subjects()].
+#' @param slope_lower Lower bound on discrimination parameters.
+#' @param slope_upper Upper bound on discrimination parameters. **Strongly
+#'   recommended** when `lambda > 0` — the iterative EM updates posteriors at
+#'   each step, and without an upper bound the gradient asymmetry between
+#'   `L_pred` and `L_gen` can compound across iterations, driving
+#'   discrimination estimates to extreme values. A typical choice is
+#'   `slope_upper = 4` or `slope_upper = 6`.
+#' @param tol Convergence tolerance: maximum absolute change in any parameter
+#'   across an EM iteration.
+#' @param em_maxit Maximum number of EM iterations.
+#' @param control Control list passed to [stats::optim()] for the M-step.
+#' @param ... Additional arguments passed to [fit_2pl()] when `initial_pars`
+#'   is omitted.
+#'
+#' @return An object of class `"mixedsubjects_fit"` with the standard fields
+#'   plus `em_iterations` (number of EM cycles completed) and `em_converged`
+#'   (logical).
+#' @export
+#'
+#' @examples
+#' set.seed(1)
+#' pars <- data.frame(a = c(1, 1.2, 0.9), d = c(0, -0.5, 0.3))
+#' observed <- simulate_2pl(rnorm(40), pars)
+#' predicted <- observed
+#' generated <- simulate_2pl(rnorm(100), pars)
+#' fit <- fit_mixed_subjects_iterative(
+#'   observed, predicted, generated,
+#'   lambda = 0.5, initial_pars = pars, n_quad = 7,
+#'   control = list(maxit = 50), em_maxit = 5
+#' )
+#' fit$item_pars
+fit_mixed_subjects_iterative <- function(observed, predicted, generated,
+                                          lambda = 1,
+                                          n_quad = 31,
+                                          initial_pars = NULL,
+                                          quadrature = NULL,
+                                          common_predicted_weights = TRUE,
+                                          paired_missing = c("match_observed", "allow"),
+                                          slope_lower = 1e-4,
+                                          slope_upper = NULL,
+                                          tol = 1e-4,
+                                          em_maxit = 30,
+                                          control = list(maxit = 200),
+                                          ...) {
+  lambda <- validate_lambda(lambda)
+  observed <- validate_response_matrix(observed, "observed",
+                                       allow_fractional = FALSE)
+  predicted <- validate_response_matrix(predicted, "predicted",
+                                        allow_fractional = TRUE)
+  generated <- validate_response_matrix(generated, "generated",
+                                        allow_fractional = TRUE)
+  check_same_items(observed, predicted, "observed", "predicted")
+  check_same_items(observed, generated, "observed", "generated")
+
+  if (nrow(observed) != nrow(predicted)) {
+    stop("observed and predicted must have the same number of rows.",
+         call. = FALSE)
+  }
+  paired_missing <- check_paired_missingness(
+    observed = observed,
+    predicted = predicted,
+    paired_missing = paired_missing,
+    common_predicted_weights = common_predicted_weights
+  )
+
+  quadrature <- check_quadrature(quadrature, n_quad = n_quad)
+
+  if (is.null(initial_pars)) {
+    initial_fit <- fit_2pl(observed, ...)
+    current_pars <- initial_fit$pars
+  } else {
+    initial_fit <- NULL
+    current_pars <- standardize_item_pars(
+      initial_pars,
+      n_items = ncol(observed),
+      item_names = colnames(observed)
+    )
+  }
+  stored_initial_pars <- current_pars
+
+  if (is.null(slope_upper) && lambda > 0) {
+    warning(
+      "fit_mixed_subjects_iterative() with lambda > 0 and no slope_upper ",
+      "can diverge to extreme discrimination values. Setting slope_upper ",
+      "(e.g. slope_upper = 6) is strongly recommended.",
+      call. = FALSE
+    )
+  }
+
+  em_iter <- 0L
+  converged <- FALSE
+
+  for (em_iter in seq_len(em_maxit)) {
+    # E-step: use the SAME current_pars for all three datasets to keep
+    # posteriors internally consistent across the three terms.
+    q_obs <- build_quadrature_summary(observed, current_pars, quadrature)
+
+    predicted_weights <- if (isTRUE(common_predicted_weights)) {
+      q_obs$weights
+    } else {
+      NULL
+    }
+    q_pred <- build_quadrature_summary(
+      predicted, current_pars, quadrature, weights = predicted_weights
+    )
+    q_gen <- build_quadrature_summary(generated, current_pars, quadrature)
+
+    # M-step
+    fit <- fit_from_counts(
+      counts_observed  = q_obs$counts,
+      counts_predicted = q_pred$counts,
+      counts_generated = q_gen$counts,
+      initial_pars     = current_pars,
+      lambda           = lambda,
+      slope_lower      = slope_lower,
+      slope_upper      = slope_upper,
+      control          = control
+    )
+
+    new_pars <- fit$item_pars
+    delta    <- max(abs(new_pars$a - current_pars$a),
+                    abs(new_pars$d - current_pars$d))
+    current_pars <- new_pars
+
+    if (delta < tol) {
+      converged <- TRUE
+      break
+    }
+  }
+
+  # Final E-step with converged parameters (for vcov and ability risk)
+  q_obs_final <- build_quadrature_summary(observed, current_pars, quadrature)
+  pred_w_final <- if (isTRUE(common_predicted_weights)) q_obs_final$weights else NULL
+  q_pred_final <- build_quadrature_summary(
+    predicted, current_pars, quadrature, weights = pred_w_final
+  )
+  q_gen_final <- build_quadrature_summary(generated, current_pars, quadrature)
+
+  out <- c(
+    fit,
+    list(
+      lambda                   = lambda,
+      initial_pars             = stored_initial_pars,
+      initial_model            = if (is.null(initial_fit)) NULL else initial_fit$model,
+      quadrature               = quadrature,
+      q_observed               = q_obs_final,
+      q_predicted              = q_pred_final,
+      q_generated              = q_gen_final,
+      common_predicted_weights = common_predicted_weights,
+      paired_missing           = paired_missing,
+      split                    = NULL,
+      em_iterations            = em_iter,
+      em_converged             = converged,
+      call                     = match.call()
+    )
+  )
+  class(out) <- "mixedsubjects_fit"
+  out
+}
+
 #' @export
 print.mixedsubjects_fit <- function(x, ...) {
   cat("mixedsubjectsirt 2PL fit\n")
@@ -620,6 +816,11 @@ print.mixedsubjects_fit <- function(x, ...) {
   cat("  convergence:", x$convergence, "\n")
   if (!is.null(x$split)) {
     cat("  splits:     ", x$split$n_splits, "\n", sep = "")
+  }
+  if (!is.null(x$em_iterations)) {
+    cat("  EM iters:   ", x$em_iterations,
+        if (isTRUE(x$em_converged)) " (converged)" else " (max reached)",
+        "\n", sep = "")
   }
   invisible(x)
 }
