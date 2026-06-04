@@ -92,7 +92,8 @@ mixed_no_split <- fit_mixed_subjects(
   generated = generated,
   lambda = 0.5,
   initial_pars = human_start$pars,
-  n_quad = 11
+  n_quad = 11,
+  slope_upper = 4   # cap discriminations; gradient asymmetry drives them up at lambda > 0
 )
 
 mixed_no_split
@@ -120,6 +121,7 @@ mixed_split <- fit_mixed_subjects_split(
   n_splits = 2,
   seed = 2026,
   n_quad = 11,
+  slope_upper = 4,
   technical = list(NCYCLES = 500)
 )
 
@@ -153,6 +155,15 @@ candidate lambda values. The summary reports the optimized mixed objective and
 the human expected-count loss, but final lambda selection should be tied to the
 study's inferential target or evaluated with a bootstrap/cross-validation plan.
 
+When the LLM has attenuated discrimination relative to humans (as here), the combined
+gradient $\nabla L_\text{obs} + \lambda\nabla(L_\text{gen} - L_\text{pred})$ is
+systematically negative for high-discrimination items — it pushes $a$ upward at any
+$\lambda > 0$. Without an upper bound, this drives discriminations to extreme values and
+the optimizer reports convergence code 52 (L-BFGS-B line-search failure). The
+`slope_upper` argument caps discriminations during optimization. With it, the optimizer
+converges at the bound, ability risk is high for capped items, and `tune_lambda_ability`
+correctly selects $\lambda \approx 0$ — recovering the human-only estimate.
+
 ```{r tune}
 tuned <- diagnose_lambda_grid(
   lambda_grid = c(0, 0.25, 0.5, 0.75),
@@ -161,6 +172,7 @@ tuned <- diagnose_lambda_grid(
   generated = generated,
   initial_pars = human_start$pars,
   n_quad = 11,
+  slope_upper = 4,
   control = list(maxit = 200)
 )
 
@@ -175,15 +187,22 @@ fits item parameters, estimates the full sandwich covariance matrix for the item
 parameters, computes ability-score gradients, and summarizes the average
 `g' Sigma g` risk.
 
+For this scenario the ability-risk criterion selects $\lambda = 0$: the LLM's
+attenuated discrimination causes gradient asymmetry that inflates item parameters at
+any $\lambda > 0$, increasing scoring uncertainty. This is the expected and correct
+behavior — the method recovers the human-only estimate when the LLM model is
+substantially misaligned.
+
 ```{r ability-risk}
 ability_tuned <- tune_lambda_ability(
-  lambda_grid = c(0, 0.5, 0.75),
+  lambda_grid = c(0, 0.25, 0.5, 0.75),
   observed = observed,
   predicted = predicted,
   generated = generated,
   target_resp = observed,
   initial_pars = human_start$pars,
   n_quad = 11,
+  slope_upper = 4,
   control = list(maxit = 200)
 )
 

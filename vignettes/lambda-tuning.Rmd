@@ -101,6 +101,7 @@ fixed_fit <- fit_mixed_subjects(
   lambda = 0.5,
   initial_pars = human_pars,
   n_quad = 7,
+  slope_upper = 4,
   control = list(maxit = 100)
 )
 
@@ -116,6 +117,18 @@ already specifies `lambda`.
 objective and the observed-human expected-count loss. This is useful for seeing
 how sensitive the fitted calibration is to lambda.
 
+The value in `lowest_observed_loss_lambda` is not a final PPI++ tuning rule. It
+is the lambda with the smallest observed-human expected-count loss after fitting.
+That criterion can overfit the labeled sample and is not the same as minimizing
+downstream ability-score uncertainty.
+
+When the LLM parameters differ from human parameters (here: attenuated discrimination,
+shifted intercepts), the correction gradient $\nabla(L_\text{gen} - L_\text{pred})$
+systematically pushes item discriminations upward at any $\lambda > 0$. Without an upper
+bound on discriminations this leads to convergence code 52 (L-BFGS-B line-search failure)
+at large $\lambda$. The `slope_upper = 4` argument caps discriminations so the optimizer
+converges at the bound instead of diverging.
+
 ```{r diagnostic}
 diagnostic <- diagnose_lambda_grid(
   lambda_grid = lambda_grid,
@@ -124,17 +137,13 @@ diagnostic <- diagnose_lambda_grid(
   generated = generated,
   initial_pars = human_pars,
   n_quad = 7,
+  slope_upper = 4,
   control = list(maxit = 100)
 )
 
 diagnostic$summary
 diagnostic$lowest_observed_loss_lambda
 ```
-
-The value in `lowest_observed_loss_lambda` is not a final PPI++ tuning rule. It
-is the lambda with the smallest observed-human expected-count loss after fitting.
-That criterion can overfit the labeled sample and is not the same as minimizing
-downstream ability-score uncertainty.
 
 ## PPI++ Score Tuning (Theoretical Diagnostic)
 
@@ -191,12 +200,19 @@ ability_tuned <- tune_lambda_ability(
   target_resp = observed,
   initial_pars = human_pars,
   n_quad = 7,
+  slope_upper = 4,
   control = list(maxit = 100)
 )
 
 ability_tuned$summary
 ability_tuned$best_lambda
 ```
+
+For this scenario the criterion selects $\lambda = 0$: gradient asymmetry (LLM
+discrimination is ~10% attenuated) means any $\lambda > 0$ inflates item parameters,
+increasing scoring uncertainty. This is the correct behavior — the human-only estimate
+is optimal when the LLM model is substantially misaligned. `slope_upper = 4` prevents
+convergence failures at large $\lambda$ by capping discriminations at 4.
 
 The selected calibration is available as `ability_tuned$best_fit`.
 
@@ -219,6 +235,11 @@ risk <- ability_risk(
 risk$summary
 ```
 
+`mean_squared_error` is `NA` because no `theta_true` was supplied. This column is only
+populated in simulation studies where true ability is known. `mean_param_var` is the
+propagated item-parameter uncertainty and is the relevant quantity for calibration
+studies with real data.
+
 In simulation studies, pass `theta_true` to include squared ability-estimation
 error in addition to propagated item-parameter uncertainty.
 
@@ -232,6 +253,7 @@ ability_tuned_with_truth <- tune_lambda_ability(
   theta_true = theta_human,
   initial_pars = human_pars,
   n_quad = 7,
+  slope_upper = 4,
   control = list(maxit = 100)
 )
 
@@ -261,12 +283,18 @@ crossfit_tuned <- tune_lambda_ability_crossfit(
   split_id = split_id,
   initial_pars = human_pars,
   n_quad = 7,
+  slope_upper = 4,
   control = list(maxit = 100)
 )
 
 crossfit_tuned$lambda_by_split
 crossfit_tuned$final_fit
 ```
+
+Cross-fitting also selects $\lambda = 0$ for both folds for the same reason as
+`tune_lambda_ability`: gradient asymmetry from LLM-human misalignment means the
+correction term hurts estimation at any positive $\lambda$, and this shows up on
+training folds as well as the full sample.
 
 The final fit stores both the fold-specific lambdas and their split-size
 weighted mean for the generated term.
