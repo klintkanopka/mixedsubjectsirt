@@ -890,8 +890,8 @@ distribution</caption>
 <td align="right">2.166</td>
 </tr>
 <tr class="even">
-<td align="left">NA</td>
-<td align="right">NA</td>
+<td align="left">Stocking-Lord</td>
+<td align="right">0.50</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
 <td align="right">NA</td>
@@ -947,30 +947,41 @@ estimate in the worst case.</p>
 <span><span class="va">q_gen_linked</span> <span class="op">&lt;-</span> <span class="fu">mixedsubjectsirt</span><span class="fu">:::</span><span class="fu">build_quadrature_summary</span><span class="op">(</span></span>
 <span>  <span class="va">generated_matched</span>, <span class="va">ms_linked_pars</span>, <span class="va">quad</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">risk_tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.05</span>, <span class="fl">0.10</span>, <span class="fl">0.20</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">lam</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="co"># Optimise the M-step with fixed E-step counts</span></span>
-<span>  <span class="va">fit_counts</span> <span class="op">&lt;-</span> <span class="fu">mixedsubjectsirt</span><span class="fu">:::</span><span class="fu">fit_from_counts</span><span class="op">(</span></span>
-<span>    <span class="va">q_obs</span><span class="op">$</span><span class="va">counts</span>, <span class="va">q_pred</span><span class="op">$</span><span class="va">counts</span>, <span class="va">q_gen_linked</span><span class="op">$</span><span class="va">counts</span>,</span>
-<span>    initial_pars <span class="op">=</span> <span class="va">human_pars</span>, lambda <span class="op">=</span> <span class="va">lam</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">risk_tab</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.05</span>, <span class="fl">0.10</span>, <span class="fl">0.20</span>, <span class="fl">0.30</span>, <span class="fl">0.50</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">lam</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">fit_counts</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span></span>
+<span>    <span class="fu">mixedsubjectsirt</span><span class="fu">:::</span><span class="fu">fit_from_counts</span><span class="op">(</span></span>
+<span>      <span class="va">q_obs</span><span class="op">$</span><span class="va">counts</span>, <span class="va">q_pred</span><span class="op">$</span><span class="va">counts</span>, <span class="va">q_gen_linked</span><span class="op">$</span><span class="va">counts</span>,</span>
+<span>      initial_pars <span class="op">=</span> <span class="va">human_pars</span>, lambda <span class="op">=</span> <span class="va">lam</span>,</span>
+<span>      slope_upper <span class="op">=</span> <span class="fl">4</span>,                <span class="co"># prevents divergence at large lambda</span></span>
+<span>      control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>item_pars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>a <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">NA_real_</span>, <span class="va">n_items</span><span class="op">)</span>,</span>
+<span>                                                     d <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">NA_real_</span>, <span class="va">n_items</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
 <span></span>
-<span>  <span class="co"># For vcov we need a fit object that carries raw responses and weights.</span></span>
-<span>  <span class="co"># fit_mixed_subjects recomputes the E-step internally; using ms_linked_pars</span></span>
-<span>  <span class="co"># here uses linked params for all three E-steps as a proxy.  The risk</span></span>
-<span>  <span class="co"># trend is the quantity of interest; exact vcov values are illustrative.</span></span>
-<span>  <span class="va">fit_for_vcov</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_mixed_subjects.html">fit_mixed_subjects</a></span><span class="op">(</span></span>
-<span>    observed <span class="op">=</span> <span class="va">observed</span>, predicted <span class="op">=</span> <span class="va">predicted</span>, generated <span class="op">=</span> <span class="va">generated_matched</span>,</span>
-<span>    lambda <span class="op">=</span> <span class="va">lam</span>, initial_pars <span class="op">=</span> <span class="va">ms_linked_pars</span>,</span>
-<span>    n_quad <span class="op">=</span> <span class="va">n_quad</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">200</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="co"># fit_mixed_subjects is used for vcov; ms_linked_pars for all three E-steps</span></span>
+<span>  <span class="co"># is a proxy — the risk trend is the quantity of interest.</span></span>
+<span>  <span class="va">fit_for_vcov</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="../reference/fit_mixed_subjects.html">fit_mixed_subjects</a></span><span class="op">(</span></span>
+<span>      observed <span class="op">=</span> <span class="va">observed</span>, predicted <span class="op">=</span> <span class="va">predicted</span>, generated <span class="op">=</span> <span class="va">generated_matched</span>,</span>
+<span>      lambda <span class="op">=</span> <span class="va">lam</span>, initial_pars <span class="op">=</span> <span class="va">ms_linked_pars</span>,</span>
+<span>      n_quad <span class="op">=</span> <span class="va">n_quad</span>, slope_upper <span class="op">=</span> <span class="fl">4</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">200</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="cn">NULL</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="va">rmse_a</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">anyNA</a></span><span class="op">(</span><span class="va">fit_counts</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">a</span><span class="op">)</span><span class="op">)</span> <span class="cn">NA_real_</span> <span class="kw">else</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">fit_counts</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">a</span>, <span class="va">true_pars</span><span class="op">$</span><span class="va">a</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span></span>
+<span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">fit_for_vcov</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>lambda <span class="op">=</span> <span class="va">lam</span>, rmse_a <span class="op">=</span> <span class="va">rmse_a</span>, mean_param_var <span class="op">=</span> <span class="cn">NA_real_</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
 <span></span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span><span class="op">{</span></span>
 <span>    <span class="va">Sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/vcov_mixed_subjects.html">vcov_mixed_subjects</a></span><span class="op">(</span><span class="va">fit_for_vcov</span><span class="op">)</span></span>
 <span>    <span class="va">risk</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ability_risk.html">ability_risk</a></span><span class="op">(</span><span class="va">observed</span>, <span class="va">fit_for_vcov</span>, vcov <span class="op">=</span> <span class="va">Sigma</span><span class="op">)</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>      lambda         <span class="op">=</span> <span class="va">lam</span>,</span>
-<span>      rmse_a         <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">fit_counts</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">a</span>, <span class="va">true_pars</span><span class="op">$</span><span class="va">a</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>,</span>
-<span>      mean_param_var <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">risk</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">mean_param_var</span>, <span class="fl">6</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>lambda <span class="op">=</span> <span class="va">lam</span>, rmse_a <span class="op">=</span> <span class="va">rmse_a</span>,</span>
+<span>               mean_param_var <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">risk</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">mean_param_var</span>, <span class="fl">6</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">}</span>, error <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">e</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>lambda <span class="op">=</span> <span class="va">lam</span>, rmse_a <span class="op">=</span> <span class="cn">NA_real_</span>, mean_param_var <span class="op">=</span> <span class="cn">NA_real_</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>lambda <span class="op">=</span> <span class="va">lam</span>, rmse_a <span class="op">=</span> <span class="va">rmse_a</span>, mean_param_var <span class="op">=</span> <span class="cn">NA_real_</span><span class="op">)</span></span>
 <span>  <span class="op">}</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -1006,15 +1017,31 @@ matched case</caption>
 <td align="right">0.3151</td>
 <td align="right">0.016629</td>
 </tr>
+<tr class="odd">
+<td align="right">0.30</td>
+<td align="right">0.4449</td>
+<td align="right">0.020594</td>
+</tr>
+<tr class="even">
+<td align="right">0.50</td>
+<td align="right">0.9841</td>
+<td align="right">0.040722</td>
+</tr>
 </tbody>
 </table>
-<p>The mean ability-score risk increases monotonically with
+<p>Both RMSE(a) and ability-score risk increase monotonically with
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>,
 which causes <code>tune_lambda_ability</code> to select
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
+— correctly recovering the human-only estimate when the LLM parameters
+differ substantially from human parameters. At
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>≥</mo><mn>0.3</mn></mrow><annotation encoding="application/x-tex">\lambda \geq 0.3</annotation></semantics></math>,
+without <code>slope_upper</code>, discriminations diverge and the
+optimizer reports convergence code 52. With
+<code>slope_upper = 4</code>, items converge at the bound; the ability
+risk at the bound remains large, confirming that large
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-close to zero for this scenario — correctly recovering the human-only
-estimate when the LLM parameters differ substantially from the human
-parameters.</p>
+is harmful.</p>
 <hr>
 </div>
 <div class="section level2">
@@ -1271,6 +1298,23 @@ validation tool.</p>
 <div class="section level2">
 <h2 id="summary-of-findings">Summary of findings<a class="anchor" aria-label="anchor" href="#summary-of-findings"></a>
 </h2>
+<p>The best
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+for all methods in the table below is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
+— the human-only estimate. This is the expected finding when the LLM’s
+item parameters differ from the human calibration: the gradient
+asymmetry means any positive
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+inflates discriminations and increases RMSE(a). The NA rows
+(Stocking-Lord at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0.5</mn></mrow><annotation encoding="application/x-tex">\lambda = 0.5</annotation></semantics></math>)
+arise when the linked parameters destabilise the optimizer before
+<code>tryCatch</code> can catch them at the sweep stage; the underlying
+cause is the same gradient asymmetry at extreme linking constants.
+<code>tune_lambda_ability</code> correctly identifies
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
+as optimal for all methods in this scenario.</p>
 <table class="table">
 <caption>Best achievable RMSE(a) and the λ that achieves it — matched
 ability case</caption>

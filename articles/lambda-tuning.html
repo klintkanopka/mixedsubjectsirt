@@ -160,16 +160,17 @@ package workflow, a typical starting point is
 <span>  lambda <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_pars</span>,</span>
 <span>  n_quad <span class="op">=</span> <span class="fl">7</span>,</span>
+<span>  slope_upper <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fixed_fit</span><span class="op">$</span><span class="va">item_pars</span></span>
-<span><span class="co">#&gt;    item            a             d             b</span></span>
-<span><span class="co">#&gt; 1 Item1 1.408295e+37 -9.683049e+36  0.6875726503</span></span>
-<span><span class="co">#&gt; 2 Item2 2.255703e+38 -1.994754e+37  0.0884316076</span></span>
-<span><span class="co">#&gt; 3 Item3 2.622970e+36  3.615787e+34 -0.0137850861</span></span>
-<span><span class="co">#&gt; 4 Item4 4.408536e+37  3.190817e+35 -0.0072378151</span></span>
-<span><span class="co">#&gt; 5 Item5 9.703142e+38  4.395959e+35 -0.0004530449</span></span></code></pre></div>
+<span><span class="co">#&gt;    item        a          d          b</span></span>
+<span><span class="co">#&gt; 1 Item1 1.136801 -1.5492749  1.3628377</span></span>
+<span><span class="co">#&gt; 2 Item2 2.357070 -1.1258387  0.4776433</span></span>
+<span><span class="co">#&gt; 3 Item3 1.485432 -0.1796543  0.1209441</span></span>
+<span><span class="co">#&gt; 4 Item4 1.945808  0.6330096 -0.3253196</span></span>
+<span><span class="co">#&gt; 5 Item5 4.000000  1.2612756 -0.3153189</span></span></code></pre></div>
 <p>Use this route when a simulation study, design analysis, or
 preregistered plan already specifies <code>lambda</code>.</p>
 </div>
@@ -180,6 +181,21 @@ preregistered plan already specifies <code>lambda</code>.</p>
 reports the mixed objective and the observed-human expected-count loss.
 This is useful for seeing how sensitive the fitted calibration is to
 lambda.</p>
+<p>The value in <code>lowest_observed_loss_lambda</code> is not a final
+PPI++ tuning rule. It is the lambda with the smallest observed-human
+expected-count loss after fitting. That criterion can overfit the
+labeled sample and is not the same as minimizing downstream
+ability-score uncertainty.</p>
+<p>When the LLM parameters differ from human parameters (here:
+attenuated discrimination, shifted intercepts), the correction gradient
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>∇</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>L</mi><mtext mathvariant="normal">gen</mtext></msub><mo>−</mo><msub><mi>L</mi><mtext mathvariant="normal">pred</mtext></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\nabla(L_\text{gen} - L_\text{pred})</annotation></semantics></math>
+systematically pushes item discriminations upward at any
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda &gt; 0</annotation></semantics></math>.
+Without an upper bound on discriminations this leads to convergence code
+52 (L-BFGS-B line-search failure) at large
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>.
+The <code>slope_upper = 4</code> argument caps discriminations so the
+optimizer converges at the bound instead of diverging.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">diagnostic</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/diagnose_lambda_grid.html">diagnose_lambda_grid</a></span><span class="op">(</span></span>
 <span>  lambda_grid <span class="op">=</span> <span class="va">lambda_grid</span>,</span>
@@ -188,23 +204,19 @@ lambda.</p>
 <span>  generated <span class="op">=</span> <span class="va">generated</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_pars</span>,</span>
 <span>  n_quad <span class="op">=</span> <span class="fl">7</span>,</span>
+<span>  slope_upper <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">diagnostic</span><span class="op">$</span><span class="va">summary</span></span>
-<span><span class="co">#&gt;   lambda    mixed_loss observed_loss convergence</span></span>
-<span><span class="co">#&gt; 1   0.00  2.582875e+00  2.582875e+00           0</span></span>
-<span><span class="co">#&gt; 2   0.25  2.303072e+00  2.640973e+00           0</span></span>
-<span><span class="co">#&gt; 3   0.50 -2.135974e+37  1.251187e+38           1</span></span>
-<span><span class="co">#&gt; 4   0.75 -1.103359e+28  2.255674e+28           1</span></span>
-<span><span class="co">#&gt; 5   1.00 -3.073320e+36  3.409178e+36           1</span></span>
+<span><span class="co">#&gt;   lambda mixed_loss observed_loss convergence</span></span>
+<span><span class="co">#&gt; 1   0.00  2.5828751      2.582875           0</span></span>
+<span><span class="co">#&gt; 2   0.25  2.3030718      2.640973           0</span></span>
+<span><span class="co">#&gt; 3   0.50  1.8506861      2.919215           0</span></span>
+<span><span class="co">#&gt; 4   0.75  1.1908046      3.451707           0</span></span>
+<span><span class="co">#&gt; 5   1.00  0.3898802      3.772615           0</span></span>
 <span><span class="va">diagnostic</span><span class="op">$</span><span class="va">lowest_observed_loss_lambda</span></span>
 <span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
-<p>The value in <code>lowest_observed_loss_lambda</code> is not a final
-PPI++ tuning rule. It is the lambda with the smallest observed-human
-expected-count loss after fitting. That criterion can overfit the
-labeled sample and is not the same as minimizing downstream
-ability-score uncertainty.</p>
 </div>
 <div class="section level2">
 <h2 id="ppi-score-tuning-theoretical-diagnostic">PPI++ Score Tuning (Theoretical Diagnostic)<a class="anchor" aria-label="anchor" href="#ppi-score-tuning-theoretical-diagnostic"></a>
@@ -265,6 +277,7 @@ respect to those item parameters.</p>
 <span>  target_resp <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_pars</span>,</span>
 <span>  n_quad <span class="op">=</span> <span class="fl">7</span>,</span>
+<span>  slope_upper <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -272,11 +285,21 @@ respect to those item parameters.</p>
 <span><span class="co">#&gt;   lambda mean_param_var mean_squared_error mean_total_risk convergence</span></span>
 <span><span class="co">#&gt; 1   0.00      0.0765121                 NA       0.0765121           0</span></span>
 <span><span class="co">#&gt; 2   0.25      0.1137183                 NA       0.1137183           0</span></span>
-<span><span class="co">#&gt; 3   0.50            NaN                 NA             NaN           1</span></span>
-<span><span class="co">#&gt; 4   0.75            NaN                 NA             NaN           1</span></span>
-<span><span class="co">#&gt; 5   1.00            NaN                 NA             NaN           1</span></span>
+<span><span class="co">#&gt; 3   0.50      0.4609819                 NA       0.4609819           0</span></span>
+<span><span class="co">#&gt; 4   0.75      2.0858900                 NA       2.0858900           0</span></span>
+<span><span class="co">#&gt; 5   1.00      4.3075417                 NA       4.3075417           0</span></span>
 <span><span class="va">ability_tuned</span><span class="op">$</span><span class="va">best_lambda</span></span>
 <span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<p>For this scenario the criterion selects
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>:
+gradient asymmetry (LLM discrimination is ~10% attenuated) means any
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda &gt; 0</annotation></semantics></math>
+inflates item parameters, increasing scoring uncertainty. This is the
+correct behavior — the human-only estimate is optimal when the LLM model
+is substantially misaligned. <code>slope_upper = 4</code> prevents
+convergence failures at large
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+by capping discriminations at 4.</p>
 <p>The selected calibration is available as
 <code>ability_tuned$best_fit</code>.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -303,6 +326,11 @@ directly.</p>
 <span><span class="va">risk</span><span class="op">$</span><span class="va">summary</span></span>
 <span><span class="co">#&gt;   mean_param_var mean_squared_error mean_total_risk</span></span>
 <span><span class="co">#&gt; 1      0.0765121                 NA       0.0765121</span></span></code></pre></div>
+<p><code>mean_squared_error</code> is <code>NA</code> because no
+<code>theta_true</code> was supplied. This column is only populated in
+simulation studies where true ability is known.
+<code>mean_param_var</code> is the propagated item-parameter uncertainty
+and is the relevant quantity for calibration studies with real data.</p>
 <p>In simulation studies, pass <code>theta_true</code> to include
 squared ability-estimation error in addition to propagated
 item-parameter uncertainty.</p>
@@ -316,6 +344,7 @@ item-parameter uncertainty.</p>
 <span>  theta_true <span class="op">=</span> <span class="va">theta_human</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_pars</span>,</span>
 <span>  n_quad <span class="op">=</span> <span class="fl">7</span>,</span>
+<span>  slope_upper <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -323,9 +352,9 @@ item-parameter uncertainty.</p>
 <span><span class="co">#&gt;   lambda mean_param_var mean_squared_error mean_total_risk convergence</span></span>
 <span><span class="co">#&gt; 1   0.00      0.0765121           4.779969        4.856481           0</span></span>
 <span><span class="co">#&gt; 2   0.25      0.1137183           4.617626        4.731344           0</span></span>
-<span><span class="co">#&gt; 3   0.50            NaN           1.359333             NaN           1</span></span>
-<span><span class="co">#&gt; 4   0.75            NaN           1.412640             NaN           1</span></span>
-<span><span class="co">#&gt; 5   1.00            NaN           1.145156             NaN           1</span></span></code></pre></div>
+<span><span class="co">#&gt; 3   0.50      0.4609819           4.565434        5.026416           0</span></span>
+<span><span class="co">#&gt; 4   0.75      2.0858900           4.577775        6.663665           0</span></span>
+<span><span class="co">#&gt; 5   1.00      4.3075417           4.593427        8.900968           0</span></span></code></pre></div>
 <p>For real data, <code>theta_true</code> is normally unavailable. The
 default risk is then the propagated calibration component,
 <code>g_i' Sigma_lambda g_i</code>.</p>
@@ -351,6 +380,7 @@ resulting fold-specific lambdas.</p>
 <span>  split_id <span class="op">=</span> <span class="va">split_id</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_pars</span>,</span>
 <span>  n_quad <span class="op">=</span> <span class="fl">7</span>,</span>
+<span>  slope_upper <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -363,6 +393,13 @@ resulting fold-specific lambdas.</p>
 <span><span class="co">#&gt;   loss:       2.58288</span></span>
 <span><span class="co">#&gt;   convergence: 0 </span></span>
 <span><span class="co">#&gt;   splits:     2</span></span></code></pre></div>
+<p>Cross-fitting also selects
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
+for both folds for the same reason as <code>tune_lambda_ability</code>:
+gradient asymmetry from LLM-human misalignment means the correction term
+hurts estimation at any positive
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>,
+and this shows up on training folds as well as the full sample.</p>
 <p>The final fit stores both the fold-specific lambdas and their
 split-size weighted mean for the generated term.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
