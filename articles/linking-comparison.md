@@ -1,4 +1,4 @@
-# IRT Linking Methods for the Mixed-Subjects E-step
+# IRT Linking and Gradient Asymmetry: Diagnostic Guide
 
 ## Background
 
@@ -859,11 +859,114 @@ estimates close to the human-only baseline.
   to or exceeds the human value. The TCC improvement does not translate
   to uniformly better parameter recovery relative to mean-sigma.
 
-**Recommended workflow.** Implement mean-sigma linking as the default
-E-step for generated data, expose a `link_generated` argument in
-`fit_mixed_subjects` so users can choose the method, and always pair
-with `tune_lambda_ability_risk` or `tune_lambda_ability_risk_crossfit`
-for final lambda selection. The power-tuning step is the critical
-safeguard: when the LLM parameters differ substantially from the human
-parameters, the ability-risk criterion will select $`\lambda`$ close to
-zero and recover the human-only estimate.
+**Recommended workflow.** For the frozen expected-count estimator
+(`fit_mixed_subjects`), always pair with mean-sigma linking and
+`tune_lambda_ability_risk` with `slope_upper` for stability. For the
+recommended **marginal-MML estimator** (`fit_mixed_subjects_mml`),
+linking is not needed: the MML objective is evaluated at the current
+candidate parameters at every gradient step, so the posteriors adapt
+naturally. See the final section below.
+
+------------------------------------------------------------------------
+
+## The marginal-MML fix
+
+All of the above analysis — gradient asymmetry, false minima, NA rows,
+best $`\lambda = 0`$ — applies specifically to the **frozen
+expected-count estimator** (`fit_mixed_subjects`). That estimator
+computes posteriors once from the initial human MLE and holds them
+fixed, creating the structural posterior mismatch.
+
+The **marginal-MML estimator** (`fit_mixed_subjects_mml`) recomputes
+posteriors at every gradient evaluation. At the true optimum
+$`\gamma^*`$, the expected gradients of $`L_g^\mathrm{marg}`$ and
+$`L_p^\mathrm{marg}`$ are both zero (Fisher consistency), so there is no
+systematic asymmetry. The false minimum at large $`a`$ does not exist in
+the marginal-likelihood landscape.
+
+``` r
+
+# Direct comparison: frozen EC with slope cap vs MML without cap
+fit_frozen <- fit_mixed_subjects(
+  observed = observed, predicted = predicted, generated = generated_matched,
+  lambda = 0.2, initial_pars = human_pars,
+  n_quad = n_quad, slope_upper = 4, control = list(maxit = 200))
+
+fit_mml <- fit_mixed_subjects_mml(
+  observed = observed, predicted = predicted, generated = generated_matched,
+  lambda = 0.2, initial_pars = human_pars,
+  n_quad = n_quad, control = list(maxit = 200))
+
+comp <- data.frame(
+  item   = human_pars$item,
+  true_a = true_pars$a,
+  frozen_a = round(fit_frozen$item_pars$a, 3),
+  mml_a    = round(fit_mml$item_pars$a,    3)
+)
+knitr::kable(comp, row.names = FALSE,
+  caption = "Item discrimination: true vs. frozen-EC (slope_upper=4) vs. MML at lambda=0.2")
+```
+
+| item  |    true_a | frozen_a | mml_a |
+|:------|----------:|---------:|------:|
+| Item1 | 0.8000000 |    0.689 | 0.463 |
+| Item2 | 0.9142857 |    1.259 | 0.844 |
+| Item3 | 1.0285714 |    1.055 | 0.792 |
+| Item4 | 1.1428571 |    1.052 | 0.752 |
+| Item5 | 1.2571429 |    1.944 | 1.194 |
+| Item6 | 1.3714286 |    1.668 | 1.152 |
+| Item7 | 1.4857143 |    1.316 | 0.966 |
+| Item8 | 1.6000000 |    2.117 | 1.473 |
+
+Item discrimination: true vs. frozen-EC (slope_upper=4) vs. MML at
+lambda=0.2 {.table}
+
+``` r
+
+# Lambda sweep: MML without slope cap
+mml_sweep <- do.call(rbind, lapply(lambda_grid, function(lam) {
+  fit <- tryCatch(
+    fit_mixed_subjects_mml(
+      observed = observed, predicted = predicted, generated = generated_matched,
+      lambda = lam, initial_pars = human_pars,
+      n_quad = n_quad, control = list(maxit = 300)),
+    error = function(e) NULL
+  )
+  if (is.null(fit)) return(data.frame(lambda=lam, rmse_a=NA_real_, max_a=NA_real_))
+  data.frame(
+    lambda = lam,
+    rmse_a = round(rmse(fit$item_pars$a, true_pars$a), 4),
+    max_a  = round(max(fit$item_pars$a), 3)
+  )
+}))
+
+knitr::kable(mml_sweep, row.names = FALSE,
+  col.names = c("λ", "RMSE(a)", "max(a)"),
+  caption = "MML parameter recovery across lambda — no slope_upper needed")
+```
+
+|    λ | RMSE(a) | max(a) |
+|-----:|--------:|-------:|
+| 0.00 |  0.2843 |  1.354 |
+| 0.02 |  0.2844 |  1.365 |
+| 0.05 |  0.2846 |  1.382 |
+| 0.10 |  0.2854 |  1.411 |
+| 0.15 |  0.2867 |  1.442 |
+| 0.20 |  0.2885 |  1.473 |
+| 0.30 |  0.2940 |  1.542 |
+| 0.50 |  0.3134 |  1.698 |
+
+MML parameter recovery across lambda — no slope_upper needed {.table}
+
+The MML estimator converges at all $`\lambda`$ values without a slope
+cap, and the discriminations do not inflate. Ability-risk tuning with
+MML selects the $`\lambda`$ that minimises scoring uncertainty directly
+— there is no need for a linking pre-processing step when using the MML
+estimator.
+
+**When is linking still useful?** When you need to use the frozen
+expected-count estimator for speed and the LLM ability distribution is
+substantially different from the human distribution. In that case, use
+mean-sigma linking for the generated E-step as described in this
+vignette, and always pair with `tune_lambda_ability_risk` and
+`slope_upper`.

@@ -18,8 +18,10 @@
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
-    <li><a class="dropdown-item" href="articles/linking-comparison.html">IRT Linking Methods for the Mixed-Subjects E-step</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="articles/lambda-tuning-item.html">Per-Item Lambda (Experimental)</a></li>
+    <li><a class="dropdown-item" href="articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
+    <li><a class="dropdown-item" href="articles/linking-comparison.html">IRT Linking and Gradient Asymmetry: Diagnostic Guide</a></li>
+    <li><a class="dropdown-item" href="articles/mixed-subjects-1pl.html">Mixed-Subjects 1PL Calibration</a></li>
     <li><a class="dropdown-item" href="articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -319,6 +321,79 @@ fit_mixed_subjects_mml with partial lambda ([0.5]*4, [0]*4):
 <div class="section level3">
 <h3 id="test-results-1">Test results<a class="anchor" aria-label="anchor" href="#test-results-1"></a></h3>
 <p>52 PASS, 0 FAIL, 0 WARN.</p>
+<hr></div>
+</div>
+<div class="section level2">
+<h2 id="round-2-reviewer-follow-up-steps-13">Round 2 (reviewer follow-up): Steps 1–3<a class="anchor" aria-label="anchor" href="#round-2-reviewer-follow-up-steps-13"></a></h2>
+<div class="section level3">
+<h3 id="step-1-correct-marginal-mml-sandwich-covariance-vcov_mixed_subjects_mml">Step 1: Correct marginal-MML sandwich covariance (<code>vcov_mixed_subjects_mml</code>)<a class="anchor" aria-label="anchor" href="#step-1-correct-marginal-mml-sandwich-covariance-vcov_mixed_subjects_mml"></a></h3>
+<p><strong>The problem.</strong> <code><a href="reference/vcov_mixed_subjects.html">vcov_mixed_subjects()</a></code> uses <code>avg_hessian_counts()</code> — the EM complete-data Hessian — as the bread. For the frozen expected-count estimator this is correct. For the marginal-MML estimator (<code>fit_mixed_subjects_mml</code>) it is not: the complete-data Hessian over-states information by ignoring the missing information about the latent ability θ (Louis 1982).</p>
+<p><strong>The fix — Louis’ identity.</strong> The correct bread for the MML estimator is the marginal observed information:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>A_marg <span class="ot">=</span> H_comp <span class="sc">-</span> I_miss</span></code></pre></div>
+<p>where <code>I_miss = (1/n) Σ_i Var_{w_i}(s_ik)</code> is the average within-posterior variance of the complete-data score vector at each node. The meat (marginal score outer products) is already correct in the existing implementation.</p>
+<p><strong>Implementation (<code>R/risk.R</code>):</strong></p>
+<ul><li>
+<p>Added <code>louis_missing_info(resp, weights, item_pars)</code> (internal helper). For each pair of items (j, l), computes the three second-moment matrices (aa, ad, dd) via a fully vectorised decomposition:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>sm_block <span class="ot">=</span> <span class="dv">1</span><span class="sc">/</span>n × [yy <span class="sc">-</span> yp <span class="sc">-</span> <span class="fu">t</span>(yp) <span class="sc">+</span> pp]</span></code></pre></div>
+<p>where <code>yy</code>, <code>yp</code>, <code>pp</code> involve outer products of response columns with expected- probability matrices. Cost: O(J² × n × K) — fast (≈800K ops for J=8, n=400, K=31). The formula was verified against numerical central-difference Hessian to &lt; 6×10⁻¹⁰ error across all six parameters.</p>
+</li>
+<li><p>Added <code>vcov_mixed_subjects_mml(object, ridge = 1e-8)</code> (exported). Bread: <code>louis_bread(q_X) = avg_hessian_counts(q_X) - louis_missing_info(q_X)</code> for each of the three datasets, combined with the usual <code>+ λ*(gen - pred)</code> weighting. Meat: unchanged (marginal score covariance).</p></li>
+<li><p>Updated <code>vcov.mixedsubjects_fit</code> S3 dispatch: routes to <code>vcov_mixed_subjects_mml</code> when <code>isTRUE(object$mml) &amp;&amp; length(object$lambda) == 1</code>, and to the existing <code>vcov_mixed_subjects</code> otherwise.</p></li>
+</ul><p><strong>Empirical effect.</strong> For the standard vignette scenario (n=400, N=1200, F=Y): - Mean diagonal of MML sandwich: <strong>0.0074</strong> (Louis-corrected) - Mean diagonal of EM sandwich: <strong>0.0032</strong> (over-precise)</p>
+<p>The ~2.3× larger MML uncertainty correctly accounts for the missing information about individual abilities. The EM bread treats the latent ability as observed, which inflates efficiency.</p>
+<p><strong>Note.</strong> The marginal Hessian is only guaranteed positive definite AT the MLE. At the true parameters (which may differ from the sample MLE), it can be indefinite — this is the correct mathematical behaviour, not a bug.</p>
+<hr></div>
+<div class="section level3">
+<h3 id="step-2-fix-mml_pred_weights--human-objectivegradient-mismatch">Step 2: Fix <code>mml_pred_weights = "human"</code> objective/gradient mismatch<a class="anchor" aria-label="anchor" href="#step-2-fix-mml_pred_weights--human-objectivegradient-mismatch"></a></h3>
+<p><strong>The problem.</strong> With <code>mml_pred_weights = "human"</code>, the <code>recompute</code> closure in <code>fit_mixed_subjects_mml</code> was calling <code>summarize_expected_counts(predicted, obs_r$weights)</code> where <code>obs_r</code> was recomputed from the CURRENT candidate <code>ip</code> at each L-BFGS-B evaluation. The objective changes with <code>ip</code> through both the item parameters in the loss AND through the human posteriors used to weight the predicted term. But the gradient only accounted for the first channel (direct gradient, EM approximation). This mismatch meant <code>fn</code> and <code>gr</code> were inconsistent, causing L-BFGS-B line-search failures.</p>
+<p><strong>The fix.</strong> When <code>mml_pred_weights = "human"</code>, compute the human posteriors ONCE from <code>init_std</code> and freeze them. The resulting objective <code>loss_expected_counts(pred_cts_fixed, ip)</code> depends on <code>ip</code> only through the item parameters in the loss (not through the weights), so the EM gradient <code>gradient_expected_counts(pred_cts_fixed, ip)</code> IS the gradient of the objective. Fully consistent.</p>
+<p>This is the <strong>fixed-nuisance Q-function</strong> interpretation: human posteriors are a fixed nuisance, not a parameter.</p>
+<p>The final <code>q_predicted</code> stored in the output also uses <code>pred_w_fixed</code> so that <code>vcov_mixed_subjects_mml</code> uses consistent posteriors for the bread and meat.</p>
+<hr></div>
+<div class="section level3">
+<h3 id="step-3a-convergence-and-finite-risk-filtering-in-tune_lambda_ability_risk">Step 3a: Convergence and finite-risk filtering in <code>tune_lambda_ability_risk</code>
+<a class="anchor" aria-label="anchor" href="#step-3a-convergence-and-finite-risk-filtering-in-tune_lambda_ability_risk"></a></h3>
+<p>Added <code>selection_risk</code> column to the summary table: candidates with non-zero convergence codes or non-finite risk get <code>selection_risk = Inf</code>. If all candidates fail, a warning is issued and <code>lambda = 0</code> (human-only) is returned. The full summary is retained for diagnostics.</p>
+<p>Applied to: <code>tune_lambda_ability_risk</code>, <code>tune_lambda_ability_risk_1pl</code>.</p>
+<hr></div>
+<div class="section level3">
+<h3 id="step-3b-cross-fit-target-mode-and-final-fit-function">Step 3b: Cross-fit target mode and final-fit function<a class="anchor" aria-label="anchor" href="#step-3b-cross-fit-target-mode-and-final-fit-function"></a></h3>
+<p><strong><code>target_mode</code></strong> argument added to <code>tune_lambda_ability_risk_crossfit</code>: - <code>"fixed"</code> (default): the full <code>target_resp</code> is used in every fold. Correct for operational scoring where the target population is independent of the labeled split. When <code>target_resp</code> is not supplied, defaults to <code>"row_aligned"</code> for backward compatibility. - <code>"row_aligned"</code>: only the training rows of <code>target_resp</code> are used per fold. Valid when <code>target_resp = observed</code> and fold-matched evaluation is desired.</p>
+<p><strong><code>final_fit_fn</code></strong> argument added to <code>tune_lambda_ability_risk_crossfit</code> (default: <code>fit_mixed_subjects_split</code>). Allows users to pass any final-fitting function. Note that mixing MML fold tuning with a frozen EC final fit is an approximation; document this when reporting results.</p>
+<hr></div>
+<div class="section level3">
+<h3 id="step-3c-vcov_mixed_subjects-for-vector-lambda">Step 3c: <code>vcov_mixed_subjects</code> for vector lambda<a class="anchor" aria-label="anchor" href="#step-3c-vcov_mixed_subjects-for-vector-lambda"></a></h3>
+<p><code>validate_lambda(object$lambda)</code> was replaced by <code>validate_lambda_vector(...)</code> to accept vector lambda. For vector lambda: - <strong>Bread</strong>: item j’s 2×2 diagonal block uses <code>λ_j</code> (from the block-diagonal frozen EC Hessian). Off-diagonal coupling terms are scaled by <code>√(λ_j λ_l)</code>. - <strong>Meat</strong>: item j’s score columns are scaled by <code>λ_j</code> in the labeled score matrix; generated score columns are scaled similarly.</p>
+<hr></div>
+<div class="section level3">
+<h3 id="test-count-after-round-2-75-pass-0-fail-0-warn">Test count after Round 2: 75 PASS, 0 FAIL, 0 WARN<a class="anchor" aria-label="anchor" href="#test-count-after-round-2-75-pass-0-fail-0-warn"></a></h3>
+<p>New tests added: - <code>louis_missing_info</code> matches numerical Hessian to &lt; 1e-5; MLE bread is PD - <code>vcov</code> dispatches correctly (MML gets Louis bread, EC gets EM bread; MML diagonal &gt; EC diagonal) - <code>vcov</code> handles vector lambda without error - <code>tune_lambda_ability_risk</code> <code>selection_risk</code> column filters failed candidates</p>
+<hr></div>
+</div>
+<div class="section level2">
+<h2 id="round-3-steps-47-documentation-and-vignette-restructuring">Round 3 (Steps 4–7): Documentation and vignette restructuring<a class="anchor" aria-label="anchor" href="#round-3-steps-47-documentation-and-vignette-restructuring"></a></h2>
+<div class="section level3">
+<h3 id="step-4-docstring-updates">Step 4: Docstring updates<a class="anchor" aria-label="anchor" href="#step-4-docstring-updates"></a></h3>
+<ul><li>
+<p><strong><code>fit_mixed_subjects_mml</code></strong> (<code>R/fit.R</code>): expanded <code>@details</code> to explicitly document (a) that <code>mml_pred_weights = "human"</code> uses a fixed-nuisance Q-function (not a true marginal objective) with frozen posteriors from <code>init_std</code>, and</p>
+<ol start="2" style="list-style-type: lower-alpha"><li>that vector <code>lambda</code> (per-item) also uses a frozen Q-function and should be reported as approximate.</li>
+</ol></li>
+<li><p><strong><code>tune_lambda_ability_risk_item</code></strong> (<code>R/risk.R</code>): added <code>@note</code> block stating that coordinate descent uses the frozen Q-function, explaining the approximation conditions, and recommending that results be labelled experimental.</p></li>
+<li><p><strong><code>vcov_mixed_subjects_1pl</code></strong> (<code>R/risk-1pl.R</code>): added <code>@note</code> that the bread uses the EM complete-data Hessian rather than the Louis correction, and flags the Louis-corrected 1PL bread as planned for a future release.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="step-5-vignette-rewrites">Step 5: Vignette rewrites<a class="anchor" aria-label="anchor" href="#step-5-vignette-rewrites"></a></h3>
+<p><strong><code>vignettes/mixed-subjects-workflow.Rmd</code></strong> (full rewrite): - Primary workflow now uses <code>fit_mixed_subjects_mml</code> throughout. - <code>tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects_mml)</code> is shown as the recommended lambda-selection step with Louis-corrected covariance. - Removed <code>slope_upper</code> workaround from the default workflow. - Added a “When the LLM is a good predictor” section using F = Y to verify that the method selects <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda &gt; 0</annotation></semantics></math> when appropriate.</p>
+<p><strong><code>vignettes/lambda-tuning.Rmd</code></strong> (full rewrite): - Restructured around a clean five-row table: ppi_score, MML ability-risk (recommended), frozen EC (fast approximation), crossfit, per-item. - Explains the two objectives (Tr(Σ_γ) vs E[g’Σg]) and two estimators (frozen EC vs MML) with the key practical distinction. - <code>tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects_mml)</code> is labelled “Recommended default”. - Explains <code>selection_risk</code> filtering and the <code>target_mode</code> / <code>final_fit_fn</code> crossfit arguments. - Notes that frozen EC requires <code>slope_upper</code> while MML does not.</p>
+<p><strong><code>vignettes/linking-comparison.Rmd</code></strong> (retitled + new section): - Title changed to “IRT Linking and Gradient Asymmetry: Diagnostic Guide”. - Added final section “The marginal-MML fix” showing a direct comparison of frozen EC (with <code>slope_upper = 4</code>) vs MML at <code>lambda = 0.2</code>, and an MML lambda sweep confirming no slope cap is needed. - Recommendation section updated to direct users to <code>fit_mixed_subjects_mml</code> for the recommended workflow while keeping the linking analysis as a diagnostic.</p>
+</div>
+<div class="section level3">
+<h3 id="step-6-new-vignettes">Step 6: New vignettes<a class="anchor" aria-label="anchor" href="#step-6-new-vignettes"></a></h3>
+<p><strong><code>vignettes/lambda-tuning-item.Rmd</code></strong> (new, experimental): - Motivates per-item lambda with a heterogeneous test (4 good + 4 poor items). - Shows <code>tune_lambda_ppi_score_item()</code> as the fast diagnostic step. - Shows <code>tune_lambda_ability_risk_item(init_lambda = global_best)</code> as the coordinate-descent step. - Explains why starting from all-zeros is not recommended. - Clearly labels all results as approximate/experimental.</p>
+<p><strong><code>vignettes/mixed-subjects-1pl.Rmd</code></strong> (new): - Introduces the 1PL model, explains when to prefer it over 2PL. - Shows <code>fit_1pl()</code>, <code>fit_mixed_subjects_mml_1pl()</code>, <code>vcov_mixed_subjects_1pl()</code>. - Shows <code>tune_lambda_ability_risk_1pl()</code> and verifies F = Y gives <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda &gt; 0</annotation></semantics></math>. - Includes 1PL vs 2PL comparison on a correctly-specified 1PL test. - Notes that the 1PL vcov uses the EM bread (not Louis-corrected).</p>
+</div>
+<div class="section level3">
+<h3 id="test-count-after-round-3-75-pass-0-fail-0-warn-unchanged">Test count after Round 3: 75 PASS, 0 FAIL, 0 WARN (unchanged)<a class="anchor" aria-label="anchor" href="#test-count-after-round-3-75-pass-0-fail-0-warn-unchanged"></a></h3>
 <hr></div>
 </div>
 <div class="section level2">

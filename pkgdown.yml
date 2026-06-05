@@ -2,10 +2,12 @@ pandoc: 3.8.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
+  lambda-tuning-item: lambda-tuning-item.html
   lambda-tuning: lambda-tuning.html
   linking-comparison: linking-comparison.html
+  mixed-subjects-1pl: mixed-subjects-1pl.html
   mixed-subjects-workflow: mixed-subjects-workflow.html
-last_built: 2026-06-05T00:01Z
+last_built: 2026-06-05T00:55Z
 urls:
   reference: http://klintkanopka.com/mixedsubjectsirt/reference
   article: http://klintkanopka.com/mixedsubjectsirt/articles

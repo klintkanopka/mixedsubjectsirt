@@ -33,8 +33,10 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
-    <li><a class="dropdown-item" href="../articles/linking-comparison.html">IRT Linking Methods for the Mixed-Subjects E-step</a></li>
+<li><a class="dropdown-item" href="../articles/lambda-tuning-item.html">Per-Item Lambda (Experimental)</a></li>
+    <li><a class="dropdown-item" href="../articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
+    <li><a class="dropdown-item" href="../articles/linking-comparison.html">IRT Linking and Gradient Asymmetry: Diagnostic Guide</a></li>
+    <li><a class="dropdown-item" href="../articles/mixed-subjects-1pl.html">Mixed-Subjects 1PL Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
   </ul>
 </li>
@@ -65,12 +67,13 @@
 
     
     
-<p>This vignette shows the basic mixed-subjects workflow for a
-unidimensional 2PL model. The package expects three response matrices
-with the same item columns:</p>
+<p>This vignette shows the recommended mixed-subjects workflow for a
+unidimensional 2PL model using the <strong>marginal maximum-likelihood
+PPI++ estimator</strong> (<code>fit_mixed_subjects_mml</code>). The
+package expects three response matrices with the same item columns:</p>
 <ul>
 <li>
-<code>observed</code>: human responses.</li>
+<code>observed</code>: binary human responses.</li>
 <li>
 <code>predicted</code>: LLM responses or probabilities for the same
 human rows.</li>
@@ -79,218 +82,218 @@ human rows.</li>
 responses.</li>
 </ul>
 <p>The fitted objective is</p>
-<p><code>L_human + lambda * (L_generated - L_paired_llm)</code></p>
-<p>Setting <code>lambda = 0</code> gives the human-only expected-count
-calibration.</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>L</mi><mi>h</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">g</mi></mrow></msubsup><mo stretchy="false" form="prefix">(</mo><mi>γ</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>λ</mi><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">[</mo><msubsup><mi>L</mi><mi>g</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">g</mi></mrow></msubsup><mo stretchy="false" form="prefix">(</mo><mi>γ</mi><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msubsup><mi>L</mi><mi>p</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">g</mi></mrow></msubsup><mo stretchy="false" form="prefix">(</mo><mi>γ</mi><mo stretchy="false" form="postfix">)</mo><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">L_h^{\mathrm{marg}}(\gamma) + \lambda\bigl[ L_g^{\mathrm{marg}}(\gamma) - L_p^{\mathrm{marg}}(\gamma)\bigr]</annotation></semantics></math></p>
+<p>where each <span class="math inline">$L^\\mathrm{marg}$</span> is the
+true IRT marginal negative log-likelihood, with posteriors recomputed
+from the current candidate <span class="math inline">$\\gamma$</span> at
+every gradient step. Setting <span class="math inline">$\\lambda =
+0$</span> recovers the human-only MML calibration. See the <a href="lambda-tuning.html">Choosing Lambda</a> vignette for the
+scientific background on why the marginal-MML objective is preferred
+over the older frozen expected-count estimator.</p>
 <div class="section level2">
 <h2 id="simulate-example-data">Simulate example data<a class="anchor" aria-label="anchor" href="#simulate-example-data"></a>
 </h2>
-<p>This example uses simulated LLM responses so the vignette can run
-without any external API calls.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://klintkanopka.com/mixedsubjectsirt/">mixedsubjectsirt</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2026</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">n_human</span> <span class="op">&lt;-</span> <span class="fl">400</span></span>
+<span><span class="va">n_human</span>    <span class="op">&lt;-</span> <span class="fl">400</span></span>
 <span><span class="va">n_generated</span> <span class="op">&lt;-</span> <span class="fl">1200</span></span>
-<span><span class="va">n_items</span> <span class="op">&lt;-</span> <span class="fl">8</span></span>
+<span><span class="va">n_items</span>    <span class="op">&lt;-</span> <span class="fl">8</span></span>
 <span></span>
 <span><span class="va">true_pars</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  item <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Item"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n_items</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  a <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.8</span>, <span class="fl">1.6</span>, length.out <span class="op">=</span> <span class="va">n_items</span><span class="op">)</span>,</span>
-<span>  d <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.1</span>, <span class="fl">1.1</span>, length.out <span class="op">=</span> <span class="va">n_items</span><span class="op">)</span></span>
+<span>  a    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.8</span>, <span class="fl">1.6</span>, length.out <span class="op">=</span> <span class="va">n_items</span><span class="op">)</span>,</span>
+<span>  d    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.1</span>, <span class="fl">1.1</span>, length.out <span class="op">=</span> <span class="va">n_items</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">true_pars</span><span class="op">$</span><span class="va">b</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="va">true_pars</span><span class="op">$</span><span class="va">d</span> <span class="op">/</span> <span class="va">true_pars</span><span class="op">$</span><span class="va">a</span></span>
 <span></span>
 <span><span class="va">theta_human</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_human</span><span class="op">)</span></span>
-<span><span class="va">observed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="va">theta_human</span>, <span class="va">true_pars</span><span class="op">)</span></span>
+<span><span class="va">observed</span>    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="va">theta_human</span>, <span class="va">true_pars</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># LLM with ~10% attenuated discrimination and a small intercept shift</span></span>
 <span><span class="va">llm_pars</span> <span class="op">&lt;-</span> <span class="va">true_pars</span></span>
 <span><span class="va">llm_pars</span><span class="op">$</span><span class="va">a</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">0.9</span> <span class="op">*</span> <span class="va">true_pars</span><span class="op">$</span><span class="va">a</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_items</span>, <span class="fl">0</span>, <span class="fl">0.05</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">llm_pars</span><span class="op">$</span><span class="va">d</span> <span class="op">&lt;-</span> <span class="va">true_pars</span><span class="op">$</span><span class="va">d</span> <span class="op">+</span> <span class="fl">0.25</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_items</span>, <span class="fl">0</span>, <span class="fl">0.15</span><span class="op">)</span></span>
 <span><span class="va">llm_pars</span><span class="op">$</span><span class="va">b</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="va">llm_pars</span><span class="op">$</span><span class="va">d</span> <span class="op">/</span> <span class="va">llm_pars</span><span class="op">$</span><span class="va">a</span></span>
 <span></span>
 <span><span class="va">predicted</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="va">theta_human</span>, <span class="va">llm_pars</span><span class="op">)</span></span>
-<span><span class="va">generated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_generated</span>, mean <span class="op">=</span> <span class="fl">0.1</span>, sd <span class="op">=</span> <span class="fl">1.05</span><span class="op">)</span>, <span class="va">llm_pars</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">generated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_generated</span><span class="op">)</span>, <span class="va">llm_pars</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="workflow-without-split-samples">Workflow without split samples<a class="anchor" aria-label="anchor" href="#workflow-without-split-samples"></a>
+<h2 id="step-1-fit-the-human-baseline">Step 1: Fit the human baseline<a class="anchor" aria-label="anchor" href="#step-1-fit-the-human-baseline"></a>
 </h2>
-<p>The no-split workflow uses all human responses to construct the human
-posterior weights and uses those same posterior weights for the paired
-LLM responses. That default is controlled by
-<code>common_predicted_weights = TRUE</code>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">human_start</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span></span>
-<span>  <span class="va">observed</span>,</span>
-<span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>NCYCLES <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">human_only</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_mixed_subjects.html">fit_mixed_subjects</a></span><span class="op">(</span></span>
-<span>  observed <span class="op">=</span> <span class="va">observed</span>,</span>
-<span>  predicted <span class="op">=</span> <span class="va">predicted</span>,</span>
-<span>  generated <span class="op">=</span> <span class="va">generated</span>,</span>
-<span>  lambda <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span>,</span>
-<span>  n_quad <span class="op">=</span> <span class="fl">11</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">mixed_no_split</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_mixed_subjects.html">fit_mixed_subjects</a></span><span class="op">(</span></span>
-<span>  observed <span class="op">=</span> <span class="va">observed</span>,</span>
-<span>  predicted <span class="op">=</span> <span class="va">predicted</span>,</span>
-<span>  generated <span class="op">=</span> <span class="va">generated</span>,</span>
-<span>  lambda <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span>,</span>
-<span>  n_quad <span class="op">=</span> <span class="fl">11</span>,</span>
-<span>  slope_upper <span class="op">=</span> <span class="fl">4</span>   <span class="co"># cap discriminations; gradient asymmetry drives them up at lambda &gt; 0</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">mixed_no_split</span></span>
-<span><span class="co">#&gt; mixedsubjectsirt 2PL fit</span></span>
-<span><span class="co">#&gt;   items:      8</span></span>
-<span><span class="co">#&gt;   lambda:     0.5</span></span>
-<span><span class="co">#&gt;   loss:       3.46725</span></span>
-<span><span class="co">#&gt;   convergence: 0</span></span></code></pre></div>
-<p>The fitted item parameters are returned in slope-intercept form.</p>
+<code class="sourceCode R"><span><span class="va">human_start</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">observed</span>, technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>NCYCLES <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="step-2-fit-the-marginal-mml-mixed-subjects-model">Step 2: Fit the marginal-MML mixed-subjects model<a class="anchor" aria-label="anchor" href="#step-2-fit-the-marginal-mml-mixed-subjects-model"></a>
+</h2>
+<p><code>fit_mixed_subjects_mml()</code> recomputes posterior weights at
+every gradient evaluation, eliminating the frozen-posterior gradient
+asymmetry that causes the older <code><a href="../reference/fit_mixed_subjects.html">fit_mixed_subjects()</a></code> to
+inflate item discriminations when the LLM parameters differ from the
+human calibration.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">mixed_no_split</span><span class="op">$</span><span class="va">item_pars</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    item         a           d            b</span></span>
-<span><span class="co">#&gt; 1 Item1 0.8347858 -1.26460926  1.514890762</span></span>
-<span><span class="co">#&gt; 2 Item2 1.5692739 -1.16988198  0.745492554</span></span>
-<span><span class="co">#&gt; 3 Item3 1.2331265 -0.20684323  0.167738861</span></span>
-<span><span class="co">#&gt; 4 Item4 1.3177043 -0.49184243  0.373257052</span></span>
-<span><span class="co">#&gt; 5 Item5 4.0000000 -0.02148907  0.005372268</span></span>
-<span><span class="co">#&gt; 6 Item6 2.1663434  0.57442082 -0.265156871</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="workflow-with-split-samples">Workflow with split samples<a class="anchor" aria-label="anchor" href="#workflow-with-split-samples"></a>
-</h2>
-<p>The split workflow cross-fits the posterior weights used for the
-labeled human and paired LLM terms. For each split, the initial human
-2PL model is estimated on the other splits, then used to summarize the
-held-out split. Every human row still contributes to the final
-estimating equation once.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">mixed_split</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_mixed_subjects_split.html">fit_mixed_subjects_split</a></span><span class="op">(</span></span>
-<span>  observed <span class="op">=</span> <span class="va">observed</span>,</span>
+<code class="sourceCode R"><span><span class="va">mixed_mml</span> <span class="op">&lt;-</span> <span class="fu">fit_mixed_subjects_mml</span><span class="op">(</span></span>
+<span>  observed  <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted <span class="op">=</span> <span class="va">predicted</span>,</span>
 <span>  generated <span class="op">=</span> <span class="va">generated</span>,</span>
-<span>  lambda <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  n_splits <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">2026</span>,</span>
-<span>  n_quad <span class="op">=</span> <span class="fl">11</span>,</span>
-<span>  slope_upper <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>  technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>NCYCLES <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span>
+<span>  lambda    <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span>,</span>
+<span>  n_quad    <span class="op">=</span> <span class="fl">11</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">mixed_split</span></span>
+<span><span class="va">mixed_mml</span></span>
 <span><span class="co">#&gt; mixedsubjectsirt 2PL fit</span></span>
 <span><span class="co">#&gt;   items:      8</span></span>
 <span><span class="co">#&gt;   lambda:     0.5</span></span>
-<span><span class="co">#&gt;   loss:       3.485</span></span>
+<span><span class="co">#&gt;   loss:       4.78863</span></span>
 <span><span class="co">#&gt;   convergence: 0 </span></span>
-<span><span class="co">#&gt;   splits:     2</span></span></code></pre></div>
+<span><span class="co">#&gt;   estimator:  marginal MML PPI++</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">mixed_mml</span><span class="op">$</span><span class="va">item_pars</span></span>
+<span><span class="co">#&gt;    item         a          d          b</span></span>
+<span><span class="co">#&gt; 1 Item1 0.3892905 -1.1201778  2.8774858</span></span>
+<span><span class="co">#&gt; 2 Item2 0.7835246 -0.8527486  1.0883495</span></span>
+<span><span class="co">#&gt; 3 Item3 0.7887476 -0.1147950  0.1455409</span></span>
+<span><span class="co">#&gt; 4 Item4 0.7234563 -0.3232715  0.4468431</span></span>
+<span><span class="co">#&gt; 5 Item5 1.0983294  0.1180605 -0.1074910</span></span>
+<span><span class="co">#&gt; 6 Item6 1.1514876  0.5788988 -0.5027399</span></span>
+<span><span class="co">#&gt; 7 Item7 0.9533489  0.7575978 -0.7946700</span></span>
+<span><span class="co">#&gt; 8 Item8 1.6982913  1.4114240 -0.8310847</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="compare-the-calibrations">Compare the calibrations<a class="anchor" aria-label="anchor" href="#compare-the-calibrations"></a>
+<h2 id="step-3-select-lambda-by-ability-score-risk">Step 3: Select lambda by ability-score risk<a class="anchor" aria-label="anchor" href="#step-3-select-lambda-by-ability-score-risk"></a>
 </h2>
-<p>In a real calibration study the true item parameters are unknown. In
-this simulation they are useful for checking that the workflow is
-behaving as expected.</p>
+<p><code>tune_lambda_ability_risk()</code> with
+<code>fit_fn = fit_mixed_subjects_mml</code> evaluates candidates on the
+MML objective and selects the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+that minimises propagated ability-score risk
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">E[g'\Sigma_\gamma g]</annotation></semantics></math>,
+where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><annotation encoding="application/x-tex">\Sigma_\gamma</annotation></semantics></math>
+is the <strong>Louis-corrected</strong> marginal sandwich
+covariance.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">estimates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>estimator <span class="op">=</span> <span class="st">"human only"</span>, <span class="va">human_only</span><span class="op">$</span><span class="va">item_pars</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>estimator <span class="op">=</span> <span class="st">"mixed no split"</span>, <span class="va">mixed_no_split</span><span class="op">$</span><span class="va">item_pars</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>estimator <span class="op">=</span> <span class="st">"mixed split"</span>, <span class="va">mixed_split</span><span class="op">$</span><span class="va">item_pars</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">estimates</span><span class="op">$</span><span class="va">true_b</span> <span class="op">&lt;-</span> <span class="va">true_pars</span><span class="op">$</span><span class="va">b</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">estimates</span><span class="op">$</span><span class="va">item</span>, <span class="va">true_pars</span><span class="op">$</span><span class="va">item</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="va">estimates</span><span class="op">$</span><span class="va">true_a</span> <span class="op">&lt;-</span> <span class="va">true_pars</span><span class="op">$</span><span class="va">a</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">estimates</span><span class="op">$</span><span class="va">item</span>, <span class="va">true_pars</span><span class="op">$</span><span class="va">item</span><span class="op">)</span><span class="op">]</span></span>
-<span></span>
-<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">estimates</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">true_b</span>, <span class="va">b</span>, color <span class="op">=</span> <span class="va">estimator</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_abline</a></span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1</span>, intercept <span class="op">=</span> <span class="fl">0</span>, linewidth <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"True difficulty"</span>, y <span class="op">=</span> <span class="st">"Estimated difficulty"</span>, color <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="mixed-subjects-workflow_files/figure-html/compare-1.png" class="r-plt" alt="" width="672"></p>
-<p>The helper <code><a href="../reference/diagnose_lambda_grid.html">diagnose_lambda_grid()</a></code> can be used for quick
-sensitivity checks over candidate lambda values. The summary reports the
-optimized mixed objective and the human expected-count loss, but final
-lambda selection should be tied to the study’s inferential target or
-evaluated with a bootstrap/cross-validation plan.</p>
-<p>When the LLM has attenuated discrimination relative to humans (as
-here), the combined gradient
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>∇</mi><msub><mi>L</mi><mtext mathvariant="normal">obs</mtext></msub><mo>+</mo><mi>λ</mi><mi>∇</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>L</mi><mtext mathvariant="normal">gen</mtext></msub><mo>−</mo><msub><mi>L</mi><mtext mathvariant="normal">pred</mtext></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\nabla L_\text{obs} + \lambda\nabla(L_\text{gen} - L_\text{pred})</annotation></semantics></math>
-is systematically negative for high-discrimination items — it pushes
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>a</mi><annotation encoding="application/x-tex">a</annotation></semantics></math>
-upward at any
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda &gt; 0</annotation></semantics></math>.
-Without an upper bound, this drives discriminations to extreme values
-and the optimizer reports convergence code 52 (L-BFGS-B line-search
-failure). The <code>slope_upper</code> argument caps discriminations
-during optimization. With it, the optimizer converges at the bound,
-ability risk is high for capped items, and
-<code>tune_lambda_ability_risk</code> correctly selects
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda \approx 0</annotation></semantics></math>
-— recovering the human-only estimate.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/diagnose_lambda_grid.html">diagnose_lambda_grid</a></span><span class="op">(</span></span>
-<span>  lambda_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span><span class="op">)</span>,</span>
-<span>  observed <span class="op">=</span> <span class="va">observed</span>,</span>
-<span>  predicted <span class="op">=</span> <span class="va">predicted</span>,</span>
-<span>  generated <span class="op">=</span> <span class="va">generated</span>,</span>
-<span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span>,</span>
-<span>  n_quad <span class="op">=</span> <span class="fl">11</span>,</span>
-<span>  slope_upper <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">tuned</span><span class="op">$</span><span class="va">summary</span></span>
-<span><span class="co">#&gt;   lambda mixed_loss observed_loss convergence</span></span>
-<span><span class="co">#&gt; 1   0.00   4.081765      4.081765           0</span></span>
-<span><span class="co">#&gt; 2   0.25   3.825618      4.117991           0</span></span>
-<span><span class="co">#&gt; 3   0.50   3.467245      4.395663           0</span></span>
-<span><span class="co">#&gt; 4   0.75   2.973209      4.573353           0</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="tune-lambda-by-ability-risk">Tune lambda by ability risk<a class="anchor" aria-label="anchor" href="#tune-lambda-by-ability-risk"></a>
-</h2>
-<p>For a target scoring population,
-<code>tune_lambda_ability_risk()</code> evaluates candidate calibrations
-using propagated ability-score risk. For each candidate lambda it fits
-item parameters, estimates the full sandwich covariance matrix for the
-item parameters, computes ability-score gradients, and summarizes the
-average <code>g' Sigma g</code> risk.</p>
-<p>For this scenario the ability-risk criterion selects
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>:
-the LLM’s attenuated discrimination causes gradient asymmetry that
-inflates item parameters at any
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda &gt; 0</annotation></semantics></math>,
-increasing scoring uncertainty. This is the expected and correct
-behavior — the method recovers the human-only estimate when the LLM
-model is substantially misaligned.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ability_tuned</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
-<span>  lambda_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span><span class="op">)</span>,</span>
-<span>  observed <span class="op">=</span> <span class="va">observed</span>,</span>
-<span>  predicted <span class="op">=</span> <span class="va">predicted</span>,</span>
-<span>  generated <span class="op">=</span> <span class="va">generated</span>,</span>
-<span>  target_resp <span class="op">=</span> <span class="va">observed</span>,</span>
+<span>  lambda_grid  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,</span>
+<span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
+<span>  predicted    <span class="op">=</span> <span class="va">predicted</span>,</span>
+<span>  generated    <span class="op">=</span> <span class="va">generated</span>,</span>
+<span>  target_resp  <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span>,</span>
-<span>  n_quad <span class="op">=</span> <span class="fl">11</span>,</span>
-<span>  slope_upper <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
+<span>  fit_fn       <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>,</span>
+<span>  n_quad       <span class="op">=</span> <span class="fl">11</span>,</span>
+<span>  control      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ability_tuned</span><span class="op">$</span><span class="va">summary</span></span>
 <span><span class="co">#&gt;   lambda mean_param_var mean_squared_error mean_total_risk convergence</span></span>
-<span><span class="co">#&gt; 1   0.00     0.01539735                 NA      0.01539735           0</span></span>
-<span><span class="co">#&gt; 2   0.25     0.02186879                 NA      0.02186879           0</span></span>
-<span><span class="co">#&gt; 3   0.50     0.07231729                 NA      0.07231729           0</span></span>
-<span><span class="co">#&gt; 4   0.75     0.13123481                 NA      0.13123481           0</span></span>
+<span><span class="co">#&gt; 1    0.0     0.01468912                 NA      0.01468912           0</span></span>
+<span><span class="co">#&gt; 2    0.2     0.01654963                 NA      0.01654963           0</span></span>
+<span><span class="co">#&gt; 3    0.4     0.02039017                 NA      0.02039017           0</span></span>
+<span><span class="co">#&gt; 4    0.6     0.02684917                 NA      0.02684917           0</span></span>
+<span><span class="co">#&gt; 5    0.8     0.03711546                 NA      0.03711546           0</span></span>
+<span><span class="co">#&gt; 6    1.0     0.05370607                 NA      0.05370607           0</span></span>
+<span><span class="co">#&gt;   selection_risk</span></span>
+<span><span class="co">#&gt; 1     0.01468912</span></span>
+<span><span class="co">#&gt; 2     0.01654963</span></span>
+<span><span class="co">#&gt; 3     0.02039017</span></span>
+<span><span class="co">#&gt; 4     0.02684917</span></span>
+<span><span class="co">#&gt; 5     0.03711546</span></span>
+<span><span class="co">#&gt; 6     0.05370607</span></span>
 <span><span class="va">ability_tuned</span><span class="op">$</span><span class="va">best_lambda</span></span>
 <span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<p>When the LLM parameters differ substantially from the human
+calibration the ability-risk criterion correctly selects
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda \approx 0</annotation></semantics></math>,
+recovering the human-only estimate. The <code>selection_risk</code>
+column shows <code>Inf</code> for any candidate that failed to converge,
+so the selection is protected against numerical failures.</p>
+</div>
+<div class="section level2">
+<h2 id="step-4-inspect-the-covariance">Step 4: Inspect the covariance<a class="anchor" aria-label="anchor" href="#step-4-inspect-the-covariance"></a>
+</h2>
+<p><code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> on a scalar-lambda MML fit automatically uses
+<code>vcov_mixed_subjects_mml()</code>, which applies Louis’ (1982)
+observed-information correction — the marginal bread is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">p</mi></mrow></msub><mo>−</mo><msub><mi>I</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">s</mi></mrow></msub></mrow><annotation encoding="application/x-tex">H_\mathrm{comp} - I_\mathrm{miss}</annotation></semantics></math>
+rather than the EM complete-data Hessian alone.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">Sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">ability_tuned</span><span class="op">$</span><span class="va">best_fit</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">Sigma</span><span class="op">)</span>  <span class="co"># 2J × 2J</span></span>
+<span><span class="co">#&gt; [1] 16 16</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="compare-calibrations">Compare calibrations<a class="anchor" aria-label="anchor" href="#compare-calibrations"></a>
+</h2>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">human_only</span> <span class="op">&lt;-</span> <span class="fu">fit_mixed_subjects_mml</span><span class="op">(</span></span>
+<span>  observed  <span class="op">=</span> <span class="va">observed</span>,</span>
+<span>  predicted <span class="op">=</span> <span class="va">predicted</span>,</span>
+<span>  generated <span class="op">=</span> <span class="va">generated</span>,</span>
+<span>  lambda    <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span>,</span>
+<span>  n_quad    <span class="op">=</span> <span class="fl">11</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">estimates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>estimator <span class="op">=</span> <span class="st">"human only"</span>,  <span class="va">human_only</span><span class="op">$</span><span class="va">item_pars</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>estimator <span class="op">=</span> <span class="st">"MML lambda = 0.5"</span>, <span class="va">mixed_mml</span><span class="op">$</span><span class="va">item_pars</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>estimator <span class="op">=</span> <span class="st">"MML ability-risk"</span>,</span>
+<span>             <span class="va">ability_tuned</span><span class="op">$</span><span class="va">best_fit</span><span class="op">$</span><span class="va">item_pars</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">estimates</span><span class="op">$</span><span class="va">true_b</span> <span class="op">&lt;-</span> <span class="va">true_pars</span><span class="op">$</span><span class="va">b</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">estimates</span><span class="op">$</span><span class="va">item</span>, <span class="va">true_pars</span><span class="op">$</span><span class="va">item</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">estimates</span><span class="op">$</span><span class="va">true_a</span> <span class="op">&lt;-</span> <span class="va">true_pars</span><span class="op">$</span><span class="va">a</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">estimates</span><span class="op">$</span><span class="va">item</span>, <span class="va">true_pars</span><span class="op">$</span><span class="va">item</span><span class="op">)</span><span class="op">]</span></span>
+<span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">estimates</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">true_b</span>, <span class="va">b</span>, colour <span class="op">=</span> <span class="va">estimator</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_abline</a></span><span class="op">(</span>slope <span class="op">=</span> <span class="fl">1</span>, intercept <span class="op">=</span> <span class="fl">0</span>, linewidth <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"True difficulty"</span>, y <span class="op">=</span> <span class="st">"Estimated difficulty"</span>, colour <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="mixed-subjects-workflow_files/figure-html/compare-1.png" class="r-plt" alt="" width="672"></p>
+</div>
+<div class="section level2">
+<h2 id="when-the-llm-is-a-good-predictor">When the LLM is a good predictor<a class="anchor" aria-label="anchor" href="#when-the-llm-is-a-good-predictor"></a>
+</h2>
+<p>To verify that the method selects
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda &gt; 0</annotation></semantics></math>
+when the LLM genuinely helps, simulate with
+<code>predicted = observed</code> (F = Y, the perfect paired
+predictor):</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">tuned_fy</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
+<span>  lambda_grid  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,</span>
+<span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
+<span>  predicted    <span class="op">=</span> <span class="va">observed</span>,          <span class="co"># F = Y: perfect paired predictor</span></span>
+<span>  generated    <span class="op">=</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_generated</span><span class="op">)</span>, <span class="va">true_pars</span><span class="op">)</span>,</span>
+<span>  target_resp  <span class="op">=</span> <span class="va">observed</span>,</span>
+<span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span>,</span>
+<span>  fit_fn       <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>,</span>
+<span>  n_quad       <span class="op">=</span> <span class="fl">11</span>,</span>
+<span>  control      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">tuned_fy</span><span class="op">$</span><span class="va">best_lambda</span>   <span class="co"># expect &gt; 0, near N/(n+N) = 0.75</span></span>
+<span><span class="co">#&gt; [1] 0.8</span></span>
+<span><span class="va">tuned_fy</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lambda"</span>, <span class="st">"mean_param_var"</span>, <span class="st">"convergence"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt;   lambda mean_param_var convergence</span></span>
+<span><span class="co">#&gt; 1    0.0    0.014689121           0</span></span>
+<span><span class="co">#&gt; 2    0.2    0.009595393           0</span></span>
+<span><span class="co">#&gt; 3    0.4    0.006101125           0</span></span>
+<span><span class="co">#&gt; 4    0.6    0.004169105           0</span></span>
+<span><span class="co">#&gt; 5    0.8    0.003813351           0</span></span>
+<span><span class="co">#&gt; 6    1.0    0.005118509           0</span></span></code></pre></div>
+<p>The ability risk decreases from
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
+to a minimum near the theoretical upper bound
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>1200</mn><mi>/</mi><mn>1600</mn><mo>=</mo><mn>0.75</mn></mrow><annotation encoding="application/x-tex">N/(n+N) = 1200/1600 = 0.75</annotation></semantics></math>,
+confirming the estimator correctly identifies and exploits a highly
+informative predictor.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
