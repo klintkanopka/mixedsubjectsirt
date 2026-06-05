@@ -597,7 +597,8 @@ test_that("louis_missing_info matches numerical Hessian of marginal_loss_2pl", {
 
 test_that("vcov dispatches to vcov_mixed_subjects_mml for scalar MML fits", {
   set.seed(61)
-  pars     <- data.frame(a = c(1, 1.2, 0.9), d = c(0, -0.5, 0.3))
+  pars     <- data.frame(item = paste0("I", 1:3), a = c(1, 1.2, 0.9),
+                          d = c(0, -0.5, 0.3))
   obs      <- simulate_2pl(rnorm(50), pars)
   gen      <- simulate_2pl(rnorm(120), pars)
 
@@ -606,18 +607,28 @@ test_that("vcov dispatches to vcov_mixed_subjects_mml for scalar MML fits", {
   fit_ec   <- fit_mixed_subjects(obs, obs, gen, lambda = 0.5,
     initial_pars = pars, n_quad = 7, control = list(maxit = 80))
 
-  Sigma_mml <- vcov(fit_mml)   # should use Louis bread
-  Sigma_ec  <- vcov(fit_ec)    # should use EM Hessian bread
+  # Use stats::vcov() — the correct way to get MML covariance
+  Sigma_mml_dispatch  <- stats::vcov(fit_mml)    # routes to Louis-corrected
+  Sigma_mml_direct    <- vcov_mixed_subjects_mml(fit_mml)  # explicit call
+  Sigma_ec            <- stats::vcov(fit_ec)     # routes to EM Hessian
+
+  # S3 dispatch equals direct call for MML fits
+  expect_equal(Sigma_mml_dispatch, Sigma_mml_direct)
 
   # Both are valid covariance matrices
-  expect_equal(dim(Sigma_mml), c(6L, 6L))
-  expect_true(all(is.finite(Sigma_mml)))
-  expect_true(all(eigen(Sigma_mml)$values > 0))
+  expect_equal(dim(Sigma_mml_dispatch), c(6L, 6L))
+  expect_true(all(is.finite(Sigma_mml_dispatch)))
+  expect_true(all(eigen(Sigma_mml_dispatch)$values > 0))
 
   # Louis-corrected covariance is larger than EM Hessian covariance
   # (Louis bread <= EM bread  =>  Louis bread^{-1} >= EM bread^{-1}  =>
   #  Louis sandwich >= EM sandwich in PSD sense)
-  expect_gt(mean(diag(Sigma_mml)), mean(diag(Sigma_ec)))
+  expect_gt(mean(diag(Sigma_mml_dispatch)), mean(diag(Sigma_ec)))
+
+  # Direct call to vcov_mixed_subjects bypasses Louis correction — should be
+  # smaller than the dispatch result for an MML fit
+  Sigma_ec_path <- vcov_mixed_subjects(fit_mml)  # deliberately uses EM bread
+  expect_lt(mean(diag(Sigma_ec_path)), mean(diag(Sigma_mml_dispatch)))
 })
 
 test_that("vcov_mixed_subjects handles vector lambda", {

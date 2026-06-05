@@ -876,10 +876,15 @@ fit_mixed_subjects_iterative <- function(observed, predicted, generated,
 #'   is omitted.
 #'
 #' @return An object of class `"mixedsubjects_fit"` with the same structure as
-#'   [fit_mixed_subjects()]. The quadrature summaries `q_observed`,
-#'   `q_predicted`, and `q_generated` store posteriors at the **converged**
-#'   parameters (not frozen initial posteriors), so [vcov_mixed_subjects()]
-#'   computes the correct marginal sandwich covariance.
+#'   [fit_mixed_subjects()].  For **scalar** lambda fits, the quadrature
+#'   summaries store posteriors at the converged parameters, and
+#'   `stats::vcov()` dispatches automatically to
+#'   [vcov_mixed_subjects_mml()] to compute the Louis-corrected marginal
+#'   sandwich covariance.  Calling [vcov_mixed_subjects()] directly bypasses
+#'   the Louis correction.  For **vector** lambda fits, the summaries store
+#'   the frozen posteriors used during optimisation, and `stats::vcov()`
+#'   dispatches to [vcov_mixed_subjects()] (EM bread) for consistency with the
+#'   frozen Q-function objective.
 #' @export
 #'
 #' @examples
@@ -1072,21 +1077,36 @@ fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
 
   conv_pars <- item_pars_from_vector(opt$par, item_names)
 
-  # Build final quadrature summaries at the CONVERGED parameters so that
-  # vcov_mixed_subjects() computes the correct marginal sandwich covariance.
-  q_obs_final <- build_quadrature_summary(observed, conv_pars, quadrature)
+  # Build final quadrature summaries.
+  # - Scalar MML path: posteriors at the CONVERGED parameters so that
+  #   vcov_mixed_subjects_mml() applies Louis' formula at the MLE.
+  # - Vector-lambda path: posteriors frozen at INIT_STD (same as those used
+  #   during optimisation) so that vcov_mixed_subjects() is consistent with
+  #   the frozen Q-function that was actually optimised.  Storing converged
+  #   posteriors here would mean vcov uses a different estimating equation
+  #   from the one that determined conv_pars, making the sandwich invalid.
+  if (scalar_lambda) {
+    q_obs_final <- build_quadrature_summary(observed, conv_pars, quadrature)
 
-  q_pred_final <- if (mml_pred_weights == "own") {
-    # "own": posteriors from predicted responses at converged params
-    build_quadrature_summary(predicted, conv_pars, quadrature)
+    q_pred_final <- if (mml_pred_weights == "own") {
+      build_quadrature_summary(predicted, conv_pars, quadrature)
+    } else {
+      # "human": fixed-nuisance posteriors from init_std
+      build_quadrature_summary(predicted, conv_pars, quadrature,
+                               weights = pred_w_fixed)
+    }
+
+    q_gen_final <- build_quadrature_summary(generated, conv_pars, quadrature)
+
   } else {
-    # "human": store the fixed-nuisance posteriors used during optimisation
-    # so that vcov_mixed_subjects_mml applies Louis' formula consistently
-    build_quadrature_summary(predicted, conv_pars, quadrature,
-                             weights = pred_w_fixed)
+    # Vector-lambda: store the frozen weights/counts that were used in fitting
+    q_obs_final  <- build_quadrature_summary(observed,  init_std, quadrature,
+                                              weights = obs_w_frozen)
+    q_pred_final <- build_quadrature_summary(predicted, init_std, quadrature,
+                                              weights = obs_w_frozen)
+    q_gen_final  <- build_quadrature_summary(generated, init_std, quadrature,
+                                              weights = gen_w_frozen)
   }
-
-  q_gen_final <- build_quadrature_summary(generated, conv_pars, quadrature)
 
   out <- c(
     list(

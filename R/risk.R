@@ -885,6 +885,15 @@ tune_lambda_ability_risk <- function(lambda_grid, observed, predicted, generated
 #'   Note that mixing MML fold-tuning with a frozen final fit is an
 #'   approximation; document this when reporting results.
 #'
+#' @param fit_fn Fitting function used for each fold's ability-risk tuning
+#'   (passed to [tune_lambda_ability_risk()]). Defaults to
+#'   [fit_mixed_subjects()] (frozen expected-count). Pass
+#'   [fit_mixed_subjects_mml()] for marginal-MML fold tuning. This argument is
+#'   handled explicitly so it does not leak through `...` into `final_fit_fn`.
+#' @param ... Additional arguments forwarded to `fit_fn` (e.g. `slope_upper`).
+#'   These are NOT forwarded to `final_fit_fn`; use `final_fit_fn`'s own
+#'   argument list for arguments specific to the final fit.
+#'
 #' @return A list with fold-specific lambda values, fold tuning objects, and the
 #'   final fit.
 #' @export
@@ -894,6 +903,7 @@ tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
                                               split_id = NULL, seed = NULL,
                                               n_quad = 31, initial_pars = NULL,
                                               target_mode = c("fixed", "row_aligned"),
+                                              fit_fn = fit_mixed_subjects,
                                               final_fit_fn = fit_mixed_subjects_split,
                                               bounds = c(-6, 6),
                                               control = list(maxit = 500), ...) {
@@ -957,18 +967,20 @@ tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
       theta_train  <- theta_true       # fixed true thetas (or NULL)
     }
 
+    # Pass fit_fn explicitly so it does not need to travel through ...
     fold_tuning[[s]] <- tune_lambda_ability_risk(
-      lambda_grid = lambda_grid,
-      observed    = observed[train, , drop = FALSE],
-      predicted   = predicted[train, , drop = FALSE],
-      generated   = generated,
-      target_resp = target_train,
-      theta_true  = theta_train,
-      n_quad      = n_quad,
+      lambda_grid  = lambda_grid,
+      observed     = observed[train, , drop = FALSE],
+      predicted    = predicted[train, , drop = FALSE],
+      generated    = generated,
+      target_resp  = target_train,
+      theta_true   = theta_train,
+      n_quad       = n_quad,
       initial_pars = initial_pars,
-      bounds      = bounds,
-      control     = control,
-      ...
+      fit_fn       = fit_fn,
+      bounds       = bounds,
+      control      = control,
+      ...               # user's extra fitting args (slope_upper, etc.)
     )
     lambda_by_split[s] <- fold_tuning[[s]]$best_lambda
   }
@@ -994,6 +1006,9 @@ tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
     extra_split  <- list()
   }
 
+  # final_fit_fn gets only the core arguments; user's ... (e.g. slope_upper)
+  # are for fold tuning, not the final fit.  This prevents fit_fn and other
+  # tuning-only arguments from leaking into final_fit_fn and causing errors.
   final_fit <- do.call(final_fit_fn, c(
     list(
       observed     = observed,
@@ -1004,8 +1019,7 @@ tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
       initial_pars = initial_pars,
       control      = control
     ),
-    extra_split,
-    list(...)
+    extra_split
   ))
 
   list(
@@ -1124,10 +1138,12 @@ tune_lambda_ppi_score_item <- function(observed, predicted, item_pars, n_generat
 #' items. Each coordinate step selects the `λ_j` in `lambda_grid` that gives
 #' the smallest mean ability risk while holding all other `λ_{j'}` fixed.
 #'
-#' Uses [fit_mixed_subjects_mml()] at each candidate, so posteriors are
-#' recomputed from the current parameters (no frozen-posterior bias). The
-#' resulting lambda vector can then be used directly with
-#' [fit_mixed_subjects_mml()].
+#' Calls [fit_mixed_subjects_mml()] with a per-item lambda vector at each
+#' candidate evaluation. Because the lambda is a vector, that function
+#' **switches to its frozen expected-count Q-function path** — posteriors are
+#' frozen at `initial_pars`, not recomputed continuously. This is an
+#' approximation; see the `@note` below. The resulting lambda vector can be
+#' used directly with [fit_mixed_subjects_mml()].
 #'
 #' **Computational cost.** Each pass evaluates `n_items × length(lambda_grid)`
 #' fits. For `n_items = 8` and a 5-point grid this is 40 fits per pass. Use
