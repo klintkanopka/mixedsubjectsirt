@@ -829,14 +829,30 @@ fit_mixed_subjects_iterative <- function(observed, predicted, generated,
 #'   \item{`"own"` (default)}{L_pred uses posteriors computed from the
 #'     *predicted* response matrix at the current parameter values.  All three
 #'     terms are true marginal likelihoods; objective and gradient are
-#'     internally consistent.  Recommended for most applications.}
+#'     internally consistent.  Recommended for most applications and required
+#'     for [vcov_mixed_subjects_mml()] to produce the fully correct
+#'     Louis-formula bread.}
 #'   \item{`"human"`}{L_pred uses posteriors computed from the *observed*
-#'     (human) response matrix, similar to `common_predicted_weights = TRUE` in
-#'     [fit_mixed_subjects()].  The gradient for L_pred ignores the chain-rule
-#'     term through the human posteriors (standard EM approximation), so the
-#'     objective and gradient are slightly inconsistent.  Useful when strong
-#'     ability-level pairing is needed and the EM approximation is acceptable.}
+#'     (human) response matrix, frozen at `initial_pars`.  This is a
+#'     **fixed-nuisance Q-function**: the predicted term is treated as a frozen
+#'     expected-count lower bound rather than a true marginal likelihood.
+#'     Objective and gradient are mutually consistent (both use the same frozen
+#'     posteriors) so L-BFGS-B converges correctly.  Useful when strong
+#'     ability-level pairing is needed.  Note that [vcov_mixed_subjects_mml()]
+#'     applies Louis' formula to the stored fixed posteriors, which is
+#'     approximately correct when `initial_pars` ≈ `conv_pars`.}
 #' }
+#'
+#' **Per-item lambda (vector `lambda`).**  When `lambda` is a length-`n_items`
+#' vector rather than a scalar, `fit_mixed_subjects_mml` switches to a
+#' **frozen Q-function** objective: expected-count counts are computed once from
+#' `initial_pars` and held fixed during L-BFGS-B, with item `j`'s counts
+#' weighted by `lambda[j]`.  This is a consistent (objective, gradient) pair
+#' but is *not* the full marginal-MML objective — it is a frozen expected-count
+#' approximation analogous to [fit_mixed_subjects()].  Per-item lambda values
+#' obtained from [tune_lambda_ability_risk_item()] assign `lambda_j ≈ 0` to
+#' items where the LLM correction is harmful, containing the frozen-posterior
+#' gradient asymmetry.  Document per-item lambda results as approximate.
 #'
 #' @param observed Human response matrix.
 #' @param predicted LLM responses or probabilities for the same rows as
@@ -939,6 +955,17 @@ fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
     gen_cts_frozen  <- summarize_expected_counts(generated, gen_w_frozen)
   }
 
+  # For mml_pred_weights = "human": precompute FIXED-NUISANCE human posteriors
+  # from init_std and freeze them throughout optimisation. This makes the
+  # objective and gradient fully consistent (both use the same frozen Q-function
+  # for L_pred). The old behaviour — recomputing human posteriors at every
+  # candidate ip — was inconsistent: the objective and gradient differed by the
+  # chain-rule term through the posteriors, causing L-BFGS-B line-search issues.
+  if (scalar_lambda && mml_pred_weights == "human") {
+    pred_w_fixed   <- posterior_weights_2pl(observed, init_std, quadrature)
+    pred_cts_fixed <- summarize_expected_counts(predicted, pred_w_fixed)
+  }
+
   # Shared cache: reuse posteriors when fn and gr are called at the same par.
   .cache     <- new.env(parent = emptyenv())
   .cache$par <- NULL
@@ -962,12 +989,16 @@ fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
       gen_counts <- summarize_expected_counts(generated, gen_r$weights)
 
       if (mml_pred_weights == "own") {
+        # Pure MML: L_pred uses its own posteriors (consistent marginal objective)
         pred_r      <- posterior_and_log_lik_2pl(predicted, ip, quadrature)
         pred_counts <- summarize_expected_counts(predicted, pred_r$weights)
         l_pred <- -mean(pred_r$log_normalizers)
       } else {
-        pred_counts <- summarize_expected_counts(predicted, obs_r$weights)
-        l_pred <- loss_expected_counts(pred_counts, ip)
+        # Fixed-nuisance Q-function: L_pred uses posteriors frozen at init_std.
+        # pred_cts_fixed is precomputed outside this closure and never updated.
+        # Both objective and gradient use these fixed counts → fully consistent.
+        pred_counts <- pred_cts_fixed
+        l_pred <- loss_expected_counts(pred_cts_fixed, ip)
       }
 
       .cache$val <- -mean(obs_r$log_normalizers) +
@@ -1046,10 +1077,13 @@ fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
   q_obs_final <- build_quadrature_summary(observed, conv_pars, quadrature)
 
   q_pred_final <- if (mml_pred_weights == "own") {
+    # "own": posteriors from predicted responses at converged params
     build_quadrature_summary(predicted, conv_pars, quadrature)
   } else {
+    # "human": store the fixed-nuisance posteriors used during optimisation
+    # so that vcov_mixed_subjects_mml applies Louis' formula consistently
     build_quadrature_summary(predicted, conv_pars, quadrature,
-                             weights = q_obs_final$weights)
+                             weights = pred_w_fixed)
   }
 
   q_gen_final <- build_quadrature_summary(generated, conv_pars, quadrature)

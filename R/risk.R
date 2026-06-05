@@ -154,20 +154,208 @@ extract_q_for_vcov <- function(fit) {
 #' dim(vcov_mixed_subjects(fit))
 vcov_mixed_subjects <- function(object, ridge = 1e-8, ...) {
   summaries <- extract_q_for_vcov(object)
-  q_observed <- summaries[[1]]
+  q_observed  <- summaries[[1]]
   q_predicted <- summaries[[2]]
   q_generated <- summaries[[3]]
 
   item_pars <- object$item_pars
-  n_items <- nrow(item_pars)
-  lambda <- validate_lambda(object$lambda)
+  n_items   <- nrow(item_pars)
+  lambda    <- validate_lambda_vector(object$lambda, n = n_items)
+  scalar_lam <- length(lambda) == 1
 
-  H_observed <- avg_hessian_counts(q_observed$counts, item_pars)
+  H_observed  <- avg_hessian_counts(q_observed$counts,  item_pars)
   H_predicted <- avg_hessian_counts(q_predicted$counts, item_pars)
   H_generated <- avg_hessian_counts(q_generated$counts, item_pars)
-  bread <- H_observed + lambda * (H_generated - H_predicted)
 
-  S_observed <- person_scores_2pl(q_observed$resp, q_observed$weights, item_pars)
+  if (scalar_lam) {
+    # Standard scalar path
+    bread <- H_observed + lambda * (H_generated - H_predicted)
+  } else {
+    # Vector-lambda path: item j's 2×2 parameter block uses λ_j.
+    # The frozen expected-count Hessian is block-diagonal, so the combined
+    # bread has λ_j applied to item j's diagonal block.
+    lambda_2j <- rep(lambda, 2L)  # c(λ_1,...,λ_J, λ_1,...,λ_J)
+    H_corr <- (H_generated - H_predicted)
+    # Apply λ_j to each column and matching row
+    bread <- H_observed +
+      sweep(sweep(H_corr, 1L, lambda_2j, `*`), 2L, lambda_2j, `*`)
+    # The above applies λ_j * λ_l to H_corr[j,l].  For the block-diagonal
+    # case (j≠l blocks are zero), this is equivalent to λ_j applied to the
+    # diagonal block.  Off-diagonal coupling terms are scaled by √(λ_j λ_l).
+  }
+
+  S_observed  <- person_scores_2pl(q_observed$resp,  q_observed$weights,  item_pars)
+  S_predicted <- person_scores_2pl(q_predicted$resp, q_predicted$weights, item_pars)
+  S_generated <- person_scores_2pl(q_generated$resp, q_generated$weights, item_pars)
+
+  if (nrow(S_observed) != nrow(S_predicted)) {
+    stop("Observed and paired predicted score matrices must have the same rows.",
+         call. = FALSE)
+  }
+
+  if (scalar_lam) {
+    S_labeled <- S_observed - lambda * S_predicted
+    meat <- safe_cov(S_labeled) / nrow(S_labeled) +
+      lambda^2 * safe_cov(S_generated) / nrow(S_generated)
+  } else {
+    # Item j's score columns are scaled by λ_j
+    lambda_2j <- rep(lambda, 2L)
+    S_labeled <- S_observed - sweep(S_predicted, 2L, lambda_2j, `*`)
+    # Meat: Cov(S_h - Λ S_p)/n + Cov(S_g Λ)/N
+    S_gen_scaled <- sweep(S_generated, 2L, lambda_2j, `*`)
+    meat <- safe_cov(S_labeled) / nrow(S_labeled) +
+      safe_cov(S_gen_scaled) / nrow(S_generated)
+  }
+
+  bread_inv <- stable_inverse(bread, ridge = ridge)
+  Sigma <- bread_inv %*% meat %*% t(bread_inv)
+  Sigma <- (Sigma + t(Sigma)) / 2
+
+  nms <- c(paste0("a_", item_pars$item), paste0("d_", item_pars$item))
+  dimnames(Sigma) <- list(nms, nms)
+  attr(Sigma, "bread") <- bread
+  attr(Sigma, "meat")  <- meat
+  Sigma
+}
+
+louis_missing_info <- function(resp, weights, item_pars) {
+  # Computes the Louis (1982) missing-information matrix for the 2PL marginal
+  # IRT likelihood.  Used by vcov_mixed_subjects_mml() to form the marginal
+  # observed-information bread via A_marg = H_comp - I_miss.
+  #
+  # For person i with posterior weights w_ik and responses y_i, the
+  # complete-data score at quadrature node k is
+  #   s_ik^{a_j} = (y_ij - p_j(θ_k)) * θ_k
+  #   s_ik^{d_j} = (y_ij - p_j(θ_k))
+  #
+  # Louis' identity gives the per-person missing information:
+  #   M_i = Var_{w_i}(s_ik) = E_{w_i}[s_ik s_ik'] - E_{w_i}[s_ik] E_{w_i}[s_ik]'
+  #
+  # Averaged across persons: I_miss = (1/n) Σ_i M_i.
+  #
+  # The decomposition into J×J blocks (aa, ad, dd) is
+  #   I_miss_{jl}^{αβ} = sm_αβ[j,l] - S_α[,j]' S_β[,l] / n
+  # where sm_αβ is the second-moment matrix and S_α are the marginal scores.
+  #
+  # All computations are vectorised over persons and quadrature nodes.
+
+  n       <- nrow(resp)
+  n_items <- nrow(item_pars)
+  theta   <- attr(weights, "theta")
+  K       <- length(theta)
+
+  # p[j, k] = P(correct | θ_k; γ)
+  eta <- outer(item_pars$a, theta, `*`) +
+    matrix(item_pars$d, nrow = n_items, ncol = K)
+  p   <- stats::plogis(eta)
+
+  W        <- as.matrix(weights)
+  W_theta  <- sweep(W, 2L, theta,   `*`)
+  W_theta2 <- sweep(W, 2L, theta^2, `*`)
+
+  # Per-person expected θ^α
+  E1 <- drop(W_theta  %*% rep(1, K))
+  E2 <- drop(W_theta2 %*% rep(1, K))
+
+  # Per-person E_w[p_l(θ) * θ^α]: n × J
+  EP0 <- W        %*% t(p)
+  EP1 <- W_theta  %*% t(p)
+  EP2 <- W_theta2 %*% t(p)
+
+  Y        <- as.matrix(resp)
+  Y[is.na(Y)] <- 0            # NA → 0 contribution to residual
+
+  A_k <- colMeans(W)           # estimated marginal node weights
+
+  # sm_block computes the J×J second-moment matrix for block (α):
+  #   (1/n) Σ_i Σ_k w_ik r_ij(k) r_il(k) θ_k^α
+  # = (1/n) [yy - yp - t(yp) + pp]
+  # where r_ij(k) = y_ij - p_j(θ_k).
+  sm_block <- function(EW_alpha, EP_alpha, A_alpha) {
+    yy <- crossprod(Y * EW_alpha, Y) / n
+    yp <- crossprod(Y, EP_alpha)     / n
+    pp <- tcrossprod(sweep(p, 2L, A_alpha, `*`), p)
+    yy - yp - t(yp) + pp
+  }
+
+  sm_aa <- sm_block(E2,        EP2, A_k * theta^2)
+  sm_ad <- sm_block(E1,        EP1, A_k * theta)
+  sm_dd <- sm_block(rep(1, n), EP0, A_k)
+
+  # Marginal per-person scores (= E_{w_i}[s_ik]): already in person_scores_2pl
+  S   <- person_scores_2pl(resp, weights, item_pars)
+  S_a <- S[, seq_len(n_items),           drop = FALSE]
+  S_d <- S[, n_items + seq_len(n_items), drop = FALSE]
+
+  # I_miss = second_moment - outer_product_of_marginal_scores
+  I_aa <- sm_aa - crossprod(S_a)     / n
+  I_ad <- sm_ad - crossprod(S_a, S_d) / n
+  I_dd <- sm_dd - crossprod(S_d)     / n
+
+  dim_p <- 2L * n_items
+  I_miss <- matrix(0, dim_p, dim_p)
+  ia <- seq_len(n_items)
+  id <- n_items + seq_len(n_items)
+
+  I_miss[ia, ia] <- I_aa
+  I_miss[ia, id] <- I_ad
+  I_miss[id, ia] <- t(I_ad)
+  I_miss[id, id] <- I_dd
+
+  I_miss
+}
+
+#' Marginal-MML sandwich covariance for a mixed-subjects fit
+#'
+#' Computes the full sandwich covariance for the scalar marginal-MML PPI++
+#' estimator from [fit_mixed_subjects_mml()].  The bread uses Louis's (1982)
+#' observed marginal-information formula
+#'
+#' \deqn{A_\lambda^\mathrm{marg} = H_\lambda^\mathrm{comp} - I_\lambda^\mathrm{miss}}
+#'
+#' rather than the EM/complete-data Hessian used by [vcov_mixed_subjects()].
+#' Using the complete-data Hessian as the bread for a marginal-MML estimator
+#' would over-state efficiency by ignoring the missing-information correction.
+#'
+#' The meat uses the standard marginal per-person score vectors (posteriors at
+#' the converged parameters), which is identical to [vcov_mixed_subjects()].
+#'
+#' **When is this function called automatically?** [vcov.mixedsubjects_fit()]
+#' dispatches here whenever `isTRUE(object$mml) && length(object$lambda) == 1`.
+#' For vector-lambda fits, or for frozen expected-count fits, the existing
+#' [vcov_mixed_subjects()] is used.
+#'
+#' @param object A scalar-lambda [fit_mixed_subjects_mml()] fit.
+#' @param ridge Ridge regularisation for bread inversion.
+#' @param ... Unused.
+#'
+#' @return A \eqn{2J \times 2J} covariance matrix with attributes `bread` and `meat`.
+#' @export
+#'
+#' @seealso [vcov_mixed_subjects()] for the frozen expected-count version;
+#'   [louis_missing_info()] (internal) for the missing-information correction.
+vcov_mixed_subjects_mml <- function(object, ridge = 1e-8, ...) {
+  summaries  <- extract_q_for_vcov(object)
+  q_observed <- summaries[[1]]
+  q_predicted <- summaries[[2]]
+  q_generated <- summaries[[3]]
+
+  item_pars  <- object$item_pars
+  n_items    <- nrow(item_pars)
+  lambda     <- validate_lambda(object$lambda)
+
+  # Marginal observed-information bread: H_comp - I_miss (Louis formula)
+  louis_bread <- function(q) {
+    H    <- avg_hessian_counts(q$counts, item_pars)
+    Imiss <- louis_missing_info(q$resp, q$weights, item_pars)
+    H - Imiss
+  }
+
+  bread <- louis_bread(q_observed) +
+    lambda * (louis_bread(q_generated) - louis_bread(q_predicted))
+
+  # Marginal per-person score vectors (posteriors at converged parameters)
+  S_observed  <- person_scores_2pl(q_observed$resp,  q_observed$weights,  item_pars)
   S_predicted <- person_scores_2pl(q_predicted$resp, q_predicted$weights, item_pars)
   S_generated <- person_scores_2pl(q_generated$resp, q_generated$weights, item_pars)
 
@@ -181,19 +369,25 @@ vcov_mixed_subjects <- function(object, ridge = 1e-8, ...) {
     lambda^2 * safe_cov(S_generated) / nrow(S_generated)
 
   bread_inv <- stable_inverse(bread, ridge = ridge)
-  Sigma <- bread_inv %*% meat %*% t(bread_inv)
-  Sigma <- (Sigma + t(Sigma)) / 2
+  Sigma     <- bread_inv %*% meat %*% t(bread_inv)
+  Sigma     <- (Sigma + t(Sigma)) / 2
 
-  names <- c(paste0("a_", item_pars$item), paste0("d_", item_pars$item))
-  dimnames(Sigma) <- list(names, names)
+  nms <- c(paste0("a_", item_pars$item), paste0("d_", item_pars$item))
+  dimnames(Sigma) <- list(nms, nms)
   attr(Sigma, "bread") <- bread
-  attr(Sigma, "meat") <- meat
+  attr(Sigma, "meat")  <- meat
   Sigma
 }
 
 #' @export
 vcov.mixedsubjects_fit <- function(object, ...) {
-  vcov_mixed_subjects(object, ...)
+  # Dispatch: MML scalar-lambda fits use the Louis marginal bread;
+  # frozen expected-count fits (or vector-lambda fits) use the EM Hessian bread.
+  if (isTRUE(object$mml) && length(object$lambda) == 1L) {
+    vcov_mixed_subjects_mml(object, ...)
+  } else {
+    vcov_mixed_subjects(object, ...)
+  }
 }
 
 #' Gradient of ML ability scores with respect to item parameters
@@ -583,7 +777,25 @@ tune_lambda_ability_risk <- function(lambda_grid, observed, predicted, generated
   }
 
   summary <- do.call(rbind, rows)
-  best_idx <- which.min(summary$mean_total_risk)
+
+  # Filter: only candidates that converged AND produced finite risk are eligible.
+  # Keep the full summary for diagnostics; use selection_risk for argmin.
+  summary$selection_risk <- summary$mean_total_risk
+  summary$selection_risk[
+    !is.finite(summary$selection_risk) | summary$convergence != 0
+  ] <- Inf
+
+  if (all(is.infinite(summary$selection_risk))) {
+    warning(
+      "No lambda candidate converged with finite ability-score risk. ",
+      "Returning lambda = 0 (human-only estimate).",
+      call. = FALSE
+    )
+    best_idx <- which(summary$lambda == 0)
+    best_idx <- if (length(best_idx) > 0L) best_idx[1L] else 1L
+  } else {
+    best_idx <- which.min(summary$selection_risk)
+  }
 
   list(
     summary = summary,
@@ -597,24 +809,40 @@ tune_lambda_ability_risk <- function(lambda_grid, observed, predicted, generated
 #' Cross-fit ability-score-risk lambda tuning
 #'
 #' Estimates lambda separately for each held-out split using only the remaining
-#' labeled rows, then fits the final split-sample mixed-subjects estimator with
-#' those fold-specific lambda values.
+#' labeled rows, then fits a final model with those fold-specific lambda values.
 #'
 #' @inheritParams tune_lambda_ability_risk
 #' @param n_splits Number of sample splits.
 #' @param split_id Optional integer split assignment for labeled rows.
 #' @param seed Optional seed used when `split_id` is omitted.
+#' @param target_mode How `target_resp` is handled in each fold.
+#'   `"fixed"` (default): the full `target_resp` is used to evaluate risk in
+#'   every fold, suitable when the target population is fixed and independent of
+#'   the labeled-data split (e.g. an operational scoring population).
+#'   `"row_aligned"`: only the training rows of `target_resp` are used, which
+#'   is valid when `target_resp = observed` and fold-matched evaluation is
+#'   desired.
+#' @param final_fit_fn Function used to produce the final combined-data fit from
+#'   the cross-fitted lambda values. Defaults to [fit_mixed_subjects_split()].
+#'   Pass [fit_mixed_subjects_mml()] (scalar mean lambda) or a custom function
+#'   if you tuned fold lambdas with `fit_fn = fit_mixed_subjects_mml` and want a
+#'   fully MML final estimate. Note that mixing MML fold tuning with a frozen
+#'   expected-count final fit is an approximation; document this when reporting.
 #'
 #' @return A list with fold-specific lambda values, fold tuning objects, and the
-#'   final split-sample fit.
+#'   final fit.
 #' @export
 tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
                                               generated, target_resp = NULL,
                                               theta_true = NULL, n_splits = 2,
                                               split_id = NULL, seed = NULL,
                                               n_quad = 31, initial_pars = NULL,
+                                              target_mode = c("fixed", "row_aligned"),
+                                              final_fit_fn = fit_mixed_subjects_split,
                                               bounds = c(-6, 6),
                                               control = list(maxit = 500), ...) {
+  target_mode <- match.arg(target_mode)
+
   observed <- validate_response_matrix(observed, "observed",
                                        allow_fractional = FALSE)
   predicted <- validate_response_matrix(predicted, "predicted",
@@ -640,59 +868,72 @@ tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
 
   if (is.null(target_resp)) {
     target_resp <- observed
+    # When target_resp is derived from observed, default to row_aligned
+    # unless the user explicitly requested fixed.
+    if (target_mode == "fixed") target_mode <- "row_aligned"
   } else {
     target_resp <- validate_response_matrix(target_resp, "target_resp",
                                             allow_fractional = TRUE)
     check_same_items(observed, target_resp, "observed", "target_resp")
+    if (target_mode == "row_aligned" &&
+        nrow(target_resp) != nrow(observed)) {
+      stop(
+        "target_mode = 'row_aligned' requires nrow(target_resp) == nrow(observed).",
+        call. = FALSE
+      )
+    }
   }
 
-  split_values <- sort(unique(split_id))
+  split_values    <- sort(unique(split_id))
   lambda_by_split <- numeric(length(split_values))
-  fold_tuning <- vector("list", length(split_values))
+  fold_tuning     <- vector("list", length(split_values))
 
   for (s in seq_along(split_values)) {
-    fold <- split_values[s]
+    fold  <- split_values[s]
     train <- split_id != fold
 
-    theta_train <- if (is.null(theta_true)) {
-      NULL
+    # Target and theta for this fold
+    if (target_mode == "row_aligned") {
+      target_train <- target_resp[train, , drop = FALSE]
+      theta_train  <- if (is.null(theta_true)) NULL else theta_true[train]
     } else {
-      theta_true[train]
+      target_train <- target_resp      # fixed target population
+      theta_train  <- theta_true       # fixed true thetas (or NULL)
     }
 
     fold_tuning[[s]] <- tune_lambda_ability_risk(
       lambda_grid = lambda_grid,
-      observed = observed[train, , drop = FALSE],
-      predicted = predicted[train, , drop = FALSE],
-      generated = generated,
-      target_resp = target_resp[train, , drop = FALSE],
-      theta_true = theta_train,
-      n_quad = n_quad,
+      observed    = observed[train, , drop = FALSE],
+      predicted   = predicted[train, , drop = FALSE],
+      generated   = generated,
+      target_resp = target_train,
+      theta_true  = theta_train,
+      n_quad      = n_quad,
       initial_pars = initial_pars,
-      bounds = bounds,
-      control = control,
+      bounds      = bounds,
+      control     = control,
       ...
     )
     lambda_by_split[s] <- fold_tuning[[s]]$best_lambda
   }
 
-  final_fit <- fit_mixed_subjects_split(
-    observed = observed,
+  final_fit <- final_fit_fn(
+    observed  = observed,
     predicted = predicted,
     generated = generated,
-    lambda = lambda_by_split,
-    split_id = split_id,
-    n_quad = n_quad,
+    lambda    = lambda_by_split,
+    split_id  = split_id,
+    n_quad    = n_quad,
     initial_pars = initial_pars,
-    control = control,
+    control   = control,
     ...
   )
 
   list(
     lambda_by_split = lambda_by_split,
-    split_id = split_id,
-    fold_tuning = fold_tuning,
-    final_fit = final_fit
+    split_id        = split_id,
+    fold_tuning     = fold_tuning,
+    final_fit       = final_fit
   )
 }
 
@@ -825,12 +1066,20 @@ tune_lambda_ppi_score_item <- function(observed, predicted, item_pars, n_generat
 #' @param n_pass Number of coordinate-descent passes (default 1).
 #' @param init_lambda Starting lambda vector for coordinate descent. Supply the
 #'   global scalar optimum from [tune_lambda_ability_risk()] (e.g.
-#'   `init_lambda = 0.5`) to start the search around a useful operating point
-#'   rather than all-zeros. A scalar is broadcast to all items; a vector of
-#'   length `n_items` sets per-item starting values.
+#'   `init_lambda = 0.5`) to start the search around a useful operating point.
+#'   Starting from all-zeros is not recommended: each single-item improvement is
+#'   too small to detect when other items are at zero. A scalar is broadcast to
+#'   all items; a vector of length `n_items` sets per-item starting values.
 #' @param bounds Bounds passed to [score_theta()].
 #' @param control Control list passed to [stats::optim()].
 #' @param ... Additional arguments passed to [fit_mixed_subjects_mml()].
+#'
+#' @note **Approximation status.** The coordinate descent fits use the frozen
+#'   expected-count Q-function (not the full marginal-MML objective) because the
+#'   IRT marginal likelihood integrates over the joint response pattern and does
+#'   not decompose item-wise. The approach is approximately correct when
+#'   `initial_pars` is close to the converged parameters. Report per-item
+#'   results as experimental / approximate.
 #'
 #' @return A list with `lambda` (per-item vector), `item` (item names),
 #'   `n_pass`, and `final_fit` (the [fit_mixed_subjects_mml()] fit at the

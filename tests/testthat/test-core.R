@@ -550,3 +550,159 @@ test_that("fit_mixed_subjects_mml with vector lambda converges and equals scalar
   # Lambda stored correctly
   expect_equal(fit_v$lambda, rep(0.5, 3))
 })
+
+# ---------- 1PL tests -------------------------------------------------------
+
+test_that("louis_missing_info matches numerical Hessian of marginal_loss_2pl", {
+  set.seed(60)
+  pars <- data.frame(item = paste0("I", 1:3), a = c(1, 1.2, 0.9),
+                     d = c(0, -0.5, 0.3))
+  # Use a larger sample and more quadrature nodes so A_marg is reliably PD
+  resp <- simulate_2pl(rnorm(400), pars)
+  quad <- make_quadrature(15)
+
+  w    <- posterior_weights_2pl(resp, pars, quadrature = quad)
+  cnts <- summarize_expected_counts(resp, w)
+
+  H      <- mixedsubjectsirt:::avg_hessian_counts(cnts, pars)
+  Imiss  <- mixedsubjectsirt:::louis_missing_info(resp, w, pars)
+  A_marg <- H - Imiss
+
+  # Numerical Hessian via central differences on the marginal gradient
+  par_vec    <- c(pars$a, pars$d)
+  item_names <- pars$item
+  eps        <- 1e-4
+  n_par      <- length(par_vec)
+  num_hess   <- matrix(0, n_par, n_par)
+  for (j in seq_len(n_par)) {
+    pv <- pm <- par_vec; pv[j] <- pv[j] + eps; pm[j] <- pm[j] - eps
+    ipv <- mixedsubjectsirt:::item_pars_from_vector(pv, item_names)
+    ipm <- mixedsubjectsirt:::item_pars_from_vector(pm, item_names)
+    gv  <- mixedsubjectsirt:::marginal_gradient_2pl(resp, ipv, quad)
+    gm  <- mixedsubjectsirt:::marginal_gradient_2pl(resp, ipm, quad)
+    num_hess[j, ] <- (gv - gm) / (2 * eps)
+  }
+
+  # Louis formula matches numerical Hessian
+  expect_equal(as.numeric(A_marg), as.numeric(num_hess), tolerance = 1e-5)
+
+  # At the MLE (converged parameters), the marginal bread is positive definite
+  fit_mle <- fit_1pl(resp, n_quad = 15)
+  w_mle   <- posterior_weights_2pl(resp, fit_mle$pars, quadrature = quad)
+  H_mle   <- mixedsubjectsirt:::avg_hessian_counts(
+    summarize_expected_counts(resp, w_mle), fit_mle$pars)
+  Im_mle  <- mixedsubjectsirt:::louis_missing_info(resp, w_mle, fit_mle$pars)
+  expect_true(all(eigen(H_mle - Im_mle)$values > 0))
+})
+
+test_that("vcov dispatches to vcov_mixed_subjects_mml for scalar MML fits", {
+  set.seed(61)
+  pars     <- data.frame(a = c(1, 1.2, 0.9), d = c(0, -0.5, 0.3))
+  obs      <- simulate_2pl(rnorm(50), pars)
+  gen      <- simulate_2pl(rnorm(120), pars)
+
+  fit_mml  <- fit_mixed_subjects_mml(obs, obs, gen, lambda = 0.5,
+    initial_pars = pars, n_quad = 7, control = list(maxit = 80))
+  fit_ec   <- fit_mixed_subjects(obs, obs, gen, lambda = 0.5,
+    initial_pars = pars, n_quad = 7, control = list(maxit = 80))
+
+  Sigma_mml <- vcov(fit_mml)   # should use Louis bread
+  Sigma_ec  <- vcov(fit_ec)    # should use EM Hessian bread
+
+  # Both are valid covariance matrices
+  expect_equal(dim(Sigma_mml), c(6L, 6L))
+  expect_true(all(is.finite(Sigma_mml)))
+  expect_true(all(eigen(Sigma_mml)$values > 0))
+
+  # Louis-corrected covariance is larger than EM Hessian covariance
+  # (Louis bread <= EM bread  =>  Louis bread^{-1} >= EM bread^{-1}  =>
+  #  Louis sandwich >= EM sandwich in PSD sense)
+  expect_gt(mean(diag(Sigma_mml)), mean(diag(Sigma_ec)))
+})
+
+test_that("vcov_mixed_subjects handles vector lambda", {
+  set.seed(62)
+  pars <- data.frame(a = c(1, 1.2, 0.9), d = c(0, -0.5, 0.3))
+  obs  <- simulate_2pl(rnorm(60), pars)
+  gen  <- simulate_2pl(rnorm(120), pars)
+
+  fit_vec <- fit_mixed_subjects_mml(obs, obs, gen, lambda = rep(0.5, 3),
+    initial_pars = pars, n_quad = 7, control = list(maxit = 80))
+
+  # vcov should not throw for vector lambda
+  Sigma <- vcov(fit_vec)
+  expect_equal(dim(Sigma), c(6L, 6L))
+  expect_true(all(is.finite(Sigma)))
+})
+
+test_that("tune_lambda_ability_risk filters failed candidates", {
+  set.seed(63)
+  pars  <- data.frame(a = c(1, 1.2), d = c(0, -0.5))
+  obs   <- simulate_2pl(rnorm(30), pars)
+  gen   <- simulate_2pl(rnorm(60), pars)
+
+  # All candidates should converge; best_lambda should be > 0 for F=Y
+  res <- tune_lambda_ability_risk(
+    c(0, 0.5), obs, obs, gen,
+    fit_fn = fit_mixed_subjects_mml,
+    initial_pars = pars, n_quad = 5, control = list(maxit = 50)
+  )
+  expect_true("selection_risk" %in% names(res$summary))
+  expect_true(res$best_lambda %in% c(0, 0.5))
+})
+
+test_that("fit_1pl returns positive shared discrimination", {
+  set.seed(50)
+  pars <- data.frame(a = 1, d = c(-0.5, 0, 0.5))
+  resp <- simulate_2pl(rnorm(80), pars)
+  fit  <- fit_1pl(resp, n_quad = 7)
+
+  expect_equal(fit$convergence, 0)
+  # All a values equal (1PL constraint)
+  expect_equal(length(unique(round(fit$pars$a, 10))), 1)
+  expect_gt(fit$pars$a[1], 0)
+  expect_equal(nrow(fit$pars), 3)
+})
+
+test_that("gradient_expected_counts_1pl length equals n_items + 1", {
+  set.seed(51)
+  pars <- data.frame(a = 1.1, d = c(-0.4, 0.1, 0.5, -0.2))
+  resp <- simulate_2pl(rnorm(60), pars)
+  quad <- make_quadrature(7)
+  w    <- posterior_weights_2pl(resp, pars, quadrature = quad)
+  cnts <- summarize_expected_counts(resp, w)
+
+  g <- mixedsubjectsirt:::gradient_expected_counts_1pl(cnts, pars)
+  expect_length(g, nrow(pars) + 1L)
+  expect_true(all(is.finite(g)))
+})
+
+test_that("fit_mixed_subjects_mml_1pl with F=Y converges and tune selects lambda > 0", {
+  set.seed(52)
+  pars <- data.frame(a = 1, d = seq(-0.8, 0.8, l = 5))
+  theta <- rnorm(150)
+  obs   <- simulate_2pl(theta, pars)
+  gen   <- simulate_2pl(rnorm(400), pars)
+
+  fit <- fit_mixed_subjects_mml_1pl(obs, obs, gen, lambda = 0.5,
+    initial_pars = pars, n_quad = 7, control = list(maxit = 100))
+
+  expect_s3_class(fit, "mixedsubjects_1pl_fit")
+  expect_equal(fit$convergence, 0)
+  expect_equal(length(unique(round(fit$item_pars$a, 10))), 1)
+
+  # vcov should be (J+1) x (J+1) = 6 x 6
+  Sigma <- vcov_mixed_subjects_1pl(fit)
+  expect_equal(dim(Sigma), c(6L, 6L))
+  expect_true(all(is.finite(Sigma)))
+
+  # tune_lambda_ppi_score_1pl: F=Y should give N/(n+N)
+  ppi <- tune_lambda_ppi_score_1pl(obs, obs, pars, n_generated = 400, n_quad = 7)
+  expect_equal(ppi$lambda, 400 / (150 + 400), tolerance = 1e-6)
+
+  # tune_lambda_ability_risk_1pl should select lambda > 0 for F=Y
+  tuned <- tune_lambda_ability_risk_1pl(
+    c(0, 0.5), obs, obs, gen,
+    initial_pars = pars, n_quad = 7, control = list(maxit = 50))
+  expect_gt(tuned$best_lambda, 0)
+})
