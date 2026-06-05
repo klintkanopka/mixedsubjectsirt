@@ -159,10 +159,10 @@ cat("Per-item ability-risk lambda:\n")
 #> Per-item ability-risk lambda:
 print(data.frame(item = item_tuned$item, lambda = round(item_tuned$lambda, 3)))
 #>    item lambda
-#> 1 Item1   0.25
-#> 2 Item2   0.50
-#> 3 Item3   0.50
-#> 4 Item4   0.25
+#> 1 Item1   0.75
+#> 2 Item2   0.75
+#> 3 Item3   0.75
+#> 4 Item4   0.75
 #> 5 Item5   0.00
 #> 6 Item6   0.00
 #> 7 Item7   0.00
@@ -195,10 +195,10 @@ knitr::kable(comparison, row.names = FALSE,
 
 | item  | true_a | human_a | scalar_a | item_a |
 |:------|-------:|--------:|---------:|-------:|
-| Item1 |  0.800 |   0.727 |    0.523 |  0.630 |
-| Item2 |  0.914 |   1.256 |    0.856 |  0.952 |
-| Item3 |  1.029 |   1.117 |    0.793 |  0.893 |
-| Item4 |  1.143 |   1.091 |    0.754 |  0.923 |
+| Item1 |  0.800 |   0.727 |    0.523 |  0.633 |
+| Item2 |  0.914 |   1.256 |    0.856 |  0.863 |
+| Item3 |  1.029 |   1.117 |    0.793 |  0.835 |
+| Item4 |  1.143 |   1.091 |    0.754 |  0.902 |
 | Item5 |  1.257 |   1.758 |    1.187 |  1.586 |
 | Item6 |  1.371 |   1.610 |    1.113 |  1.449 |
 | Item7 |  1.486 |   1.369 |    1.002 |  1.187 |
@@ -219,7 +219,7 @@ if (!is.null(fit_per_item)) {
   cat("RMSE(a) per-item MML: ",
       round(rmse(fit_per_item$item_pars$a, true_pars$a), 4), "\n")
 }
-#> RMSE(a) per-item MML:  0.1958
+#> RMSE(a) per-item MML:  0.205
 ```
 
 ## Important note on initialisation

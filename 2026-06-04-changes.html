@@ -397,6 +397,74 @@ fit_mixed_subjects_mml with partial lambda ([0.5]*4, [0]*4):
 <hr></div>
 </div>
 <div class="section level2">
+<h2 id="round-4-third-reviewer-pass-bug-fixes">Round 4 (third reviewer pass): Bug fixes<a class="anchor" aria-label="anchor" href="#round-4-third-reviewer-pass-bug-fixes"></a></h2>
+<p>Eight issues were identified in the third static review. The reviewer confirmed that all Round 2 and Round 3 fixes landed correctly. Two remaining issues were described as “important implementation bugs that should be fixed before trusting simulation results.”</p>
+<div class="section level3">
+<h3 id="assessment">Assessment<a class="anchor" aria-label="anchor" href="#assessment"></a></h3>
+<p>The reviewer’s ranking was accurate. Issue 1 (vector-lambda quadrature summaries) was a genuine correctness bug — if left unaddressed, <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> on a per-item-lambda fit would compute the bread and meat from posteriors that the optimizer never used, making the sandwich covariance inconsistent with the actual estimating equation. Issue 2 (<code>...</code> leakage) was a latent API fragility: passing <code>fit_fn = fit_mixed_subjects_mml</code> via <code>...</code> to <code>tune_lambda_ability_risk_crossfit</code> would silently forward that argument to <code>final_fit_fn</code>, causing an unused-argument error or unexpected behaviour for any <code>final_fit_fn</code> that doesn’t have a <code>fit_fn</code> parameter. Issues 3–5 were documentation and test quality problems with no effect on numerical results. The remaining three issues (1PL Louis correction, missingness in Louis formula, EAP ability risk) were already acknowledged as deferred work.</p>
+<hr></div>
+<div class="section level3">
+<h3 id="fix-1-vector-lambda-quadrature-summaries-now-store-frozen-posteriors-rfitr">Fix 1: Vector-lambda quadrature summaries now store frozen posteriors (<code>R/fit.R</code>)<a class="anchor" aria-label="anchor" href="#fix-1-vector-lambda-quadrature-summaries-now-store-frozen-posteriors-rfitr"></a></h3>
+<p><strong>Bug.</strong> After optimization in <code>fit_mixed_subjects_mml()</code>, the output quadrature summaries (<code>q_observed</code>, <code>q_predicted</code>, <code>q_generated</code>) were always built from the converged parameters <code>conv_pars</code>, regardless of whether a scalar or vector lambda was used. For the vector-lambda (frozen Q-function) path, the optimizer used expected counts frozen at <code>init_std</code>, but the stored summaries were at <code>conv_pars</code>. When <code><a href="reference/vcov_mixed_subjects.html">vcov_mixed_subjects()</a></code> was subsequently called, it computed Hessian and score vectors from these mismatched posteriors, making the sandwich covariance inconsistent with the estimating equation that determined <code>conv_pars</code>.</p>
+<p><strong>Fix.</strong> Added a branch on <code>scalar_lambda</code> in the final summary construction:</p>
+<ul><li>
+<strong>Scalar path</strong> (unchanged): summaries built at <code>conv_pars</code>, so <code>vcov_mixed_subjects_mml()</code> (Louis-corrected) is consistent.</li>
+<li>
+<strong>Vector path</strong> (fixed): summaries built from <code>init_std</code> as item parameters and <code>obs_w_frozen</code>/<code>gen_w_frozen</code> as posterior weights — exactly the frozen posteriors that were used during optimization. <code><a href="reference/vcov_mixed_subjects.html">vcov_mixed_subjects()</a></code> (EM bread) is now consistent with the frozen Q-function.</li>
+</ul><p>Verified: vector-lambda <code>q_observed$irt_pars$a</code> now exactly matches <code>init_pars$a</code>.</p>
+<hr></div>
+<div class="section level3">
+<h3 id="fix-2-explicit-fit_fn-argument-in-tune_lambda_ability_risk_crossfit-rriskr">Fix 2: Explicit <code>fit_fn</code> argument in <code>tune_lambda_ability_risk_crossfit</code> (<code>R/risk.R</code>)<a class="anchor" aria-label="anchor" href="#fix-2-explicit-fit_fn-argument-in-tune_lambda_ability_risk_crossfit-rriskr"></a></h3>
+<p><strong>Bug.</strong> <code>tune_lambda_ability_risk_crossfit</code> had no explicit <code>fit_fn</code> parameter. When users passed <code>fit_fn = fit_mixed_subjects_mml</code> it traveled through <code>...</code>, which was forwarded to both the fold-level <code>tune_lambda_ability_risk</code> calls (where it was needed) and to <code>final_fit_fn</code> via <code>list(...)</code> in <code>do.call</code> (where it caused an unused-argument error or unexpected behaviour for functions like <code>fit_mixed_subjects_split</code> that have no <code>fit_fn</code> parameter).</p>
+<p><strong>Fix.</strong> Added <code>fit_fn = fit_mixed_subjects</code> as an explicit named argument to <code>tune_lambda_ability_risk_crossfit</code>. The fold-loop passes <code>fit_fn = fit_fn</code> explicitly. The <code>do.call</code> for <code>final_fit_fn</code> no longer includes <code>list(...)</code> — fold-tuning arguments do not contaminate the final fit call.</p>
+<p>The consequence: any user-supplied <code>...</code> arguments (e.g. <code>slope_upper</code>) are now forwarded to the fold tuner but NOT to the final fitter. Both are documented in the updated <code>@param</code> block.</p>
+<hr></div>
+<div class="section level3">
+<h3 id="fix-3-stale-return-sentence-in-fit_mixed_subjects_mml-rfitr">Fix 3: Stale <code>@return</code> sentence in <code>fit_mixed_subjects_mml</code> (<code>R/fit.R</code>)<a class="anchor" aria-label="anchor" href="#fix-3-stale-return-sentence-in-fit_mixed_subjects_mml-rfitr"></a></h3>
+<p>Updated the <code>@return</code> section to correctly describe the dispatch behaviour:</p>
+<ul><li>
+<strong>Scalar lambda</strong>: <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">stats::vcov()</a></code> dispatches to <code>vcov_mixed_subjects_mml()</code> (Louis-corrected marginal sandwich). Calling <code><a href="reference/vcov_mixed_subjects.html">vcov_mixed_subjects()</a></code> directly bypasses the Louis correction.</li>
+<li>
+<strong>Vector lambda</strong>: summaries now store frozen posteriors; <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">stats::vcov()</a></code> dispatches to <code><a href="reference/vcov_mixed_subjects.html">vcov_mixed_subjects()</a></code> (EM bread), consistent with the frozen Q-function.</li>
+</ul><p>The previous text pointed users to <code><a href="reference/vcov_mixed_subjects.html">vcov_mixed_subjects()</a></code> for the “correct marginal sandwich covariance,” which was wrong — the correct route is always <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">stats::vcov()</a></code>.</p>
+<hr></div>
+<div class="section level3">
+<h3 id="fix-4-mml-covariance-test-updated-to-use-statsvcov-teststestthattest-corer">Fix 4: MML covariance test updated to use <code>stats::vcov()</code> (<code>tests/testthat/test-core.R</code>)<a class="anchor" aria-label="anchor" href="#fix-4-mml-covariance-test-updated-to-use-statsvcov-teststestthattest-corer"></a></h3>
+<p>The existing test for MML covariance dispatch called <code>vcov_mixed_subjects(fit)</code>, which deliberately tests the EM-bread path and does not exercise the Louis correction. Replaced with:</p>
+<ol style="list-style-type: decimal"><li>
+<code>stats::vcov(fit_mml)</code> — verifies the S3 dispatch routes to Louis-corrected.</li>
+<li>Equality check: <code>stats::vcov(fit_mml) == vcov_mixed_subjects_mml(fit_mml)</code>.</li>
+<li>Ordering check: <code>stats::vcov(fit_mml)</code> mean diagonal &gt; <code>stats::vcov(fit_ec)</code> mean diagonal (Louis &gt; EM).</li>
+<li>Bypass check: <code>vcov_mixed_subjects(fit_mml)</code> mean diagonal &lt; <code>stats::vcov(fit_mml)</code> mean diagonal — confirms that calling the EM-bread function directly gives smaller (over-precise) uncertainty for an MML fit.</li>
+</ol><hr></div>
+<div class="section level3">
+<h3 id="fix-5-per-item-lambda-description-corrected-rriskr">Fix 5: Per-item lambda description corrected (<code>R/risk.R</code>)<a class="anchor" aria-label="anchor" href="#fix-5-per-item-lambda-description-corrected-rriskr"></a></h3>
+<p>The <code>tune_lambda_ability_risk_item()</code> description said “uses <code>fit_mixed_subjects_mml()</code> at each candidate, so posteriors are recomputed from the current parameters.” This contradicted the accurate <code>@note</code> block that correctly describes the frozen Q-function approximation.</p>
+<p>Updated the description to: “calls <code>fit_mixed_subjects_mml()</code> with a per-item lambda vector at each candidate evaluation. Because the lambda is a vector, that function <strong>switches to its frozen expected-count Q-function path</strong> — posteriors are frozen at <code>initial_pars</code>, not recomputed continuously.”</p>
+<hr></div>
+<div class="section level3">
+<h3 id="issues-acknowledged-as-deferred-not-yet-fixed">Issues acknowledged as deferred (not yet fixed)<a class="anchor" aria-label="anchor" href="#issues-acknowledged-as-deferred-not-yet-fixed"></a></h3>
+<table class="table"><colgroup><col width="46%"><col width="53%"></colgroup><thead><tr><th>Issue</th>
+<th>Status</th>
+</tr></thead><tbody><tr><td>Louis missing-information correction for item-level missingness</td>
+<td>
+<code>vcov_mixed_subjects_mml</code> warns on NA; full mask-based correction deferred</td>
+</tr><tr><td>1PL marginal bread (Louis correction)</td>
+<td>Documented as planned; 1PL vcov uses EM bread</td>
+</tr><tr><td>EAP-based ability risk (more stable at boundaries)</td>
+<td>Deferred; ML boundary guard added as interim fix</td>
+</tr><tr><td>Split-sample <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>
+</td>
+<td>Throws informative error directing users to <code>fit_mixed_subjects_mml</code>
+</td>
+</tr></tbody></table></div>
+<div class="section level3">
+<h3 id="test-count-after-round-4-77-pass-0-fail-0-warn">Test count after Round 4: <strong>77 PASS, 0 FAIL, 0 WARN</strong>
+<a class="anchor" aria-label="anchor" href="#test-count-after-round-4-77-pass-0-fail-0-warn"></a></h3>
+<p>Two new tests added (expanded MML covariance dispatch test); no tests removed.</p>
+<hr></div>
+</div>
+<div class="section level2">
 <h2 id="files-modified-in-phase-1-and-phase-2">Files modified in Phase 1 and Phase 2<a class="anchor" aria-label="anchor" href="#files-modified-in-phase-1-and-phase-2"></a></h2>
 <table class="table"><colgroup><col width="42%"><col width="57%"></colgroup><thead><tr><th>File</th>
 <th>Change</th>

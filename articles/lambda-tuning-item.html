@@ -234,10 +234,10 @@ below.</p>
 <span><span class="co">#&gt; Per-item ability-risk lambda:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>item <span class="op">=</span> <span class="va">item_tuned</span><span class="op">$</span><span class="va">item</span>, lambda <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">item_tuned</span><span class="op">$</span><span class="va">lambda</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    item lambda</span></span>
-<span><span class="co">#&gt; 1 Item1   0.25</span></span>
-<span><span class="co">#&gt; 2 Item2   0.50</span></span>
-<span><span class="co">#&gt; 3 Item3   0.50</span></span>
-<span><span class="co">#&gt; 4 Item4   0.25</span></span>
+<span><span class="co">#&gt; 1 Item1   0.75</span></span>
+<span><span class="co">#&gt; 2 Item2   0.75</span></span>
+<span><span class="co">#&gt; 3 Item3   0.75</span></span>
+<span><span class="co">#&gt; 4 Item4   0.75</span></span>
 <span><span class="co">#&gt; 5 Item5   0.00</span></span>
 <span><span class="co">#&gt; 6 Item6   0.00</span></span>
 <span><span class="co">#&gt; 7 Item7   0.00</span></span>
@@ -281,28 +281,28 @@ lambda</caption>
 <td align="right">0.800</td>
 <td align="right">0.727</td>
 <td align="right">0.523</td>
-<td align="right">0.630</td>
+<td align="right">0.633</td>
 </tr>
 <tr class="even">
 <td align="left">Item2</td>
 <td align="right">0.914</td>
 <td align="right">1.256</td>
 <td align="right">0.856</td>
-<td align="right">0.952</td>
+<td align="right">0.863</td>
 </tr>
 <tr class="odd">
 <td align="left">Item3</td>
 <td align="right">1.029</td>
 <td align="right">1.117</td>
 <td align="right">0.793</td>
-<td align="right">0.893</td>
+<td align="right">0.835</td>
 </tr>
 <tr class="even">
 <td align="left">Item4</td>
 <td align="right">1.143</td>
 <td align="right">1.091</td>
 <td align="right">0.754</td>
-<td align="right">0.923</td>
+<td align="right">0.902</td>
 </tr>
 <tr class="odd">
 <td align="left">Item5</td>
@@ -346,7 +346,7 @@ lambda</caption>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE(a) per-item MML: "</span>,</span>
 <span>      <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">fit_per_item</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">a</span>, <span class="va">true_pars</span><span class="op">$</span><span class="va">a</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt; RMSE(a) per-item MML:  0.1958</span></span></code></pre></div>
+<span><span class="co">#&gt; RMSE(a) per-item MML:  0.205</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="important-note-on-initialisation">Important note on initialisation<a class="anchor" aria-label="anchor" href="#important-note-on-initialisation"></a>
