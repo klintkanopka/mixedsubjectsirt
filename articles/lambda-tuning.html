@@ -225,11 +225,11 @@ asymmetry. With a good predictor (F = Y),
 <span><span class="va">ability_tuned_mml</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lambda"</span>, <span class="st">"mean_param_var"</span>, <span class="st">"mean_total_risk"</span>,</span>
 <span>                               <span class="st">"convergence"</span>, <span class="st">"selection_risk"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   lambda mean_param_var mean_total_risk convergence selection_risk</span></span>
-<span><span class="co">#&gt; 1   0.00     0.07784989      0.07784989           0     0.07784989</span></span>
-<span><span class="co">#&gt; 2   0.25     0.08909795      0.08909795           0     0.08909795</span></span>
-<span><span class="co">#&gt; 3   0.50     0.12013751      0.12013751           0     0.12013751</span></span>
-<span><span class="co">#&gt; 4   0.75     0.28620051      0.28620051           0     0.28620051</span></span>
-<span><span class="co">#&gt; 5   1.00     0.23749351      0.23749351           0     0.23749351</span></span>
+<span><span class="co">#&gt; 1   0.00      0.4956965       0.4956965           0      0.4956965</span></span>
+<span><span class="co">#&gt; 2   0.25      0.5191099       0.5191099           0      0.5191099</span></span>
+<span><span class="co">#&gt; 3   0.50      0.8566765       0.8566765           0      0.8566765</span></span>
+<span><span class="co">#&gt; 4   0.75      0.6529404       0.6529404           0      0.6529404</span></span>
+<span><span class="co">#&gt; 5   1.00      1.1593661       1.1593661           0      1.1593661</span></span>
 <span><span class="va">ability_tuned_mml</span><span class="op">$</span><span class="va">best_lambda</span></span>
 <span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
 <p><code>selection_risk</code> is <code>Inf</code> for any candidate
@@ -278,11 +278,11 @@ also include squared ability-estimation error:</p>
 <span><span class="va">ability_tuned_truth</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lambda"</span>, <span class="st">"mean_param_var"</span>,</span>
 <span>                                 <span class="st">"mean_squared_error"</span>, <span class="st">"mean_total_risk"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   lambda mean_param_var mean_squared_error mean_total_risk</span></span>
-<span><span class="co">#&gt; 1   0.00     0.07784989           5.081952        5.159802</span></span>
-<span><span class="co">#&gt; 2   0.25     0.08909795           5.048405        5.137503</span></span>
-<span><span class="co">#&gt; 3   0.50     0.12013751           4.972780        5.092918</span></span>
-<span><span class="co">#&gt; 4   0.75     0.28620051           4.746004        5.032205</span></span>
-<span><span class="co">#&gt; 5   1.00     0.23749351           4.736825        4.974318</span></span></code></pre></div>
+<span><span class="co">#&gt; 1   0.00      0.4956965           5.081952        5.577649</span></span>
+<span><span class="co">#&gt; 2   0.25      0.5191099           5.048405        5.567515</span></span>
+<span><span class="co">#&gt; 3   0.50      0.8566765           4.972780        5.829457</span></span>
+<span><span class="co">#&gt; 4   0.75      0.6529404           4.746004        5.398944</span></span>
+<span><span class="co">#&gt; 5   1.00      1.1593661           4.736825        5.896191</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-4-cross-fitted-ability-risk-tuning">Step 4: Cross-fitted ability-risk tuning<a class="anchor" aria-label="anchor" href="#step-4-cross-fitted-ability-risk-tuning"></a>

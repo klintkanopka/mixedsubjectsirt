@@ -2,12 +2,26 @@
 
 ## Background
 
-A key E-step decision in the mixed-subjects calibration is which item
-parameters to use when computing posterior quadrature weights for the
-LLM-generated responses. The current package implementation uses the
-same human-calibrated parameters for all three datasets (observed,
-predicted, generated), which is misspecified when the LLM has different
-item parameters. This misspecification creates a systematic gradient
+This document is a **diagnostic guide for the frozen expected-count
+estimator** (`fit_mixed_subjects`). It explains the gradient asymmetry
+that occurs when the LLM item parameters differ from human parameters
+and evaluates IRT scale-linking methods as a partial remedy. For the
+**recommended workflow**, see the [Mixed-Subjects IRT
+Calibration](http://klintkanopka.com/mixedsubjectsirt/articles/mixed-subjects-workflow.md)
+vignette, which uses `fit_mixed_subjects_mml()` — the marginal-MML
+estimator that eliminates the gradient asymmetry without requiring a
+linking pre-processing step.
+
+------------------------------------------------------------------------
+
+## Background (frozen expected-count estimator)
+
+A key E-step decision in the **frozen expected-count** calibration is
+which item parameters to use when computing posterior quadrature weights
+for the LLM-generated responses. The frozen estimator uses the same
+human-calibrated parameters for all three datasets (observed, predicted,
+generated), which is misspecified when the LLM has different item
+parameters. This misspecification creates a systematic gradient
 asymmetry in the combined objective — the correction gradient
 $`\nabla(L_\text{gen} - L_\text{pred})`$ is consistently larger than
 zero because LLM-specific posteriors are more diffuse than human
@@ -849,7 +863,11 @@ estimates close to the human-only baseline.
   difficulties. It consistently outperforms mean-mean when the LLM
   ability distribution is compressed (the shifted case), and it is only
   marginally more expensive than mean-mean. It is the recommended
-  default.
+  default **for the frozen EC estimator**. Note that the
+  [`link_item_parameters()`](http://klintkanopka.com/mixedsubjectsirt/reference/link_item_parameters.md)
+  exported function currently supports only `"mean_mean"` and `"none"`;
+  the mean-sigma and Stocking-Lord implementations in this vignette use
+  local helper functions defined in the `{r helpers}` chunk.
 
 - *Stocking-Lord* minimises TCC deviation directly, which is
   conceptually closest to the expected-count criterion. However, it

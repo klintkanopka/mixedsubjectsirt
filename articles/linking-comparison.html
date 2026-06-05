@@ -70,13 +70,28 @@
 <div class="section level2">
 <h2 id="background">Background<a class="anchor" aria-label="anchor" href="#background"></a>
 </h2>
-<p>A key E-step decision in the mixed-subjects calibration is which item
-parameters to use when computing posterior quadrature weights for the
-LLM-generated responses. The current package implementation uses the
-same human-calibrated parameters for all three datasets (observed,
-predicted, generated), which is misspecified when the LLM has different
-item parameters. This misspecification creates a systematic gradient
-asymmetry in the combined objective — the correction gradient
+<p>This document is a <strong>diagnostic guide for the frozen
+expected-count estimator</strong> (<code>fit_mixed_subjects</code>). It
+explains the gradient asymmetry that occurs when the LLM item parameters
+differ from human parameters and evaluates IRT scale-linking methods as
+a partial remedy. For the <strong>recommended workflow</strong>, see the
+<a href="mixed-subjects-workflow.html">Mixed-Subjects IRT
+Calibration</a> vignette, which uses
+<code>fit_mixed_subjects_mml()</code> — the marginal-MML estimator that
+eliminates the gradient asymmetry without requiring a linking
+pre-processing step.</p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="background-frozen-expected-count-estimator">Background (frozen expected-count estimator)<a class="anchor" aria-label="anchor" href="#background-frozen-expected-count-estimator"></a>
+</h2>
+<p>A key E-step decision in the <strong>frozen expected-count</strong>
+calibration is which item parameters to use when computing posterior
+quadrature weights for the LLM-generated responses. The frozen estimator
+uses the same human-calibrated parameters for all three datasets
+(observed, predicted, generated), which is misspecified when the LLM has
+different item parameters. This misspecification creates a systematic
+gradient asymmetry in the combined objective — the correction gradient
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>∇</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>L</mi><mtext mathvariant="normal">gen</mtext></msub><mo>−</mo><msub><mi>L</mi><mtext mathvariant="normal">pred</mtext></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\nabla(L_\text{gen} - L_\text{pred})</annotation></semantics></math>
 is consistently larger than zero because LLM-specific posteriors are
 more diffuse than human posteriors. The result is a false minimum in the
@@ -1387,7 +1402,11 @@ difficulties across items.</p></li>
 deviation of difficulties. It consistently outperforms mean-mean when
 the LLM ability distribution is compressed (the shifted case), and it is
 only marginally more expensive than mean-mean. It is the recommended
-default.</p></li>
+default <strong>for the frozen EC estimator</strong>. Note that the
+<code><a href="../reference/link_item_parameters.html">link_item_parameters()</a></code> exported function currently supports
+only <code>"mean_mean"</code> and <code>"none"</code>; the mean-sigma
+and Stocking-Lord implementations in this vignette use local helper
+functions defined in the <code>{r helpers}</code> chunk.</p></li>
 <li><p><em>Stocking-Lord</em> minimises TCC deviation directly, which is
 conceptually closest to the expected-count criterion. However, it
 requires bounded numerical optimisation (the A-bounds safeguard in this

@@ -89,7 +89,7 @@ global_tuned <- tune_lambda_ability_risk(
 )
 
 cat("Global scalar best lambda:", global_tuned$best_lambda, "\n")
-#> Global scalar best lambda: 0.3
+#> Global scalar best lambda: 0.2
 ```
 
 The global scalar is forced to a compromise — the four poor items
@@ -135,9 +135,11 @@ items 5–8 (random LLM) should show $`\lambda_j \approx 0`$.
 
 `tune_lambda_ability_risk_item()` uses coordinate descent: for each item
 $`j`$, it finds the $`\lambda_j`$ in `lambda_grid` that minimises
-ability-score risk while holding all other $`\lambda_{j'}`$ fixed.
-Starting from the global scalar optimum (not from all-zeros) is
-essential — see the note below.
+ability-score risk while holding all other $`\lambda_{j'}`$ fixed. Each
+evaluation fits with the **frozen expected-count Q-function** (not the
+full marginal-MML objective) because the IRT marginal likelihood does
+not decompose item-wise. Starting from the global scalar optimum (not
+from all-zeros) is essential — see the note below.
 
 ``` r
 
@@ -157,14 +159,14 @@ cat("Per-item ability-risk lambda:\n")
 #> Per-item ability-risk lambda:
 print(data.frame(item = item_tuned$item, lambda = round(item_tuned$lambda, 3)))
 #>    item lambda
-#> 1 Item1    0.3
-#> 2 Item2    0.3
-#> 3 Item3    0.3
-#> 4 Item4    0.3
-#> 5 Item5    0.3
-#> 6 Item6    0.3
-#> 7 Item7    0.3
-#> 8 Item8    0.3
+#> 1 Item1   0.25
+#> 2 Item2   0.50
+#> 3 Item3   0.50
+#> 4 Item4   0.25
+#> 5 Item5   0.00
+#> 6 Item6   0.00
+#> 7 Item7   0.00
+#> 8 Item8   0.00
 ```
 
 Items 1–4 should receive positive $`\lambda_j`$ (good predictor); items
@@ -191,16 +193,16 @@ knitr::kable(comparison, row.names = FALSE,
   caption = "Discrimination recovery: scalar lambda vs. per-item lambda")
 ```
 
-| item  | true_a | human_a | scalar_a |       item_a |
-|:------|-------:|--------:|---------:|-------------:|
-| Item1 |  0.800 |   0.727 |    0.527 | 1.514829e+36 |
-| Item2 |  0.914 |   1.256 |    0.838 | 2.274872e+34 |
-| Item3 |  1.029 |   1.117 |    0.794 | 8.175468e+31 |
-| Item4 |  1.143 |   1.091 |    0.745 | 2.279100e+33 |
-| Item5 |  1.257 |   1.758 |    1.152 | 1.115740e+38 |
-| Item6 |  1.371 |   1.610 |    1.095 | 8.029031e+37 |
-| Item7 |  1.486 |   1.369 |    1.017 | 1.371929e+35 |
-| Item8 |  1.600 |   1.925 |    1.513 | 8.010942e+37 |
+| item  | true_a | human_a | scalar_a | item_a |
+|:------|-------:|--------:|---------:|-------:|
+| Item1 |  0.800 |   0.727 |    0.523 |  0.630 |
+| Item2 |  0.914 |   1.256 |    0.856 |  0.952 |
+| Item3 |  1.029 |   1.117 |    0.793 |  0.893 |
+| Item4 |  1.143 |   1.091 |    0.754 |  0.923 |
+| Item5 |  1.257 |   1.758 |    1.187 |  1.586 |
+| Item6 |  1.371 |   1.610 |    1.113 |  1.449 |
+| Item7 |  1.486 |   1.369 |    1.002 |  1.187 |
+| Item8 |  1.600 |   1.925 |    1.453 |  1.683 |
 
 Discrimination recovery: scalar lambda vs. per-item lambda {.table}
 
@@ -212,12 +214,12 @@ cat("RMSE(a) human-only:   ",
 #> RMSE(a) human-only:    0.2645
 cat("RMSE(a) scalar MML:   ",
     round(rmse(fit_scalar$item_pars$a, true_pars$a), 4), "\n")
-#> RMSE(a) scalar MML:    0.2758
+#> RMSE(a) scalar MML:    0.277
 if (!is.null(fit_per_item)) {
   cat("RMSE(a) per-item MML: ",
       round(rmse(fit_per_item$item_pars$a, true_pars$a), 4), "\n")
 }
-#> RMSE(a) per-item MML:  5.625292e+37
+#> RMSE(a) per-item MML:  0.1958
 ```
 
 ## Important note on initialisation

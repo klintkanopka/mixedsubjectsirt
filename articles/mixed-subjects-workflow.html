@@ -193,19 +193,19 @@ covariance.</p>
 <span></span>
 <span><span class="va">ability_tuned</span><span class="op">$</span><span class="va">summary</span></span>
 <span><span class="co">#&gt;   lambda mean_param_var mean_squared_error mean_total_risk convergence</span></span>
-<span><span class="co">#&gt; 1    0.0     0.01468912                 NA      0.01468912           0</span></span>
-<span><span class="co">#&gt; 2    0.2     0.01654963                 NA      0.01654963           0</span></span>
-<span><span class="co">#&gt; 3    0.4     0.02039017                 NA      0.02039017           0</span></span>
-<span><span class="co">#&gt; 4    0.6     0.02684917                 NA      0.02684917           0</span></span>
-<span><span class="co">#&gt; 5    0.8     0.03711546                 NA      0.03711546           0</span></span>
-<span><span class="co">#&gt; 6    1.0     0.05370607                 NA      0.05370607           0</span></span>
+<span><span class="co">#&gt; 1    0.0     0.05568917                 NA      0.05568917           0</span></span>
+<span><span class="co">#&gt; 2    0.2     0.05917237                 NA      0.05917237           0</span></span>
+<span><span class="co">#&gt; 3    0.4     0.06944930                 NA      0.06944930           0</span></span>
+<span><span class="co">#&gt; 4    0.6     0.08836269                 NA      0.08836269           0</span></span>
+<span><span class="co">#&gt; 5    0.8     0.11925842                 NA      0.11925842           0</span></span>
+<span><span class="co">#&gt; 6    1.0     0.16947954                 NA      0.16947954           0</span></span>
 <span><span class="co">#&gt;   selection_risk</span></span>
-<span><span class="co">#&gt; 1     0.01468912</span></span>
-<span><span class="co">#&gt; 2     0.01654963</span></span>
-<span><span class="co">#&gt; 3     0.02039017</span></span>
-<span><span class="co">#&gt; 4     0.02684917</span></span>
-<span><span class="co">#&gt; 5     0.03711546</span></span>
-<span><span class="co">#&gt; 6     0.05370607</span></span>
+<span><span class="co">#&gt; 1     0.05568917</span></span>
+<span><span class="co">#&gt; 2     0.05917237</span></span>
+<span><span class="co">#&gt; 3     0.06944930</span></span>
+<span><span class="co">#&gt; 4     0.08836269</span></span>
+<span><span class="co">#&gt; 5     0.11925842</span></span>
+<span><span class="co">#&gt; 6     0.16947954</span></span>
 <span><span class="va">ability_tuned</span><span class="op">$</span><span class="va">best_lambda</span></span>
 <span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
 <p>When the LLM parameters differ substantially from the human
@@ -282,12 +282,12 @@ predictor):</p>
 <span><span class="co">#&gt; [1] 0.8</span></span>
 <span><span class="va">tuned_fy</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lambda"</span>, <span class="st">"mean_param_var"</span>, <span class="st">"convergence"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   lambda mean_param_var convergence</span></span>
-<span><span class="co">#&gt; 1    0.0    0.014689121           0</span></span>
-<span><span class="co">#&gt; 2    0.2    0.009595393           0</span></span>
-<span><span class="co">#&gt; 3    0.4    0.006101125           0</span></span>
-<span><span class="co">#&gt; 4    0.6    0.004169105           0</span></span>
-<span><span class="co">#&gt; 5    0.8    0.003813351           0</span></span>
-<span><span class="co">#&gt; 6    1.0    0.005118509           0</span></span></code></pre></div>
+<span><span class="co">#&gt; 1    0.0     0.05568917           0</span></span>
+<span><span class="co">#&gt; 2    0.2     0.03686035           0</span></span>
+<span><span class="co">#&gt; 3    0.4     0.02373423           0</span></span>
+<span><span class="co">#&gt; 4    0.6     0.01639657           0</span></span>
+<span><span class="co">#&gt; 5    0.8     0.01515798           0</span></span>
+<span><span class="co">#&gt; 6    1.0     0.02062474           0</span></span></code></pre></div>
 <p>The ability risk decreases from
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
 to a minimum near the theoretical upper bound

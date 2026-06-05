@@ -135,11 +135,11 @@ ability_tuned_mml <- tune_lambda_ability_risk(
 ability_tuned_mml$summary[, c("lambda", "mean_param_var", "mean_total_risk",
                                "convergence", "selection_risk")]
 #>   lambda mean_param_var mean_total_risk convergence selection_risk
-#> 1   0.00     0.07784989      0.07784989           0     0.07784989
-#> 2   0.25     0.08909795      0.08909795           0     0.08909795
-#> 3   0.50     0.12013751      0.12013751           0     0.12013751
-#> 4   0.75     0.28620051      0.28620051           0     0.28620051
-#> 5   1.00     0.23749351      0.23749351           0     0.23749351
+#> 1   0.00      0.4956965       0.4956965           0      0.4956965
+#> 2   0.25      0.5191099       0.5191099           0      0.5191099
+#> 3   0.50      0.8566765       0.8566765           0      0.8566765
+#> 4   0.75      0.6529404       0.6529404           0      0.6529404
+#> 5   1.00      1.1593661       1.1593661           0      1.1593661
 ability_tuned_mml$best_lambda
 #> [1] 0
 ```
@@ -197,11 +197,11 @@ ability_tuned_truth <- tune_lambda_ability_risk(
 ability_tuned_truth$summary[, c("lambda", "mean_param_var",
                                  "mean_squared_error", "mean_total_risk")]
 #>   lambda mean_param_var mean_squared_error mean_total_risk
-#> 1   0.00     0.07784989           5.081952        5.159802
-#> 2   0.25     0.08909795           5.048405        5.137503
-#> 3   0.50     0.12013751           4.972780        5.092918
-#> 4   0.75     0.28620051           4.746004        5.032205
-#> 5   1.00     0.23749351           4.736825        4.974318
+#> 1   0.00      0.4956965           5.081952        5.577649
+#> 2   0.25      0.5191099           5.048405        5.567515
+#> 3   0.50      0.8566765           4.972780        5.829457
+#> 4   0.75      0.6529404           4.746004        5.398944
+#> 5   1.00      1.1593661           4.736825        5.896191
 ```
 
 ## Step 4: Cross-fitted ability-risk tuning
