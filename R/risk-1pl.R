@@ -358,25 +358,55 @@ tune_lambda_ability_risk_1pl <- function(lambda_grid, observed, predicted, gener
   risks <- vector("list", length(lambda_grid))
 
   for (i in seq_along(lambda_grid)) {
-    lam      <- lambda_grid[i]
-    fits[[i]] <- fit_fn(
-      observed = observed, predicted = predicted, generated = generated,
-      lambda = lam, n_quad = n_quad, initial_pars = initial_pars,
-      control = control, ...
+    lam <- lambda_grid[i]
+
+    # Wrap the fit in tryCatch so a failed candidate does not abort the loop.
+    fits[[i]] <- tryCatch(
+      fit_fn(
+        observed = observed, predicted = predicted, generated = generated,
+        lambda = lam, n_quad = n_quad, initial_pars = initial_pars,
+        control = control, ...
+      ),
+      error = function(e) NULL
     )
 
-    Sigma     <- vcov_mixed_subjects_1pl(fits[[i]])
-    risks[[i]] <- ability_risk_1pl(
-      target_resp, fits[[i]], vcov = Sigma,
-      theta_true = theta_true, bounds = bounds
-    )
+    # Wrap vcov and risk: a singular bread or degenerate item parameters
+    # returns Inf risk, which the selection_risk filter below will exclude.
+    if (is.null(fits[[i]])) {
+      risks[[i]] <- list(summary = data.frame(
+        mean_param_var     = Inf,
+        mean_squared_error = Inf,
+        mean_total_risk    = Inf
+      ))
+    } else {
+      Sigma <- tryCatch(vcov_mixed_subjects_1pl(fits[[i]]),
+                        error = function(e) NULL)
+
+      if (is.null(Sigma)) {
+        risks[[i]] <- list(summary = data.frame(
+          mean_param_var     = Inf,
+          mean_squared_error = Inf,
+          mean_total_risk    = Inf
+        ))
+      } else {
+        risks[[i]] <- tryCatch(
+          ability_risk_1pl(target_resp, fits[[i]], vcov = Sigma,
+                           theta_true = theta_true, bounds = bounds),
+          error = function(e) list(summary = data.frame(
+            mean_param_var     = Inf,
+            mean_squared_error = Inf,
+            mean_total_risk    = Inf
+          ))
+        )
+      }
+    }
 
     rows[[i]] <- data.frame(
       lambda             = lam,
       mean_param_var     = risks[[i]]$summary$mean_param_var,
       mean_squared_error = risks[[i]]$summary$mean_squared_error,
       mean_total_risk    = risks[[i]]$summary$mean_total_risk,
-      convergence        = fits[[i]]$convergence
+      convergence        = if (is.null(fits[[i]])) 99L else fits[[i]]$convergence
     )
   }
 
