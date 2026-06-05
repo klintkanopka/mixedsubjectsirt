@@ -86,17 +86,17 @@ that minimises the <em>trace of the item-parameter covariance
 matrix</em>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Tr</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\text{Tr}(\Sigma_\gamma)</annotation></semantics></math>.
 <strong>This is a theoretical diagnostic.</strong> For psychometric
-applications, use <code><a href="../reference/tune_lambda_ability.html">tune_lambda_ability()</a></code> instead.</li>
+applications, use <code>tune_lambda_ability_risk()</code> instead.</li>
 <li>
-<code><a href="../reference/tune_lambda_ability.html">tune_lambda_ability()</a></code>: chooses a lambda by minimizing
-propagated <em>ability-score risk</em>
+<code>tune_lambda_ability_risk()</code>: chooses a lambda by
+minimizing propagated <em>ability-score risk</em>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}[g' \Sigma_\gamma g]</annotation></semantics></math>
 on a target scoring population. <strong>This is the recommended
 practical criterion</strong> for IRT applications where accurate test
 scoring is the goal.</li>
 <li>
-<code><a href="../reference/tune_lambda_ability_crossfit.html">tune_lambda_ability_crossfit()</a></code>: estimates lambda out of
-sample by fold, then fits the final split-sample estimator with
+<code>tune_lambda_ability_risk_crossfit()</code>: estimates lambda
+out of sample by fold, then fits the final split-sample estimator with
 fold-specific lambdas.</li>
 </ul>
 <p><strong>The two lambda objectives.</strong> The PPI++ score objective
@@ -108,7 +108,7 @@ These are different quantities and generally select different
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 values. Because the practical goal in psychometrics is accurate ability
 scoring, not item-parameter precision,
-<code><a href="../reference/tune_lambda_ability.html">tune_lambda_ability()</a></code> is the recommended default.</p>
+<code>tune_lambda_ability_risk()</code> is the recommended default.</p>
 <div class="section level2">
 <h2 id="example-data">Example data<a class="anchor" aria-label="anchor" href="#example-data"></a>
 </h2>
@@ -231,8 +231,8 @@ matrix
 <p>This objective measures <strong>item-parameter estimation
 efficiency</strong> and is suitable for method validation and
 theoretical analysis. For psychometric applications where accurate test
-scoring is the goal, use <code><a href="../reference/tune_lambda_ability.html">tune_lambda_ability()</a></code> instead — it
-directly minimises the propagated ability-score risk
+scoring is the goal, use <code>tune_lambda_ability_risk()</code> instead
+— it directly minimises the propagated ability-score risk
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}[g' \Sigma_\gamma g]</annotation></semantics></math>.</p>
 <p>The function uses the <strong>same</strong> human posterior weights
 for both the human and paired-LLM score vectors. This symmetry satisfies
@@ -261,15 +261,15 @@ the LLM, not exact copies of the human responses). For exact predictions
 <div class="section level2">
 <h2 id="ability-risk-tuning">Ability-Risk Tuning<a class="anchor" aria-label="anchor" href="#ability-risk-tuning"></a>
 </h2>
-<p>For scoring applications, <code><a href="../reference/tune_lambda_ability.html">tune_lambda_ability()</a></code> targets
-the quantity</p>
+<p>For scoring applications, <code>tune_lambda_ability_risk()</code>
+targets the quantity</p>
 <p><code>mean(g_i' Sigma_lambda g_i)</code></p>
 <p>where <code>Sigma_lambda</code> is the full sandwich covariance
 matrix of the item parameters and <code>g_i</code> is the gradient of
 the estimated ability score for response pattern <code>i</code> with
 respect to those item parameters.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ability_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability.html">tune_lambda_ability</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">ability_tuned</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
 <span>  lambda_grid <span class="op">=</span> <span class="va">lambda_grid</span>,</span>
 <span>  observed <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted <span class="op">=</span> <span class="va">predicted</span>,</span>
@@ -335,7 +335,7 @@ and is the relevant quantity for calibration studies with real data.</p>
 squared ability-estimation error in addition to propagated
 item-parameter uncertainty.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ability_tuned_with_truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability.html">tune_lambda_ability</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">ability_tuned_with_truth</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
 <span>  lambda_grid <span class="op">=</span> <span class="va">lambda_grid</span>,</span>
 <span>  observed <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted <span class="op">=</span> <span class="va">predicted</span>,</span>
@@ -362,17 +362,17 @@ default risk is then the propagated calibration component,
 <div class="section level2">
 <h2 id="cross-fitted-ability-risk-tuning">Cross-Fitted Ability-Risk Tuning<a class="anchor" aria-label="anchor" href="#cross-fitted-ability-risk-tuning"></a>
 </h2>
-<p><code><a href="../reference/tune_lambda_ability.html">tune_lambda_ability()</a></code> uses the same labeled responses to
-tune and fit. That is useful for prototyping, but final finite-sample
-analyses should avoid using a fold’s labels to tune the lambda applied
-to that fold’s paired correction.</p>
-<p><code><a href="../reference/tune_lambda_ability_crossfit.html">tune_lambda_ability_crossfit()</a></code> estimates lambda on
+<p><code>tune_lambda_ability_risk()</code> uses the same labeled
+responses to tune and fit. That is useful for prototyping, but final
+finite-sample analyses should avoid using a fold’s labels to tune the
+lambda applied to that fold’s paired correction.</p>
+<p><code>tune_lambda_ability_risk_crossfit()</code> estimates lambda on
 training folds and then fits the final split-sample estimator with the
 resulting fold-specific lambdas.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">split_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">observed</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">crossfit_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_crossfit.html">tune_lambda_ability_crossfit</a></span><span class="op">(</span></span>
+<span><span class="va">crossfit_tuned</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk_crossfit</span><span class="op">(</span></span>
 <span>  lambda_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  observed <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted <span class="op">=</span> <span class="va">predicted</span>,</span>
@@ -395,9 +395,9 @@ resulting fold-specific lambdas.</p>
 <span><span class="co">#&gt;   splits:     2</span></span></code></pre></div>
 <p>Cross-fitting also selects
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
-for both folds for the same reason as <code>tune_lambda_ability</code>:
-gradient asymmetry from LLM-human misalignment means the correction term
-hurts estimation at any positive
+for both folds for the same reason as
+<code>tune_lambda_ability_risk</code>: gradient asymmetry from LLM-human
+misalignment means the correction term hurts estimation at any positive
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>,
 and this shows up on training folds as well as the full sample.</p>
 <p>The final fit stores both the fold-specific lambdas and their
@@ -436,7 +436,7 @@ split-size weighted mean for the generated term.</p>
 <td>Method validation; theoretical benchmarking</td>
 </tr>
 <tr class="odd">
-<td><code><a href="../reference/tune_lambda_ability.html">tune_lambda_ability()</a></code></td>
+<td><code>tune_lambda_ability_risk()</code></td>
 <td>Minimises
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}[g' \Sigma_\gamma g]</annotation></semantics></math>
 (ability-score risk)</td>
@@ -445,7 +445,7 @@ split-size weighted mean for the generated term.</p>
 applications</td>
 </tr>
 <tr class="even">
-<td><code><a href="../reference/tune_lambda_ability_crossfit.html">tune_lambda_ability_crossfit()</a></code></td>
+<td><code>tune_lambda_ability_risk_crossfit()</code></td>
 <td>Same as above, cross-fitted</td>
 <td>Final analyses requiring out-of-sample lambda estimation</td>
 </tr>
@@ -457,12 +457,12 @@ sensitivity, not to make a final inferential choice. Use
 <code>tune_lambda_ppi_score()</code> to inspect the theoretical PPI++
 optimum as a method diagnostic — note that this minimises item-parameter
 variance, not scoring accuracy. <strong>Use
-<code><a href="../reference/tune_lambda_ability.html">tune_lambda_ability()</a></code> when the practical target is ability
-scoring</strong> and you want the lambda that minimizes propagated
-scoring risk on a chosen target population. Use
-<code><a href="../reference/tune_lambda_ability_crossfit.html">tune_lambda_ability_crossfit()</a></code> for the same target when
-finite-sample adaptivity matters and you want lambda estimated out of
-sample.</p>
+<code>tune_lambda_ability_risk()</code> when the practical target is
+ability scoring</strong> and you want the lambda that minimizes
+propagated scoring risk on a chosen target population. Use
+<code>tune_lambda_ability_risk_crossfit()</code> for the same target
+when finite-sample adaptivity matters and you want lambda estimated out
+of sample.</p>
 <p>The target population matters for ability-risk tuning.
 <code>target_resp = observed</code> tunes for the observed human
 response patterns. In operational scoring, you may prefer a larger

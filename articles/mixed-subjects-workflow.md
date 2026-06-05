@@ -177,7 +177,7 @@ discriminations to extreme values and the optimizer reports convergence
 code 52 (L-BFGS-B line-search failure). The `slope_upper` argument caps
 discriminations during optimization. With it, the optimizer converges at
 the bound, ability risk is high for capped items, and
-`tune_lambda_ability` correctly selects $`\lambda \approx 0`$ —
+`tune_lambda_ability_risk` correctly selects $`\lambda \approx 0`$ —
 recovering the human-only estimate.
 
 ``` r
@@ -203,12 +203,11 @@ tuned$summary
 
 ## Tune lambda by ability risk
 
-For a target scoring population,
-[`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
-evaluates candidate calibrations using propagated ability-score risk.
-For each candidate lambda it fits item parameters, estimates the full
-sandwich covariance matrix for the item parameters, computes
-ability-score gradients, and summarizes the average `g' Sigma g` risk.
+For a target scoring population, `tune_lambda_ability_risk()` evaluates
+candidate calibrations using propagated ability-score risk. For each
+candidate lambda it fits item parameters, estimates the full sandwich
+covariance matrix for the item parameters, computes ability-score
+gradients, and summarizes the average `g' Sigma g` risk.
 
 For this scenario the ability-risk criterion selects $`\lambda = 0`$:
 the LLM’s attenuated discrimination causes gradient asymmetry that
@@ -219,7 +218,7 @@ misaligned.
 
 ``` r
 
-ability_tuned <- tune_lambda_ability(
+ability_tuned <- tune_lambda_ability_risk(
   lambda_grid = c(0, 0.25, 0.5, 0.75),
   observed = observed,
   predicted = predicted,

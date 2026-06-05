@@ -931,7 +931,7 @@ power-tuning range is extended.</p>
 </h2>
 <p>Because all three linking methods leave residual gradient asymmetry,
 the method should always be paired with power tuning
-(<code>tune_lambda_ability</code>), not a fixed
+(<code>tune_lambda_ability_risk</code>), not a fixed
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>.
 The ability-risk criterion naturally selects small
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
@@ -1031,7 +1031,7 @@ matched case</caption>
 </table>
 <p>Both RMSE(a) and ability-score risk increase monotonically with
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>,
-which causes <code>tune_lambda_ability</code> to select
+which causes <code>tune_lambda_ability_risk</code> to select
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
 — correctly recovering the human-only estimate when the LLM parameters
 differ substantially from human parameters. At
@@ -1063,7 +1063,7 @@ matrix</em>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Tr</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\text{Tr}(\Sigma_\gamma)</annotation></semantics></math>.
 This is a measure of item-parameter estimation efficiency.</li>
 <li>
-<strong><code><a href="../reference/tune_lambda_ability.html">tune_lambda_ability()</a></code></strong> returns the
+<strong><code>tune_lambda_ability_risk()</code></strong> returns the
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 that minimises the <em>propagated ability-score risk</em>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}[g' \Sigma_\gamma g]</annotation></semantics></math>,
@@ -1076,8 +1076,8 @@ This is the quantity that matters for test scoring.</li>
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 values. In practice, users should select
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-by ability risk (<code>tune_lambda_ability</code>), not by the PPI++
-score objective.</strong> The PPI++ score lambda is provided as a
+by ability risk (<code>tune_lambda_ability_risk</code>), not by the
+PPI++ score objective.</strong> The PPI++ score lambda is provided as a
 theoretical diagnostic and method-validation tool.</p>
 <p>The PPI++
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>λ</mi><mo>*</mo></msup><annotation encoding="application/x-tex">\lambda^*</annotation></semantics></math>
@@ -1136,7 +1136,7 @@ for all subjects. The PPI++ formula reduces to
 <span>    <span class="st">"  theory N/(n+N) ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">upper_bound</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   PPI++ lambda* = 0.75   theory N/(n+N) = 0.75</span></span>
 <span></span>
-<span><span class="va">risk_A</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability.html">tune_lambda_ability</a></span><span class="op">(</span></span>
+<span><span class="va">risk_A</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
 <span>  lambda_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span>
 <span>  observed    <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted   <span class="op">=</span> <span class="va">observed</span>,</span>
@@ -1178,7 +1178,7 @@ tracks prediction quality.</p>
 <span>    <span class="st">"  (expect: between 0 and N/(n+N) ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">upper_bound</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">")\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   PPI++ lambda* = 0.233   (expect: between 0 and N/(n+N) = 0.75 )</span></span>
 <span></span>
-<span><span class="va">risk_B</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability.html">tune_lambda_ability</a></span><span class="op">(</span></span>
+<span><span class="va">risk_B</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
 <span>  lambda_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span>, by <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span>
 <span>  observed    <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted   <span class="op">=</span> <span class="va">predicted_B</span>,</span>
@@ -1221,7 +1221,7 @@ population?</p>
 <span>    <span class="st">"  (theory: near 0 for stochastic binary predictions)\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   PPI++ lambda* = 0   (theory: near 0 for stochastic binary predictions)</span></span>
 <span></span>
-<span><span class="va">risk_C</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability.html">tune_lambda_ability</a></span><span class="op">(</span></span>
+<span><span class="va">risk_C</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
 <span>  lambda_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.3</span>, by <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span>,</span>
 <span>  observed    <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted   <span class="op">=</span> <span class="va">predicted_C</span>,</span>
@@ -1281,14 +1281,15 @@ Test B is intermediate, and Test C gives
 — reflecting that independent binary LLM draws have near-zero gradient
 cross-covariance with human scores in the expected-count IRT
 formulation.</p>
-<p>The ability-risk criterion (<code>tune_lambda_ability</code>) selects
+<p>The ability-risk criterion (<code>tune_lambda_ability_risk</code>)
+selects
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 based on scoring accuracy rather than gradient covariance, and may
 choose nonzero
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 even when the PPI++ score gives 0, when adding LLM data reduces scoring
 uncertainty. <strong>For psychometric applications, always use
-<code><a href="../reference/tune_lambda_ability.html">tune_lambda_ability()</a></code> to select
+<code>tune_lambda_ability_risk()</code> to select
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>.</strong>
 The PPI++ score is provided as a method diagnostic and implementation
 validation tool.</p>
@@ -1312,7 +1313,7 @@ inflates discriminations and increases RMSE(a). The NA rows
 arise when the linked parameters destabilise the optimizer before
 <code>tryCatch</code> can catch them at the sweep stage; the underlying
 cause is the same gradient asymmetry at extreme linking constants.
-<code>tune_lambda_ability</code> correctly identifies
+<code>tune_lambda_ability_risk</code> correctly identifies
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
 as optimal for all methods in this scenario.</p>
 <table class="table">
@@ -1397,11 +1398,11 @@ better parameter recovery relative to mean-sigma.</p></li>
 as the default E-step for generated data, expose a
 <code>link_generated</code> argument in <code>fit_mixed_subjects</code>
 so users can choose the method, and always pair with
-<code>tune_lambda_ability</code> or
-<code>tune_lambda_ability_crossfit</code> for final lambda selection.
-The power-tuning step is the critical safeguard: when the LLM parameters
-differ substantially from the human parameters, the ability-risk
-criterion will select
+<code>tune_lambda_ability_risk</code> or
+<code>tune_lambda_ability_risk_crossfit</code> for final lambda
+selection. The power-tuning step is the critical safeguard: when the LLM
+parameters differ substantially from the human parameters, the
+ability-risk criterion will select
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 close to zero and recover the human-only estimate.</p>
 </div>

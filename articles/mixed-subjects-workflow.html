@@ -231,7 +231,7 @@ and the optimizer reports convergence code 52 (L-BFGS-B line-search
 failure). The <code>slope_upper</code> argument caps discriminations
 during optimization. With it, the optimizer converges at the bound,
 ability risk is high for capped items, and
-<code>tune_lambda_ability</code> correctly selects
+<code>tune_lambda_ability_risk</code> correctly selects
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda \approx 0</annotation></semantics></math>
 — recovering the human-only estimate.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -256,12 +256,12 @@ ability risk is high for capped items, and
 <div class="section level2">
 <h2 id="tune-lambda-by-ability-risk">Tune lambda by ability risk<a class="anchor" aria-label="anchor" href="#tune-lambda-by-ability-risk"></a>
 </h2>
-<p>For a target scoring population, <code><a href="../reference/tune_lambda_ability.html">tune_lambda_ability()</a></code>
-evaluates candidate calibrations using propagated ability-score risk.
-For each candidate lambda it fits item parameters, estimates the full
-sandwich covariance matrix for the item parameters, computes
-ability-score gradients, and summarizes the average
-<code>g' Sigma g</code> risk.</p>
+<p>For a target scoring population,
+<code>tune_lambda_ability_risk()</code> evaluates candidate calibrations
+using propagated ability-score risk. For each candidate lambda it fits
+item parameters, estimates the full sandwich covariance matrix for the
+item parameters, computes ability-score gradients, and summarizes the
+average <code>g' Sigma g</code> risk.</p>
 <p>For this scenario the ability-risk criterion selects
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>:
 the LLM’s attenuated discrimination causes gradient asymmetry that
@@ -271,7 +271,7 @@ increasing scoring uncertainty. This is the expected and correct
 behavior — the method recovers the human-only estimate when the LLM
 model is substantially misaligned.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ability_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability.html">tune_lambda_ability</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">ability_tuned</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
 <span>  lambda_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span><span class="op">)</span>,</span>
 <span>  observed <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted <span class="op">=</span> <span class="va">predicted</span>,</span>

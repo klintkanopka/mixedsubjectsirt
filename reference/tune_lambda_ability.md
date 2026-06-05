@@ -82,6 +82,7 @@ tuned <- tune_lambda_ability(
   c(0, 0.5), observed, observed, generated,
   initial_pars = pars, n_quad = 5, control = list(maxit = 30)
 )
+#> Warning: 'tune_lambda_ability' has been renamed 'tune_lambda_ability_risk' to make its objective (ability-score risk, not PPI++ score) explicit. Please update your code.
 tuned$best_lambda
 #> [1] 0.5
 ```

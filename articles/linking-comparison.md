@@ -515,7 +515,7 @@ practical benefit: the power-tuning range is extended.
 
 Because all three linking methods leave residual gradient asymmetry, the
 method should always be paired with power tuning
-(`tune_lambda_ability`), not a fixed $`\lambda`$. The ability-risk
+(`tune_lambda_ability_risk`), not a fixed $`\lambda`$. The ability-risk
 criterion naturally selects small $`\lambda`$ when the LLM is
 misaligned, effectively recovering the human-only estimate in the worst
 case.
@@ -587,7 +587,7 @@ Ability-score risk and parameter recovery — mean-sigma linking, matched
 case {.table}
 
 Both RMSE(a) and ability-score risk increase monotonically with
-$`\lambda`$, which causes `tune_lambda_ability` to select
+$`\lambda`$, which causes `tune_lambda_ability_risk` to select
 $`\lambda = 0`$ — correctly recovering the human-only estimate when the
 LLM parameters differ substantially from human parameters. At
 $`\lambda \geq 0.3`$, without `slope_upper`, discriminations diverge and
@@ -607,15 +607,15 @@ objectives:
   estimate: the $`\lambda`$ that minimises the *trace of the
   item-parameter covariance matrix* $`\text{Tr}(\Sigma_\gamma)`$. This
   is a measure of item-parameter estimation efficiency.
-- **[`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)**
-  returns the $`\lambda`$ that minimises the *propagated ability-score
-  risk* $`\mathbb{E}[g' \Sigma_\gamma g]`$, where $`g`$ is the gradient
-  of the ability estimate with respect to item parameters. This is the
-  quantity that matters for test scoring.
+- **`tune_lambda_ability_risk()`** returns the $`\lambda`$ that
+  minimises the *propagated ability-score risk*
+  $`\mathbb{E}[g' \Sigma_\gamma g]`$, where $`g`$ is the gradient of the
+  ability estimate with respect to item parameters. This is the quantity
+  that matters for test scoring.
 
 **These are different objectives and generally yield different
 $`\lambda`$ values. In practice, users should select $`\lambda`$ by
-ability risk (`tune_lambda_ability`), not by the PPI++ score
+ability risk (`tune_lambda_ability_risk`), not by the PPI++ score
 objective.** The PPI++ score lambda is provided as a theoretical
 diagnostic and method-validation tool.
 
@@ -667,7 +667,7 @@ cat("  PPI++ lambda* =", round(ppi_A$lambda, 3),
     "  theory N/(n+N) =", round(upper_bound, 3), "\n")
 #>   PPI++ lambda* = 0.75   theory N/(n+N) = 0.75
 
-risk_A <- tune_lambda_ability(
+risk_A <- tune_lambda_ability_risk(
   lambda_grid = seq(0, 1, by = 0.1),
   observed    = observed,
   predicted   = observed,
@@ -710,7 +710,7 @@ cat("  PPI++ lambda* =", round(ppi_B$lambda, 3),
     "  (expect: between 0 and N/(n+N) =", round(upper_bound, 3), ")\n")
 #>   PPI++ lambda* = 0.233   (expect: between 0 and N/(n+N) = 0.75 )
 
-risk_B <- tune_lambda_ability(
+risk_B <- tune_lambda_ability_risk(
   lambda_grid = seq(0, 0.5, by = 0.1),
   observed    = observed,
   predicted   = predicted_B,
@@ -755,7 +755,7 @@ cat("  PPI++ lambda* =", round(ppi_C$lambda, 3),
     "  (theory: near 0 for stochastic binary predictions)\n")
 #>   PPI++ lambda* = 0   (theory: near 0 for stochastic binary predictions)
 
-risk_C <- tune_lambda_ability(
+risk_C <- tune_lambda_ability_risk(
   lambda_grid = seq(0, 0.3, by = 0.05),
   observed    = observed,
   predicted   = predicted_C,
@@ -785,14 +785,13 @@ intermediate, and Test C gives $`\approx 0`$ — reflecting that
 independent binary LLM draws have near-zero gradient cross-covariance
 with human scores in the expected-count IRT formulation.
 
-The ability-risk criterion (`tune_lambda_ability`) selects $`\lambda`$
-based on scoring accuracy rather than gradient covariance, and may
-choose nonzero $`\lambda`$ even when the PPI++ score gives 0, when
-adding LLM data reduces scoring uncertainty. **For psychometric
-applications, always use
-[`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
-to select $`\lambda`$.** The PPI++ score is provided as a method
-diagnostic and implementation validation tool.
+The ability-risk criterion (`tune_lambda_ability_risk`) selects
+$`\lambda`$ based on scoring accuracy rather than gradient covariance,
+and may choose nonzero $`\lambda`$ even when the PPI++ score gives 0,
+when adding LLM data reduces scoring uncertainty. **For psychometric
+applications, always use `tune_lambda_ability_risk()` to select
+$`\lambda`$.** The PPI++ score is provided as a method diagnostic and
+implementation validation tool.
 
 ------------------------------------------------------------------------
 
@@ -806,8 +805,8 @@ discriminations and increases RMSE(a). The NA rows (Stocking-Lord at
 $`\lambda = 0.5`$) arise when the linked parameters destabilise the
 optimizer before `tryCatch` can catch them at the sweep stage; the
 underlying cause is the same gradient asymmetry at extreme linking
-constants. `tune_lambda_ability` correctly identifies $`\lambda = 0`$ as
-optimal for all methods in this scenario.
+constants. `tune_lambda_ability_risk` correctly identifies
+$`\lambda = 0`$ as optimal for all methods in this scenario.
 
 | Method        | Best λ | RMSE(a) at best λ | max(a) at best λ |
 |:--------------|-------:|------------------:|-----------------:|
@@ -863,8 +862,8 @@ estimates close to the human-only baseline.
 **Recommended workflow.** Implement mean-sigma linking as the default
 E-step for generated data, expose a `link_generated` argument in
 `fit_mixed_subjects` so users can choose the method, and always pair
-with `tune_lambda_ability` or `tune_lambda_ability_crossfit` for final
-lambda selection. The power-tuning step is the critical safeguard: when
-the LLM parameters differ substantially from the human parameters, the
-ability-risk criterion will select $`\lambda`$ close to zero and recover
-the human-only estimate.
+with `tune_lambda_ability_risk` or `tune_lambda_ability_risk_crossfit`
+for final lambda selection. The power-tuning step is the critical
+safeguard: when the LLM parameters differ substantially from the human
+parameters, the ability-risk criterion will select $`\lambda`$ close to
+zero and recover the human-only estimate.

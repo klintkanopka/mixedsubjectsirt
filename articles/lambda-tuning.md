@@ -18,16 +18,15 @@ This vignette distinguishes four package workflows:
   estimate, the $`\lambda`$ that minimises the *trace of the
   item-parameter covariance matrix* $`\text{Tr}(\Sigma_\gamma)`$. **This
   is a theoretical diagnostic.** For psychometric applications, use
-  [`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
-  instead.
-- [`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md):
-  chooses a lambda by minimizing propagated *ability-score risk*
-  $`\mathbb{E}[g' \Sigma_\gamma g]`$ on a target scoring population.
-  **This is the recommended practical criterion** for IRT applications
-  where accurate test scoring is the goal.
-- [`tune_lambda_ability_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_crossfit.md):
-  estimates lambda out of sample by fold, then fits the final
-  split-sample estimator with fold-specific lambdas.
+  `tune_lambda_ability_risk()` instead.
+- `tune_lambda_ability_risk()`: chooses a lambda by minimizing
+  propagated *ability-score risk* $`\mathbb{E}[g' \Sigma_\gamma g]`$ on
+  a target scoring population. **This is the recommended practical
+  criterion** for IRT applications where accurate test scoring is the
+  goal.
+- `tune_lambda_ability_risk_crossfit()`: estimates lambda out of sample
+  by fold, then fits the final split-sample estimator with fold-specific
+  lambdas.
 
 **The two lambda objectives.** The PPI++ score objective minimises
 item-parameter estimation efficiency ($`\text{Tr}(\Sigma_\gamma)`$). The
@@ -35,9 +34,7 @@ ability-risk objective minimises downstream scoring accuracy
 ($`\mathbb{E}[g' \Sigma_\gamma g]`$). These are different quantities and
 generally select different $`\lambda`$ values. Because the practical
 goal in psychometrics is accurate ability scoring, not item-parameter
-precision,
-[`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
-is the recommended default.
+precision, `tune_lambda_ability_risk()` is the recommended default.
 
 ## Example data
 
@@ -165,9 +162,8 @@ asymptotic covariance matrix $`\text{Tr}(\Sigma_\gamma)`$.
 This objective measures **item-parameter estimation efficiency** and is
 suitable for method validation and theoretical analysis. For
 psychometric applications where accurate test scoring is the goal, use
-[`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
-instead — it directly minimises the propagated ability-score risk
-$`\mathbb{E}[g' \Sigma_\gamma g]`$.
+`tune_lambda_ability_risk()` instead — it directly minimises the
+propagated ability-score risk $`\mathbb{E}[g' \Sigma_\gamma g]`$.
 
 The function uses the **same** human posterior weights for both the
 human and paired-LLM score vectors. This symmetry satisfies the PPI++
@@ -198,9 +194,8 @@ $`\lambda^* \approx N/(n+N)`$.
 
 ## Ability-Risk Tuning
 
-For scoring applications,
-[`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
-targets the quantity
+For scoring applications, `tune_lambda_ability_risk()` targets the
+quantity
 
 `mean(g_i' Sigma_lambda g_i)`
 
@@ -210,7 +205,7 @@ response pattern `i` with respect to those item parameters.
 
 ``` r
 
-ability_tuned <- tune_lambda_ability(
+ability_tuned <- tune_lambda_ability_risk(
   lambda_grid = lambda_grid,
   observed = observed,
   predicted = predicted,
@@ -285,7 +280,7 @@ uncertainty.
 
 ``` r
 
-ability_tuned_with_truth <- tune_lambda_ability(
+ability_tuned_with_truth <- tune_lambda_ability_risk(
   lambda_grid = lambda_grid,
   observed = observed,
   predicted = predicted,
@@ -312,21 +307,20 @@ then the propagated calibration component, `g_i' Sigma_lambda g_i`.
 
 ## Cross-Fitted Ability-Risk Tuning
 
-[`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
-uses the same labeled responses to tune and fit. That is useful for
-prototyping, but final finite-sample analyses should avoid using a
-fold’s labels to tune the lambda applied to that fold’s paired
-correction.
+`tune_lambda_ability_risk()` uses the same labeled responses to tune and
+fit. That is useful for prototyping, but final finite-sample analyses
+should avoid using a fold’s labels to tune the lambda applied to that
+fold’s paired correction.
 
-[`tune_lambda_ability_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_crossfit.md)
-estimates lambda on training folds and then fits the final split-sample
-estimator with the resulting fold-specific lambdas.
+`tune_lambda_ability_risk_crossfit()` estimates lambda on training folds
+and then fits the final split-sample estimator with the resulting
+fold-specific lambdas.
 
 ``` r
 
 split_id <- rep(1:2, length.out = nrow(observed))
 
-crossfit_tuned <- tune_lambda_ability_crossfit(
+crossfit_tuned <- tune_lambda_ability_risk_crossfit(
   lambda_grid = c(0, 0.5, 1),
   observed = observed,
   predicted = predicted,
@@ -350,7 +344,7 @@ crossfit_tuned$final_fit
 ```
 
 Cross-fitting also selects $`\lambda = 0`$ for both folds for the same
-reason as `tune_lambda_ability`: gradient asymmetry from LLM-human
+reason as `tune_lambda_ability_risk`: gradient asymmetry from LLM-human
 misalignment means the correction term hurts estimation at any positive
 $`\lambda`$, and this shows up on training folds as well as the full
 sample.
@@ -372,8 +366,8 @@ crossfit_tuned$final_fit$lambda_generated
 |----|----|----|
 | [`diagnose_lambda_grid()`](http://klintkanopka.com/mixedsubjectsirt/reference/diagnose_lambda_grid.md) | Sensitivity diagnostic | Exploratory analysis only — not a valid tuning rule |
 | `tune_lambda_ppi_score()` | Minimises $`\text{Tr}(\Sigma_\gamma)`$ (item-parameter variance) | Method validation; theoretical benchmarking |
-| [`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md) | Minimises $`\mathbb{E}[g' \Sigma_\gamma g]`$ (ability-score risk) | **Recommended default** for psychometric applications |
-| [`tune_lambda_ability_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_crossfit.md) | Same as above, cross-fitted | Final analyses requiring out-of-sample lambda estimation |
+| `tune_lambda_ability_risk()` | Minimises $`\mathbb{E}[g' \Sigma_\gamma g]`$ (ability-score risk) | **Recommended default** for psychometric applications |
+| `tune_lambda_ability_risk_crossfit()` | Same as above, cross-fitted | Final analyses requiring out-of-sample lambda estimation |
 
 Use a fixed lambda when the value is determined by design or by a
 simulation study. Use
@@ -381,14 +375,12 @@ simulation study. Use
 to understand sensitivity, not to make a final inferential choice. Use
 `tune_lambda_ppi_score()` to inspect the theoretical PPI++ optimum as a
 method diagnostic — note that this minimises item-parameter variance,
-not scoring accuracy. **Use
-[`tune_lambda_ability()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.md)
-when the practical target is ability scoring** and you want the lambda
-that minimizes propagated scoring risk on a chosen target population.
-Use
-[`tune_lambda_ability_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_crossfit.md)
-for the same target when finite-sample adaptivity matters and you want
-lambda estimated out of sample.
+not scoring accuracy. **Use `tune_lambda_ability_risk()` when the
+practical target is ability scoring** and you want the lambda that
+minimizes propagated scoring risk on a chosen target population. Use
+`tune_lambda_ability_risk_crossfit()` for the same target when
+finite-sample adaptivity matters and you want lambda estimated out of
+sample.
 
 The target population matters for ability-risk tuning.
 `target_resp = observed` tunes for the observed human response patterns.
