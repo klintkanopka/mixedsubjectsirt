@@ -366,6 +366,55 @@ check_paired_missingness <- function(observed, predicted,
   paired_missing
 }
 
+item_loss_and_grad <- function(counts, item_pars) {
+  # Returns the per-item contribution to the expected-count loss and gradient.
+  # Used by fit_mixed_subjects_mml() when lambda is a length-n_items vector,
+  # allowing each item j to apply a different PPI++ weight.
+  #
+  # The item-j contribution to the expected-count loss is:
+  #   L_j(γ) = Σ_k (N_jk * log(1 + exp(η_jk)) - R_jk * η_jk) / n
+  # Its gradient gives the per-item gradient components (a_j, d_j).
+  #
+  # When summed over all items this equals loss_expected_counts / gradient_expected_counts.
+  n_items   <- counts$n_items
+  theta     <- counts$theta
+  theta_mat <- matrix(theta, nrow = n_items, ncol = length(theta), byrow = TRUE)
+
+  eta <- outer(item_pars$a, theta, `*`) +
+    matrix(item_pars$d, nrow = n_items, ncol = length(theta))
+
+  item_loss <- (rowSums(counts$N * safe_log1pexp(eta)) -
+                rowSums(counts$R * eta)) / counts$n
+
+  resid  <- counts$N * stats::plogis(eta) - counts$R
+  grad_a <- rowSums(resid * theta_mat) / counts$n
+  grad_d <- rowSums(resid) / counts$n
+
+  list(loss = item_loss, grad_a = grad_a, grad_d = grad_d)
+}
+
+marginal_loss_2pl <- function(resp, item_pars, quadrature) {
+  # True IRT negative marginal log-likelihood per subject:
+  #   L^marg(γ; Y) = -1/n Σ_i log[Σ_k A_k p(Y_i | θ_k; γ)]
+  # This differs from the frozen expected-count loss, which approximates the
+  # marginal likelihood by fixing posterior weights at a separate parameter
+  # estimate.  Minimising this directly removes the false minima that arise
+  # from the posterior asymmetry in the frozen approach.
+  result <- posterior_and_log_lik_2pl(resp, item_pars, quadrature)
+  -mean(result$log_normalizers)
+}
+
+marginal_gradient_2pl <- function(resp, item_pars, quadrature) {
+  # Gradient of marginal_loss_2pl w.r.t. item parameters.
+  # By the Bock-Aitkin EM identity, this equals the expected-count gradient
+  # evaluated with posteriors computed from the CURRENT item_pars.  Posteriors
+  # are NOT frozen from any earlier set of parameters; they adapt continuously
+  # as item_pars changes during optimisation.
+  weights <- posterior_weights_2pl(resp, item_pars, quadrature = quadrature)
+  counts  <- summarize_expected_counts(resp, weights)
+  gradient_expected_counts(counts, item_pars)
+}
+
 fit_from_counts <- function(counts_observed, counts_predicted, counts_generated,
                             initial_pars, lambda, slope_lower = 1e-4,
                             slope_upper = NULL,

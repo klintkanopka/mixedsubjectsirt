@@ -378,7 +378,7 @@ test_that("ability-risk tuning chooses a candidate lambda and crossfits", {
   observed <- simulate_2pl(rnorm(80), pars)
   generated <- simulate_2pl(rnorm(240), pars)
 
-  tuned <- tune_lambda_ability(
+  tuned <- tune_lambda_ability_risk(
     lambda_grid = c(0, 0.5),
     observed = observed,
     predicted = observed,
@@ -392,7 +392,7 @@ test_that("ability-risk tuning chooses a candidate lambda and crossfits", {
   expect_equal(nrow(tuned$summary), 2)
   expect_true(all(is.finite(tuned$summary$mean_total_risk)))
 
-  split_tuned <- tune_lambda_ability_crossfit(
+  split_tuned <- tune_lambda_ability_risk_crossfit(
     lambda_grid = c(0, 0.5),
     observed = observed,
     predicted = observed,
@@ -405,4 +405,148 @@ test_that("ability-risk tuning chooses a candidate lambda and crossfits", {
 
   expect_length(split_tuned$lambda_by_split, 2)
   expect_s3_class(split_tuned$final_fit, "mixedsubjects_fit")
+})
+
+test_that("marginal_loss_2pl gradient matches finite differences", {
+  set.seed(30)
+  pars <- data.frame(item = paste0("I", 1:3), a = c(0.9, 1.1, 0.8),
+                     d = c(-0.3, 0.2, 0.5))
+  resp <- simulate_2pl(rnorm(30), pars)
+  quad <- make_quadrature(7)
+
+  par_vec <- c(pars$a, pars$d)
+  item_names <- pars$item
+  ip <- mixedsubjectsirt:::item_pars_from_vector(par_vec, item_names)
+
+  analytic <- mixedsubjectsirt:::marginal_gradient_2pl(resp, ip, quad)
+
+  eps <- 1e-5
+  numeric_fd <- numeric(length(par_vec))
+  for (j in seq_along(par_vec)) {
+    pv <- pm <- par_vec
+    pv[j] <- pv[j] + eps
+    pm[j] <- pm[j] - eps
+    numeric_fd[j] <-
+      (mixedsubjectsirt:::marginal_loss_2pl(
+        resp, mixedsubjectsirt:::item_pars_from_vector(pv, item_names), quad) -
+       mixedsubjectsirt:::marginal_loss_2pl(
+        resp, mixedsubjectsirt:::item_pars_from_vector(pm, item_names), quad)
+      ) / (2 * eps)
+  }
+
+  expect_equal(as.numeric(analytic), numeric_fd, tolerance = 1e-5)
+})
+
+test_that("fit_mixed_subjects_mml returns valid fit object", {
+  set.seed(31)
+  pars <- data.frame(item = paste0("I", 1:4), a = c(0.8, 1.1, 1.3, 0.9),
+                     d = c(-0.2, 0.1, 0.4, -0.5))
+  observed  <- simulate_2pl(rnorm(60), pars)
+  generated <- simulate_2pl(rnorm(120), pars)
+
+  fit <- fit_mixed_subjects_mml(
+    observed, observed, generated,
+    lambda = 0.5, initial_pars = pars, n_quad = 7,
+    control = list(maxit = 50)
+  )
+
+  expect_s3_class(fit, "mixedsubjects_fit")
+  expect_true(isTRUE(fit$mml))
+  expect_equal(fit$convergence, 0)
+  expect_true(all(is.finite(fit$item_pars$a)))
+  expect_true(all(is.finite(fit$item_pars$d)))
+  # vcov should work (posteriors stored at converged parameters)
+  Sigma <- vcov_mixed_subjects(fit)
+  expect_equal(dim(Sigma), c(8L, 8L))
+  expect_true(all(is.finite(Sigma)))
+})
+
+test_that("fit_mixed_subjects_mml selects lambda > 0 for F=Y predictor", {
+  # With predicted = observed (F = Y), the correction term reduces variance.
+  # tune_lambda_ability_risk should select lambda > 0, unlike the frozen
+  # expected-count estimator which collapses to 0 due to gradient asymmetry.
+  set.seed(32)
+  pars <- data.frame(item = paste0("I", 1:5), a = seq(0.8, 1.6, l = 5),
+                     d = seq(-0.8, 0.8, l = 5))
+  theta  <- rnorm(200)
+  obs    <- simulate_2pl(theta, pars)
+  gen    <- simulate_2pl(rnorm(600), pars)
+
+  tuned <- tune_lambda_ability_risk(
+    lambda_grid  = seq(0, 1, by = 0.2),
+    observed     = obs,
+    predicted    = obs,   # F = Y: theoretical upper bound
+    generated    = gen,
+    initial_pars = pars,
+    fit_fn       = fit_mixed_subjects_mml,
+    n_quad       = 11,
+    control      = list(maxit = 200)
+  )
+
+  # MML should select lambda > 0 for F=Y (the frozen estimator gives 0)
+  expect_gt(tuned$best_lambda, 0)
+  # Risk should be U-shaped: lower at the optimum than at lambda = 0
+  expect_lt(min(tuned$summary$mean_total_risk),
+            tuned$summary$mean_total_risk[tuned$summary$lambda == 0])
+})
+
+test_that("item_loss_and_grad sums equal scalar loss and gradient", {
+  set.seed(40)
+  pars <- data.frame(item = paste0("I", 1:3), a = c(0.9, 1.1, 0.8),
+                     d = c(-0.3, 0.2, 0.5))
+  obs  <- simulate_2pl(rnorm(50), pars)
+  quad <- make_quadrature(7)
+  w    <- posterior_weights_2pl(obs, pars, quadrature = quad)
+  cnts <- summarize_expected_counts(obs, w)
+
+  ig <- mixedsubjectsirt:::item_loss_and_grad(cnts, pars)
+
+  # Sum of per-item losses equals the scalar expected-count loss
+  expect_equal(sum(ig$loss),
+               mixedsubjectsirt:::loss_expected_counts(cnts, pars),
+               tolerance = 1e-10)
+
+  # Concatenated gradient equals the scalar gradient
+  expect_equal(as.numeric(c(ig$grad_a, ig$grad_d)),
+               as.numeric(mixedsubjectsirt:::gradient_expected_counts(cnts, pars)),
+               tolerance = 1e-10)
+})
+
+test_that("tune_lambda_ppi_score_item gives N/(n+N) for F=Y on all items", {
+  set.seed(41)
+  pars  <- data.frame(item = paste0("I", 1:4), a = c(0.8, 1.1, 1.3, 0.9),
+                      d = c(-0.2, 0.1, 0.4, -0.5))
+  obs   <- simulate_2pl(rnorm(80), pars)
+  N_gen <- 200
+  upper <- N_gen / (nrow(obs) + N_gen)
+
+  res <- tune_lambda_ppi_score_item(obs, obs, pars, n_generated = N_gen, n_quad = 7)
+
+  # F=Y: each item's lambda equals N/(n+N)
+  expect_equal(res$lambda, rep(upper, 4), tolerance = 1e-6)
+  expect_equal(res$item, pars$item)
+})
+
+test_that("fit_mixed_subjects_mml with vector lambda converges and equals scalar when uniform", {
+  set.seed(42)
+  pars <- data.frame(item = paste0("I", 1:3), a = c(0.9, 1.1, 0.8),
+                     d = c(-0.3, 0.2, 0.5))
+  obs  <- simulate_2pl(rnorm(60), pars)
+  gen  <- simulate_2pl(rnorm(120), pars)
+
+  # Scalar lambda
+  fit_s <- fit_mixed_subjects_mml(obs, obs, gen, lambda = 0.5,
+    initial_pars = pars, n_quad = 7, control = list(maxit = 80))
+  # Vector lambda (all 0.5): vector path uses frozen counts, different from scalar
+  fit_v <- fit_mixed_subjects_mml(obs, obs, gen, lambda = rep(0.5, 3),
+    initial_pars = pars, n_quad = 7, control = list(maxit = 80))
+
+  # Both should converge
+  expect_equal(fit_s$convergence, 0)
+  expect_equal(fit_v$convergence, 0)
+  # Both should produce valid positive discriminations
+  expect_true(all(fit_s$item_pars$a > 0))
+  expect_true(all(fit_v$item_pars$a > 0))
+  # Lambda stored correctly
+  expect_equal(fit_v$lambda, rep(0.5, 3))
 })

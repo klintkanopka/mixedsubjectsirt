@@ -214,6 +214,46 @@ summarize_expected_counts <- function(resp, weights) {
 #' resp <- matrix(c(1, 0, 0, 1), nrow = 2, byrow = TRUE)
 #' q <- mixed_subjects_quadrature(resp, item_pars = pars, N_quad = 5)
 #' names(q)
+posterior_and_log_lik_2pl <- function(resp, item_pars, quadrature) {
+  # Computes posterior weights AND per-subject marginal log-likelihoods.
+  # Identical to posterior_weights_2pl but additionally saves the log-normaliser
+  # log Z_i = log[Σ_k A_k p(Y_i | θ_k; γ)] for each subject.  These
+  # log-normalisers form the true IRT marginal log-likelihood and are needed
+  # by fit_mixed_subjects_mml() to evaluate the exact PPI++ objective.
+  theta     <- quadrature$theta
+  prior     <- quadrature$weight / sum(quadrature$weight)
+  n         <- nrow(resp)
+  k         <- length(theta)
+  weights   <- matrix(NA_real_, nrow = n, ncol = k)
+  log_norms <- numeric(n)
+
+  eta   <- outer(theta, item_pars$a, `*`) +
+    matrix(item_pars$d, nrow = k, ncol = ncol(resp), byrow = TRUE)
+  log_p <- -safe_log1pexp(-eta)
+  log_q <- -safe_log1pexp(eta)
+  log_prior <- log(pmax(prior, .Machine$double.eps))
+
+  for (i in seq_len(n)) {
+    obs_j <- which(!is.na(resp[i, ]))
+    ll <- log_prior
+    if (length(obs_j) > 0) {
+      y  <- resp[i, obs_j]
+      ll <- ll +
+        as.vector((log_p[, obs_j, drop = FALSE] -
+                   log_q[, obs_j, drop = FALSE]) %*% y) +
+        rowSums(log_q[, obs_j, drop = FALSE])
+    }
+    log_z      <- logsumexp(ll)
+    log_norms[i] <- log_z
+    weights[i, ] <- exp(ll - log_z)
+  }
+
+  colnames(weights) <- paste0("node", seq_len(k))
+  attr(weights, "theta")  <- theta
+  attr(weights, "weight") <- prior
+  list(weights = weights, log_normalizers = log_norms)
+}
+
 mixed_subjects_quadrature <- function(resp, N_quad = 31, eps = 1e-15,
                                       iterlim = 1e5, irt_pars = NULL,
                                       item_pars = NULL, quadrature = NULL,

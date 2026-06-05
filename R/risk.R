@@ -462,18 +462,32 @@ tune_lambda_ppi_score <- function(observed, predicted, item_pars, n_generated,
   )
 }
 
-#' Tune lambda by downstream ability risk
+#' Tune lambda by downstream ability-score risk
 #'
 #' Fits candidate mixed-subjects calibrations, estimates the item-parameter
-#' sandwich covariance for each, and chooses the lambda minimizing average
-#' propagated ability risk on a target response matrix.
+#' sandwich covariance for each, and chooses the lambda that minimises average
+#' propagated ability-score risk on a target response matrix.
 #'
 #' This function minimises `E[g' Sigma_gamma g]` — the propagated ability-score
 #' risk — which is the appropriate objective for IRT applications where accurate
-#' test scoring is the goal. This differs from [tune_lambda_ppi_score()], which
-#' minimises the trace of the item-parameter covariance matrix `Tr(Sigma_gamma)`
-#' (the PPI++ theoretical objective). The two criteria generally yield different
-#' lambda values; ability-score risk is the recommended practical criterion.
+#' test scoring is the goal. This is **distinct** from [tune_lambda_ppi_score()],
+#' which minimises the trace of the item-parameter covariance matrix
+#' `Tr(Sigma_gamma)` (the PPI++ theoretical objective). The two criteria
+#' generally yield different lambda values:
+#'
+#' - `tune_lambda_ability_risk()` asks: which lambda produces the most accurate
+#'   ability scores for the target population? Use this for operational scoring.
+#' - [tune_lambda_ppi_score()] asks: which lambda minimises item-parameter
+#'   estimation variance? Use this for method validation and diagnostics.
+#'
+#' Diagnostic note: if `tune_lambda_ability_risk()` selects `lambda = 0` for a
+#' misaligned LLM (one whose item parameters differ from the human calibration),
+#' this is the correct mathematical outcome under the current fixed-posterior
+#' expected-count implementation. The frozen posteriors create a gradient
+#' asymmetry that inflates item parameters at any `lambda > 0`, increasing
+#' ability risk. This is not a bug in the risk function; it is a property of the
+#' estimating equations. See [fit_mixed_subjects_mml()] for a marginal-likelihood
+#' implementation that removes this asymmetry.
 #'
 #' @param lambda_grid Numeric vector of candidate lambda values in `[0, 1]`.
 #' @param observed,predicted,generated Response matrices passed to
@@ -481,12 +495,18 @@ tune_lambda_ppi_score <- function(observed, predicted, item_pars, n_generated,
 #' @param target_resp Response matrix defining the target scoring population. If
 #'   omitted, `observed` is used.
 #' @param theta_true Optional true theta values for `target_resp`, used in
-#'   simulation studies to add squared scoring error to the risk.
+#'   simulation studies to add squared scoring error to the risk. When omitted,
+#'   `mean_squared_error` in the summary is `NA`; only `mean_param_var` is
+#'   computed.
 #' @param n_quad Number of quadrature nodes.
 #' @param initial_pars Optional starting item parameters.
+#' @param fit_fn Fitting function to use. Defaults to [fit_mixed_subjects()]
+#'   (frozen expected-count). Pass [fit_mixed_subjects_mml()] to use the
+#'   marginal-likelihood PPI++ estimator, which eliminates gradient asymmetry
+#'   and should select `lambda > 0` for genuinely informative predictors.
 #' @param bounds Bounds passed to [score_theta()].
 #' @param control Control list passed to [stats::optim()].
-#' @param ... Additional arguments passed to [fit_mixed_subjects()].
+#' @param ... Additional arguments passed to `fit_fn`.
 #'
 #' @return A list with `summary`, `best_lambda`, `best_fit`, and all fitted
 #'   candidate objects.
@@ -497,18 +517,20 @@ tune_lambda_ppi_score <- function(observed, predicted, item_pars, n_generated,
 #' pars <- data.frame(a = c(1, 1.2, 0.9), d = c(0, -0.5, 0.3))
 #' observed <- simulate_2pl(rnorm(40), pars)
 #' generated <- simulate_2pl(rnorm(100), pars)
-#' tuned <- tune_lambda_ability(
+#' tuned <- tune_lambda_ability_risk(
 #'   c(0, 0.5), observed, observed, generated,
 #'   initial_pars = pars, n_quad = 5, control = list(maxit = 30)
 #' )
 #' tuned$best_lambda
 #' @seealso [tune_lambda_ppi_score()] for the PPI++ theoretical lambda that
-#'   minimises the trace of the item-parameter covariance matrix.
-tune_lambda_ability <- function(lambda_grid, observed, predicted, generated,
-                                target_resp = NULL, theta_true = NULL,
-                                n_quad = 31, initial_pars = NULL,
-                                bounds = c(-6, 6),
-                                control = list(maxit = 500), ...) {
+#'   minimises the trace of the item-parameter covariance matrix;
+#'   [fit_mixed_subjects_mml()] for the marginal-likelihood estimator.
+tune_lambda_ability_risk <- function(lambda_grid, observed, predicted, generated,
+                                     target_resp = NULL, theta_true = NULL,
+                                     n_quad = 31, initial_pars = NULL,
+                                     fit_fn = fit_mixed_subjects,
+                                     bounds = c(-6, 6),
+                                     control = list(maxit = 500), ...) {
   if (!is.numeric(lambda_grid) || length(lambda_grid) == 0) {
     stop("lambda_grid must be a non-empty numeric vector.", call. = FALSE)
   }
@@ -531,7 +553,7 @@ tune_lambda_ability <- function(lambda_grid, observed, predicted, generated,
 
   for (i in seq_along(lambda_grid)) {
     lambda <- lambda_grid[i]
-    fits[[i]] <- fit_mixed_subjects(
+    fits[[i]] <- fit_fn(
       observed = observed,
       predicted = predicted,
       generated = generated,
@@ -572,13 +594,13 @@ tune_lambda_ability <- function(lambda_grid, observed, predicted, generated,
   )
 }
 
-#' Cross-fit ability-risk lambda tuning
+#' Cross-fit ability-score-risk lambda tuning
 #'
 #' Estimates lambda separately for each held-out split using only the remaining
 #' labeled rows, then fits the final split-sample mixed-subjects estimator with
 #' those fold-specific lambda values.
 #'
-#' @inheritParams tune_lambda_ability
+#' @inheritParams tune_lambda_ability_risk
 #' @param n_splits Number of sample splits.
 #' @param split_id Optional integer split assignment for labeled rows.
 #' @param seed Optional seed used when `split_id` is omitted.
@@ -586,13 +608,13 @@ tune_lambda_ability <- function(lambda_grid, observed, predicted, generated,
 #' @return A list with fold-specific lambda values, fold tuning objects, and the
 #'   final split-sample fit.
 #' @export
-tune_lambda_ability_crossfit <- function(lambda_grid, observed, predicted,
-                                         generated, target_resp = NULL,
-                                         theta_true = NULL, n_splits = 2,
-                                         split_id = NULL, seed = NULL,
-                                         n_quad = 31, initial_pars = NULL,
-                                         bounds = c(-6, 6),
-                                         control = list(maxit = 500), ...) {
+tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
+                                              generated, target_resp = NULL,
+                                              theta_true = NULL, n_splits = 2,
+                                              split_id = NULL, seed = NULL,
+                                              n_quad = 31, initial_pars = NULL,
+                                              bounds = c(-6, 6),
+                                              control = list(maxit = 500), ...) {
   observed <- validate_response_matrix(observed, "observed",
                                        allow_fractional = FALSE)
   predicted <- validate_response_matrix(predicted, "predicted",
@@ -638,7 +660,7 @@ tune_lambda_ability_crossfit <- function(lambda_grid, observed, predicted,
       theta_true[train]
     }
 
-    fold_tuning[[s]] <- tune_lambda_ability(
+    fold_tuning[[s]] <- tune_lambda_ability_risk(
       lambda_grid = lambda_grid,
       observed = observed[train, , drop = FALSE],
       predicted = predicted[train, , drop = FALSE],
@@ -671,5 +693,301 @@ tune_lambda_ability_crossfit <- function(lambda_grid, observed, predicted,
     split_id = split_id,
     fold_tuning = fold_tuning,
     final_fit = final_fit
+  )
+}
+
+#' Per-item PPI++ optimal tuning parameters
+#'
+#' Applies the PPI++ Proposition 2 plug-in formula independently for each item,
+#' producing a vector of item-specific lambda values `λ_j ∈ [0, 1]`.
+#'
+#' The global [tune_lambda_ppi_score()] uses the full parameter covariance matrix
+#' `Tr(Σ_γ)` as the objective. This function instead applies the same formula
+#' using only the 2×2 diagonal block of the inverse Hessian for item `j`, and
+#' the 2D sub-vectors of the human and paired-LLM score vectors. The result is
+#' the λ that minimises the marginal variance of `(a_j, d_j)` independently for
+#' each item.
+#'
+#' **Use case.** When a single global λ is forced to zero because a few items
+#' have poor LLM predictions, per-item λ_j allows well-predicted items to still
+#' benefit from the LLM data. Pass the returned vector to
+#' [fit_mixed_subjects_mml()] as the `lambda` argument.
+#'
+#' This is a **theoretical diagnostic**: it minimises item-parameter variance,
+#' not ability-score risk. For operational scoring use
+#' [tune_lambda_ability_risk_item()] instead.
+#'
+#' @param observed Human response matrix.
+#' @param predicted Paired LLM responses for the same rows as `observed`.
+#' @param item_pars Item parameters at which to evaluate the score vectors.
+#' @param n_generated Number of generated (unpaired) LLM subjects.
+#' @param quadrature Optional quadrature grid.
+#' @param n_quad Number of quadrature nodes when `quadrature` is omitted.
+#'
+#' @return A list with `lambda` (numeric vector of length `n_items`), `item`
+#'   (item names), `n`, `n_generated`, and `r = n / n_generated`.
+#' @export
+#'
+#' @seealso [tune_lambda_ppi_score()] for the global version;
+#'   [fit_mixed_subjects_mml()] to fit with a per-item lambda vector.
+#'
+#' @examples
+#' set.seed(1)
+#' pars <- data.frame(a = c(1, 1.2, 0.9), d = c(0, -0.5, 0.3))
+#' observed <- simulate_2pl(rnorm(40), pars)
+#' tune_lambda_ppi_score_item(observed, observed, pars, n_generated = 100, n_quad = 7)$lambda
+tune_lambda_ppi_score_item <- function(observed, predicted, item_pars, n_generated,
+                                        quadrature = NULL, n_quad = 31) {
+  observed  <- validate_response_matrix(observed,  "observed",
+                                        allow_fractional = FALSE)
+  predicted <- validate_response_matrix(predicted, "predicted",
+                                        allow_fractional = TRUE)
+  check_same_items(observed, predicted, "observed", "predicted")
+  if (nrow(observed) != nrow(predicted)) {
+    stop("observed and predicted must have the same number of rows.", call. = FALSE)
+  }
+  if (!is.numeric(n_generated) || length(n_generated) != 1 ||
+      !is.finite(n_generated) || n_generated <= 0) {
+    stop("n_generated must be a single positive finite number.", call. = FALSE)
+  }
+
+  item_pars  <- standardize_item_pars(item_pars, n_items = ncol(observed),
+                                      item_names = colnames(observed))
+  quadrature <- check_quadrature(quadrature, n_quad = n_quad)
+  n_items    <- nrow(item_pars)
+
+  # Human posterior weights — same for both score vectors (symmetry condition)
+  weights <- posterior_weights_2pl(observed, item_pars, quadrature = quadrature)
+  S_h     <- person_scores_2pl(observed,  weights, item_pars)
+  S_f     <- person_scores_2pl(predicted, weights, item_pars)
+
+  n   <- nrow(observed)
+  r   <- n / n_generated
+
+  # Full Hessian; use H^{-1} block for each item
+  counts <- summarize_expected_counts(observed, weights)
+  H      <- avg_hessian_counts(counts, item_pars)
+  H_inv  <- stable_inverse(H)
+
+  lambda_j <- numeric(n_items)
+
+  for (j in seq_len(n_items)) {
+    idx <- c(j, n_items + j)      # (a_j, d_j) columns in score matrices
+
+    s_h_j <- S_h[, idx, drop = FALSE]   # n × 2
+    s_f_j <- S_f[, idx, drop = FALSE]
+
+    H_inv_j <- H_inv[idx, idx, drop = FALSE]   # 2 × 2
+
+    mu_h_j  <- colMeans(s_h_j)
+    mu_f_j  <- colMeans(s_f_j)
+    C_hf_j  <- t(s_h_j - mu_h_j) %*% (s_f_j - mu_f_j) / (n - 1)
+    V_f_j   <- t(s_f_j - mu_f_j) %*% (s_f_j - mu_f_j) / (n - 1)
+
+    sym_cov_j   <- C_hf_j + t(C_hf_j)
+    numerator_j   <- sum(diag(H_inv_j %*% sym_cov_j   %*% H_inv_j))
+    denominator_j <- 2 * (1 + r) * sum(diag(H_inv_j %*% V_f_j %*% H_inv_j))
+
+    lambda_j[j] <- if (denominator_j <= 0) 0 else
+      max(0, min(1, numerator_j / denominator_j))
+  }
+
+  list(lambda = lambda_j, item = item_pars$item, n = n,
+       n_generated = n_generated, r = r)
+}
+
+#' Per-item ability-risk lambda tuning via coordinate descent
+#'
+#' Finds a per-item vector of lambda values `λ_j ∈ [0, 1]` that minimises
+#' propagated ability-score risk `E[g' Σ_γ g]` using coordinate descent on the
+#' items. Each coordinate step selects the `λ_j` in `lambda_grid` that gives
+#' the smallest mean ability risk while holding all other `λ_{j'}` fixed.
+#'
+#' Uses [fit_mixed_subjects_mml()] at each candidate, so posteriors are
+#' recomputed from the current parameters (no frozen-posterior bias). The
+#' resulting lambda vector can then be used directly with
+#' [fit_mixed_subjects_mml()].
+#'
+#' **Computational cost.** Each pass evaluates `n_items × length(lambda_grid)`
+#' fits. For `n_items = 8` and a 5-point grid this is 40 fits per pass. Use
+#' `n_pass = 1` (the default) for a single greedy sweep, which is usually
+#' sufficient.
+#'
+#' @param lambda_grid Numeric vector of candidate λ values in `[0, 1]` to try
+#'   for each item independently.
+#' @param observed,predicted,generated Response matrices passed to
+#'   [fit_mixed_subjects_mml()].
+#' @param target_resp Target scoring population. If omitted, `observed` is used.
+#' @param theta_true Optional true theta values, used to add squared scoring
+#'   error to the risk.
+#' @param n_quad Number of quadrature nodes.
+#' @param initial_pars Optional starting item parameters.
+#' @param n_pass Number of coordinate-descent passes (default 1).
+#' @param init_lambda Starting lambda vector for coordinate descent. Supply the
+#'   global scalar optimum from [tune_lambda_ability_risk()] (e.g.
+#'   `init_lambda = 0.5`) to start the search around a useful operating point
+#'   rather than all-zeros. A scalar is broadcast to all items; a vector of
+#'   length `n_items` sets per-item starting values.
+#' @param bounds Bounds passed to [score_theta()].
+#' @param control Control list passed to [stats::optim()].
+#' @param ... Additional arguments passed to [fit_mixed_subjects_mml()].
+#'
+#' @return A list with `lambda` (per-item vector), `item` (item names),
+#'   `n_pass`, and `final_fit` (the [fit_mixed_subjects_mml()] fit at the
+#'   selected lambda).
+#' @export
+#'
+#' @seealso [tune_lambda_ppi_score_item()] for the faster PPI++-score version;
+#'   [tune_lambda_ability_risk()] for the global scalar version.
+#'
+#' @examples
+#' set.seed(1)
+#' pars <- data.frame(a = c(1, 1.2, 0.9), d = c(0, -0.5, 0.3))
+#' observed  <- simulate_2pl(rnorm(40), pars)
+#' generated <- simulate_2pl(rnorm(100), pars)
+#' tuned <- tune_lambda_ability_risk_item(
+#'   c(0, 0.5), observed, observed, generated,
+#'   initial_pars = pars, n_quad = 5, control = list(maxit = 30)
+#' )
+#' tuned$lambda
+tune_lambda_ability_risk_item <- function(lambda_grid, observed, predicted, generated,
+                                          target_resp = NULL, theta_true = NULL,
+                                          n_quad = 31, initial_pars = NULL,
+                                          n_pass = 1,
+                                          init_lambda = 0,
+                                          bounds = c(-6, 6),
+                                          control = list(maxit = 300), ...) {
+  if (!is.numeric(lambda_grid) || length(lambda_grid) == 0) {
+    stop("lambda_grid must be a non-empty numeric vector.", call. = FALSE)
+  }
+  lambda_grid <- sort(unique(lambda_grid))
+  vapply(lambda_grid, validate_lambda, numeric(1))
+
+  observed <- validate_response_matrix(observed, "observed", allow_fractional = FALSE)
+  n_items  <- ncol(observed)
+  if (is.null(target_resp)) target_resp <- observed
+
+  # Initialise lambda vector. init_lambda can be a scalar (same for all items)
+  # or a length-n_items vector. Passing the global scalar optimum from
+  # tune_lambda_ability_risk() is recommended: the coordinate descent then
+  # refines which items benefit from that level of correction.
+  init_lambda <- validate_lambda_vector(init_lambda, n = n_items)
+  lambda_vec  <- if (length(init_lambda) == 1) rep(init_lambda, n_items) else init_lambda
+
+  for (pass in seq_len(n_pass)) {
+    lambda_prev <- lambda_vec
+
+    for (j in seq_len(n_items)) {
+      best_risk_j <- Inf
+      best_lam_j  <- lambda_vec[j]
+
+      for (lam in lambda_grid) {
+        lambda_try    <- lambda_vec
+        lambda_try[j] <- lam
+
+        fit_j <- tryCatch(
+          fit_mixed_subjects_mml(
+            observed     = observed,
+            predicted    = predicted,
+            generated    = generated,
+            lambda       = lambda_try,
+            n_quad       = n_quad,
+            initial_pars = initial_pars,
+            control      = control,
+            ...
+          ),
+          error = function(e) NULL
+        )
+        if (is.null(fit_j)) next
+
+        risk_j <- tryCatch({
+          Sigma_j <- vcov_mixed_subjects(fit_j)
+          ability_risk(target_resp, fit_j, vcov = Sigma_j,
+                       theta_true = theta_true, bounds = bounds)$summary$mean_total_risk
+        }, error = function(e) Inf)
+
+        if (is.finite(risk_j) && risk_j < best_risk_j) {
+          best_risk_j <- risk_j
+          best_lam_j  <- lam
+        }
+      }
+      lambda_vec[j] <- best_lam_j
+    }
+
+    if (max(abs(lambda_vec - lambda_prev)) < 1e-4) break
+  }
+
+  final_fit <- tryCatch(
+    fit_mixed_subjects_mml(
+      observed     = observed,
+      predicted    = predicted,
+      generated    = generated,
+      lambda       = lambda_vec,
+      n_quad       = n_quad,
+      initial_pars = initial_pars,
+      control      = control,
+      ...
+    ),
+    error = function(e) NULL
+  )
+
+  list(
+    lambda    = lambda_vec,
+    item      = colnames(observed),
+    n_pass    = n_pass,
+    final_fit = final_fit
+  )
+}
+
+#' @describeIn tune_lambda_ability_risk Deprecated name; use
+#'   [tune_lambda_ability_risk()] instead.
+#' @export
+tune_lambda_ability <- function(lambda_grid, observed, predicted, generated,
+                                target_resp = NULL, theta_true = NULL,
+                                n_quad = 31, initial_pars = NULL,
+                                bounds = c(-6, 6),
+                                control = list(maxit = 500), ...) {
+  .Deprecated(
+    new   = "tune_lambda_ability_risk",
+    msg   = paste(
+      "'tune_lambda_ability' has been renamed 'tune_lambda_ability_risk'",
+      "to make its objective (ability-score risk, not PPI++ score) explicit.",
+      "Please update your code."
+    )
+  )
+  tune_lambda_ability_risk(
+    lambda_grid = lambda_grid,
+    observed = observed, predicted = predicted, generated = generated,
+    target_resp = target_resp, theta_true = theta_true,
+    n_quad = n_quad, initial_pars = initial_pars,
+    bounds = bounds, control = control, ...
+  )
+}
+
+#' @describeIn tune_lambda_ability_risk_crossfit Deprecated name; use
+#'   [tune_lambda_ability_risk_crossfit()] instead.
+#' @export
+tune_lambda_ability_crossfit <- function(lambda_grid, observed, predicted,
+                                         generated, target_resp = NULL,
+                                         theta_true = NULL, n_splits = 2,
+                                         split_id = NULL, seed = NULL,
+                                         n_quad = 31, initial_pars = NULL,
+                                         bounds = c(-6, 6),
+                                         control = list(maxit = 500), ...) {
+  .Deprecated(
+    new   = "tune_lambda_ability_risk_crossfit",
+    msg   = paste(
+      "'tune_lambda_ability_crossfit' has been renamed",
+      "'tune_lambda_ability_risk_crossfit'.",
+      "Please update your code."
+    )
+  )
+  tune_lambda_ability_risk_crossfit(
+    lambda_grid = lambda_grid,
+    observed = observed, predicted = predicted, generated = generated,
+    target_resp = target_resp, theta_true = theta_true,
+    n_splits = n_splits, split_id = split_id, seed = seed,
+    n_quad = n_quad, initial_pars = initial_pars,
+    bounds = bounds, control = control, ...
   )
 }
