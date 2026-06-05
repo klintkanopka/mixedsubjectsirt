@@ -171,17 +171,14 @@ vcov_mixed_subjects <- function(object, ridge = 1e-8, ...) {
     # Standard scalar path
     bread <- H_observed + lambda * (H_generated - H_predicted)
   } else {
-    # Vector-lambda path: item j's 2×2 parameter block uses λ_j.
-    # The frozen expected-count Hessian is block-diagonal, so the combined
-    # bread has λ_j applied to item j's diagonal block.
-    lambda_2j <- rep(lambda, 2L)  # c(λ_1,...,λ_J, λ_1,...,λ_J)
-    H_corr <- (H_generated - H_predicted)
-    # Apply λ_j to each column and matching row
-    bread <- H_observed +
-      sweep(sweep(H_corr, 1L, lambda_2j, `*`), 2L, lambda_2j, `*`)
-    # The above applies λ_j * λ_l to H_corr[j,l].  For the block-diagonal
-    # case (j≠l blocks are zero), this is equivalent to λ_j applied to the
-    # diagonal block.  Off-diagonal coupling terms are scaled by √(λ_j λ_l).
+    # Vector-lambda path: item j's 2×2 diagonal block uses λ_j (not λ_j²).
+    # Build the bread explicitly block-by-block to avoid incorrect sweep scaling.
+    H_corr <- H_generated - H_predicted
+    bread   <- H_observed
+    for (j in seq_len(n_items)) {
+      idx <- c(j, n_items + j)
+      bread[idx, idx] <- H_observed[idx, idx] + lambda[j] * H_corr[idx, idx]
+    }
   }
 
   S_observed  <- person_scores_2pl(q_observed$resp,  q_observed$weights,  item_pars)
@@ -263,14 +260,16 @@ louis_missing_info <- function(resp, weights, item_pars) {
   EP2 <- W_theta2 %*% t(p)
 
   Y        <- as.matrix(resp)
-  Y[is.na(Y)] <- 0            # NA → 0 contribution to residual
-
+  Y[is.na(Y)] <- 0   # treat missing as 0 (score = 0 for missing items)
   A_k <- colMeans(W)           # estimated marginal node weights
 
   # sm_block computes the J×J second-moment matrix for block (α):
   #   (1/n) Σ_i Σ_k w_ik r_ij(k) r_il(k) θ_k^α
-  # = (1/n) [yy - yp - t(yp) + pp]
-  # where r_ij(k) = y_ij - p_j(θ_k).
+  # where r_ij(k) = y_ij - p_j(θ_k), with NA responses treated as y_ij = 0.
+  # NOTE: this approximation is exact for complete data.  For responses with
+  # item-level missingness, it is approximately correct when missingness is
+  # sparse and uncorrelated with item difficulty.  See vcov_mixed_subjects_mml()
+  # for a guard that warns when missingness is present.
   sm_block <- function(EW_alpha, EP_alpha, A_alpha) {
     yy <- crossprod(Y * EW_alpha, Y) / n
     yp <- crossprod(Y, EP_alpha)     / n
@@ -336,9 +335,27 @@ louis_missing_info <- function(resp, weights, item_pars) {
 #'   [louis_missing_info()] (internal) for the missing-information correction.
 vcov_mixed_subjects_mml <- function(object, ridge = 1e-8, ...) {
   summaries  <- extract_q_for_vcov(object)
-  q_observed <- summaries[[1]]
+  q_observed  <- summaries[[1]]
   q_predicted <- summaries[[2]]
   q_generated <- summaries[[3]]
+
+  # Guard: louis_missing_info() treats NA responses as y=0, which is exact
+  # only for complete data.  Warn when missingness is present so users are
+  # aware that the Louis bread is approximate under item-level missing data.
+  has_na <- any(
+    is.na(q_observed$resp),
+    is.na(q_predicted$resp),
+    is.na(q_generated$resp)
+  )
+  if (has_na) {
+    warning(
+      "vcov_mixed_subjects_mml(): one or more response matrices contain NA. ",
+      "louis_missing_info() treats missing responses as y = 0, which gives ",
+      "an approximate (not exact) Louis bread under item-level missingness. ",
+      "Use vcov_mixed_subjects() for exact results under the frozen EC estimator.",
+      call. = FALSE
+    )
+  }
 
   item_pars  <- object$item_pars
   n_items    <- nrow(item_pars)
@@ -381,8 +398,23 @@ vcov_mixed_subjects_mml <- function(object, ridge = 1e-8, ...) {
 
 #' @export
 vcov.mixedsubjects_fit <- function(object, ...) {
-  # Dispatch: MML scalar-lambda fits use the Louis marginal bread;
-  # frozen expected-count fits (or vector-lambda fits) use the EM Hessian bread.
+  # Dispatch:
+  # - Scalar MML fits → Louis-corrected marginal bread (vcov_mixed_subjects_mml)
+  # - All other fits → EM Hessian bread (vcov_mixed_subjects)
+  #
+  # Split-sample fits (from fit_mixed_subjects_split / tune_lambda_ability_risk_crossfit)
+  # store pooled expected counts but NOT raw response matrices or posterior
+  # weights, so vcov_mixed_subjects will error.  To get ability uncertainty for
+  # a split final fit, re-fit with fit_mixed_subjects_mml (scalar lambda, full
+  # sample) and call vcov() on that fit.
+  if (!is.null(object$split)) {
+    stop(
+      "vcov() is not yet available for split-sample fits. ",
+      "Re-fit with fit_mixed_subjects_mml(lambda = mean(lambda_by_split)) ",
+      "on the full sample to obtain a covariance estimate.",
+      call. = FALSE
+    )
+  }
   if (isTRUE(object$mml) && length(object$lambda) == 1L) {
     vcov_mixed_subjects_mml(object, ...)
   } else {
@@ -435,10 +467,21 @@ ability_gradient <- function(resp, item_pars, theta = NULL,
   grad <- matrix(NA_real_, nrow = nrow(resp), ncol = 2 * n_items)
   colnames(grad) <- c(paste0("a_", item_pars$item), paste0("d_", item_pars$item))
 
+  boundary_tol <- sqrt(.Machine$double.eps)   # ~1.5e-8
+
   for (i in seq_len(nrow(resp))) {
     observed <- which(!is.na(resp[i, ]))
     if (length(observed) == 0 || !is.finite(theta[i])) {
       next
+    }
+
+    # Implicit-differentiation gradient is valid only for interior optima.
+    # At a boundary estimate (all-correct or all-incorrect response patterns),
+    # theta_hat equals the bound, the score equation does not hold, and the
+    # gradient is theoretically undefined.  Set to NA to signal this.
+    if (abs(theta[i] - bounds[1]) < boundary_tol ||
+        abs(theta[i] - bounds[2]) < boundary_tol) {
+      next     # row stays NA — excluded from mean_param_var via na.rm = TRUE
     }
 
     eta <- item_pars$d[observed] + item_pars$a[observed] * theta[i]
@@ -499,7 +542,9 @@ ability_risk <- function(resp, fit_or_pars, vcov = NULL, theta_true = NULL,
   if (inherits(fit_or_pars, "mixedsubjects_fit")) {
     item_pars <- fit_or_pars$item_pars
     if (is.null(vcov)) {
-      vcov <- vcov_mixed_subjects(fit_or_pars)
+      # Use the S3 generic so MML fits get vcov_mixed_subjects_mml (Louis bread)
+      # and frozen EC fits get vcov_mixed_subjects (EM bread).
+      vcov <- stats::vcov(fit_or_pars)
     }
   } else {
     item_pars <- fit_or_pars
@@ -758,21 +803,29 @@ tune_lambda_ability_risk <- function(lambda_grid, observed, predicted, generated
       ...
     )
 
-    Sigma <- vcov_mixed_subjects(fits[[i]])
-    risks[[i]] <- ability_risk(
-      target_resp,
-      fits[[i]],
-      vcov = Sigma,
-      theta_true = theta_true,
-      bounds = bounds
-    )
+    # Use the S3 generic so MML fits get vcov_mixed_subjects_mml (Louis bread).
+    Sigma <- tryCatch(stats::vcov(fits[[i]]),
+                      error = function(e) NULL)
+
+    if (is.null(Sigma)) {
+      risks[[i]] <- list(summary = data.frame(
+        mean_param_var     = Inf,
+        mean_squared_error = Inf,
+        mean_total_risk    = Inf
+      ))
+    } else {
+      risks[[i]] <- ability_risk(
+        target_resp, fits[[i]], vcov = Sigma,
+        theta_true = theta_true, bounds = bounds
+      )
+    }
 
     rows[[i]] <- data.frame(
-      lambda = lambda,
-      mean_param_var = risks[[i]]$summary$mean_param_var,
+      lambda             = lambda,
+      mean_param_var     = risks[[i]]$summary$mean_param_var,
       mean_squared_error = risks[[i]]$summary$mean_squared_error,
-      mean_total_risk = risks[[i]]$summary$mean_total_risk,
-      convergence = fits[[i]]$convergence
+      mean_total_risk    = risks[[i]]$summary$mean_total_risk,
+      convergence        = fits[[i]]$convergence
     )
   }
 
@@ -822,12 +875,15 @@ tune_lambda_ability_risk <- function(lambda_grid, observed, predicted, generated
 #'   `"row_aligned"`: only the training rows of `target_resp` are used, which
 #'   is valid when `target_resp = observed` and fold-matched evaluation is
 #'   desired.
-#' @param final_fit_fn Function used to produce the final combined-data fit from
-#'   the cross-fitted lambda values. Defaults to [fit_mixed_subjects_split()].
-#'   Pass [fit_mixed_subjects_mml()] (scalar mean lambda) or a custom function
-#'   if you tuned fold lambdas with `fit_fn = fit_mixed_subjects_mml` and want a
-#'   fully MML final estimate. Note that mixing MML fold tuning with a frozen
-#'   expected-count final fit is an approximation; document this when reporting.
+#' @param final_fit_fn Function used to produce the final combined-data fit.
+#'   Defaults to [fit_mixed_subjects_split()], which accepts a per-fold
+#'   `lambda` vector natively.
+#'   Pass [fit_mixed_subjects_mml()] to get a scalar marginal-MML final fit: the
+#'   fold-specific lambdas are averaged (weighted by fold size) into a single
+#'   scalar, avoiding the accidental per-item lambda problem that occurs when a
+#'   length-`n_splits` vector is passed directly to `fit_mixed_subjects_mml()`.
+#'   Note that mixing MML fold-tuning with a frozen final fit is an
+#'   approximation; document this when reporting results.
 #'
 #' @return A list with fold-specific lambda values, fold tuning objects, and the
 #'   final fit.
@@ -917,20 +973,44 @@ tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
     lambda_by_split[s] <- fold_tuning[[s]]$best_lambda
   }
 
-  final_fit <- final_fit_fn(
-    observed  = observed,
-    predicted = predicted,
-    generated = generated,
-    lambda    = lambda_by_split,
-    split_id  = split_id,
-    n_quad    = n_quad,
-    initial_pars = initial_pars,
-    control   = control,
-    ...
-  )
+  # Determine what lambda to pass to the final fit function.
+  # fit_mixed_subjects_split() and related functions accept a per-fold vector.
+  # fit_mixed_subjects_mml() accepts only a scalar or per-item vector, so
+  # passing a length-n_splits vector risks accidental per-item interpretation.
+  # When final_fit_fn is not fit_mixed_subjects_split, average the fold lambdas.
+  uses_split_fn <- identical(final_fit_fn, fit_mixed_subjects_split)
+  if (uses_split_fn) {
+    lambda_final  <- lambda_by_split
+    extra_split   <- list(split_id = split_id)
+  } else {
+    # Weighted mean: weight each fold's lambda by the number of labeled rows in
+    # that fold's held-out set.
+    fold_sizes <- vapply(
+      split_values,
+      function(v) sum(split_id == v),
+      integer(1)
+    )
+    lambda_final <- sum(fold_sizes * lambda_by_split) / sum(fold_sizes)
+    extra_split  <- list()
+  }
+
+  final_fit <- do.call(final_fit_fn, c(
+    list(
+      observed     = observed,
+      predicted    = predicted,
+      generated    = generated,
+      lambda       = lambda_final,
+      n_quad       = n_quad,
+      initial_pars = initial_pars,
+      control      = control
+    ),
+    extra_split,
+    list(...)
+  ))
 
   list(
     lambda_by_split = lambda_by_split,
+    lambda_final    = lambda_final,   # scalar mean or fold vector, as passed to final_fit_fn
     split_id        = split_id,
     fold_tuning     = fold_tuning,
     final_fit       = final_fit
@@ -1150,7 +1230,7 @@ tune_lambda_ability_risk_item <- function(lambda_grid, observed, predicted, gene
         if (is.null(fit_j)) next
 
         risk_j <- tryCatch({
-          Sigma_j <- vcov_mixed_subjects(fit_j)
+          Sigma_j <- stats::vcov(fit_j)
           ability_risk(target_resp, fit_j, vcov = Sigma_j,
                        theta_true = theta_true, bounds = bounds)$summary$mean_total_risk
         }, error = function(e) Inf)

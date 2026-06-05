@@ -133,8 +133,10 @@ Items 1–4 (F = Y) should show $\lambda_j \approx N/(n+N) = 0.75$; items 5–8
 
 `tune_lambda_ability_risk_item()` uses coordinate descent: for each item $j$, it
 finds the $\lambda_j$ in `lambda_grid` that minimises ability-score risk while
-holding all other $\lambda_{j'}$ fixed. Starting from the global scalar optimum
-(not from all-zeros) is essential — see the note below.
+holding all other $\lambda_{j'}$ fixed. Each evaluation fits with the **frozen
+expected-count Q-function** (not the full marginal-MML objective) because the IRT
+marginal likelihood does not decompose item-wise. Starting from the global scalar
+optimum (not from all-zeros) is essential — see the note below.
 
 ```{r item-risk, cache = FALSE}
 item_tuned <- tune_lambda_ability_risk_item(

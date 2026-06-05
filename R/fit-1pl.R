@@ -370,6 +370,12 @@ fit_mixed_subjects_mml_1pl <- function(observed, predicted, generated, lambda = 
   item_names <- colnames(observed)
   n_items    <- length(item_names)
 
+  # Fixed-nuisance posteriors for "human" path (same fix as 2PL).
+  if (mml_pred_weights == "human") {
+    pred_w_fixed   <- posterior_weights_2pl(observed, init_std, quadrature)
+    pred_cts_fixed <- summarize_expected_counts(predicted, pred_w_fixed)
+  }
+
   .cache     <- new.env(parent = emptyenv())
   .cache$par <- NULL
   .cache$val <- NULL
@@ -396,14 +402,16 @@ fit_mixed_subjects_mml_1pl <- function(observed, predicted, generated, lambda = 
     gen_counts <- summarize_expected_counts(generated, gen_r$weights)
 
     if (mml_pred_weights == "own") {
+      # Pure MML: L_pred uses its own posteriors
       pred_r      <- posterior_and_log_lik_2pl(predicted, ip, quadrature)
       pred_counts <- summarize_expected_counts(predicted, pred_r$weights)
       l_pred <- -mean(pred_r$log_normalizers)
       g_pred <- gradient_expected_counts_1pl(pred_counts, ip)
     } else {
-      pred_counts <- summarize_expected_counts(predicted, obs_r$weights)
-      l_pred <- loss_expected_counts(pred_counts, ip)
-      g_pred <- gradient_expected_counts_1pl(pred_counts, ip)
+      # Fixed-nuisance Q-function: frozen human posteriors from init_std
+      pred_counts <- pred_cts_fixed
+      l_pred <- loss_expected_counts(pred_cts_fixed, ip)
+      g_pred <- gradient_expected_counts_1pl(pred_cts_fixed, ip)
     }
 
     val <- -mean(obs_r$log_normalizers) +
@@ -436,8 +444,9 @@ fit_mixed_subjects_mml_1pl <- function(observed, predicted, generated, lambda = 
   q_pred_final <- if (mml_pred_weights == "own") {
     build_quadrature_summary(predicted, conv_pars, quadrature)
   } else {
+    # Store fixed-nuisance posteriors (from init_std) for consistent vcov
     build_quadrature_summary(predicted, conv_pars, quadrature,
-                              weights = q_obs_final$weights)
+                              weights = pred_w_fixed)
   }
   q_gen_final <- build_quadrature_summary(generated, conv_pars, quadrature)
 
