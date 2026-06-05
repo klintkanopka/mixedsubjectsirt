@@ -465,6 +465,42 @@ fit_mixed_subjects_mml with partial lambda ([0.5]*4, [0]*4):
 <hr></div>
 </div>
 <div class="section level2">
+<h2 id="round-5-fourth-reviewer-pass">Round 5 (fourth reviewer pass)<a class="anchor" aria-label="anchor" href="#round-5-fourth-reviewer-pass"></a></h2>
+<div class="section level3">
+<h3 id="assessment-1">Assessment<a class="anchor" aria-label="anchor" href="#assessment-1"></a></h3>
+<p>The reviewer confirmed that Fixes 1–3 from Round 4 are correct and all Round 2/3 changes landed as expected. The one substantive issue identified as “still present” (Issues 1 and 2) reflected the reviewer examining the GitHub remote, which at that point had not yet received the Round 4 commits. The local code already contained those fixes.</p>
+<p>One genuinely new issue was identified: <strong>1PL tuning robustness</strong> — the <code>tune_lambda_ability_risk_1pl()</code> loop had no <code>tryCatch</code> protection around the fit, covariance, or risk calls. A single failed candidate could abort the entire tuning call before the <code>selection_risk</code> filter had a chance to handle it, unlike the 2PL tuner which wraps each step defensively.</p>
+</div>
+<div class="section level3">
+<h3 id="fix-1pl-tuner-robustness-rrisk-1plr">Fix: 1PL tuner robustness (<code>R/risk-1pl.R</code>)<a class="anchor" aria-label="anchor" href="#fix-1pl-tuner-robustness-rrisk-1plr"></a></h3>
+<p>Added the same <code>tryCatch</code> pattern used in <code>tune_lambda_ability_risk()</code>:</p>
+<ol style="list-style-type: decimal"><li>The <code>fit_fn(...)</code> call is wrapped; a failed fit returns <code>NULL</code> and the row gets <code>convergence = 99L</code> and <code>mean_total_risk = Inf</code>.</li>
+<li>
+<code>vcov_mixed_subjects_1pl()</code> is wrapped; a failed covariance (singular bread, degenerate item parameters) returns <code>NULL</code> and the risk is set to <code>Inf</code>.</li>
+<li>
+<code>ability_risk_1pl()</code> is wrapped; any remaining failure returns <code>Inf</code> risk.</li>
+</ol><p>The existing <code>selection_risk</code> filter then excludes all <code>Inf</code>-risk candidates before <code>which.min</code> is called, and the existing warning fires when all candidates fail. The behaviour is now identical to the 2PL tuner.</p>
+</div>
+<div class="section level3">
+<h3 id="remaining-deferred-issues-unchanged-from-round-4">Remaining deferred issues (unchanged from Round 4)<a class="anchor" aria-label="anchor" href="#remaining-deferred-issues-unchanged-from-round-4"></a></h3>
+<table class="table"><colgroup><col width="46%"><col width="53%"></colgroup><thead><tr><th>Issue</th>
+<th>Status</th>
+</tr></thead><tbody><tr><td>Louis missing-information correction for item-level missingness</td>
+<td>
+<code>vcov_mixed_subjects_mml</code> warns on NA; full mask deferred</td>
+</tr><tr><td>1PL marginal bread (Louis correction)</td>
+<td>EM bread documented as approximate; deferred</td>
+</tr><tr><td>EAP-based ability risk</td>
+<td>ML boundary guard added; EAP deferred</td>
+</tr><tr><td>Split-sample <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>
+</td>
+<td>Throws informative error; deferred</td>
+</tr></tbody></table></div>
+<div class="section level3">
+<h3 id="test-count-after-round-5-77-pass-0-fail-0-warn-unchanged">Test count after Round 5: <strong>77 PASS, 0 FAIL, 0 WARN</strong> (unchanged)<a class="anchor" aria-label="anchor" href="#test-count-after-round-5-77-pass-0-fail-0-warn-unchanged"></a></h3>
+<hr></div>
+</div>
+<div class="section level2">
 <h2 id="files-modified-in-phase-1-and-phase-2">Files modified in Phase 1 and Phase 2<a class="anchor" aria-label="anchor" href="#files-modified-in-phase-1-and-phase-2"></a></h2>
 <table class="table"><colgroup><col width="42%"><col width="57%"></colgroup><thead><tr><th>File</th>
 <th>Change</th>
