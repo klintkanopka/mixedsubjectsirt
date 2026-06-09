@@ -1,8 +1,34 @@
-test_that("quadrature weights are standard-normal weights", {
-  quad <- make_quadrature(7)
+test_that("quadrature matches standard-normal moments (sum, mean, variance)", {
+  # The variance check is essential: a previous bug rescaled the nodes by
+  # sqrt(2), giving a N(0, 2) grid that passed the sum/mean checks but biased
+  # every discrimination estimate downward by ~1/sqrt(2). Check several n_quad.
+  for (n in c(7, 11, 21, 31)) {
+    quad <- make_quadrature(n)
+    expect_equal(sum(quad$weight), 1, tolerance = 1e-8)
+    expect_equal(sum(quad$theta * quad$weight), 0, tolerance = 1e-8)
+    expect_equal(sum(quad$theta^2 * quad$weight), 1, tolerance = 1e-6,
+                 info = paste("n_quad =", n))
+  }
+})
 
-  expect_equal(sum(quad$weight), 1, tolerance = 1e-10)
-  expect_equal(sum(quad$theta * quad$weight), 0, tolerance = 1e-10)
+test_that("fit_mixed_subjects_mml recovers discrimination without scale bias", {
+  # Guards against latent-scale bugs (e.g. a mis-scaled quadrature): on a large
+  # sample the recovered discriminations should be close to the truth, not a
+  # systematic multiple of it.
+  set.seed(404)
+  pars <- data.frame(item = paste0("I", 1:5), a = seq(0.8, 1.6, l = 5),
+                     d = seq(-1, 1, l = 5))
+  theta <- rnorm(3000)
+  obs   <- simulate_2pl(theta, pars)
+  gen   <- simulate_2pl(rnorm(3000), pars)
+
+  fit <- fit_mixed_subjects_mml(obs, obs, gen, lambda = 0,
+    initial_pars = pars, n_quad = 21, control = list(maxit = 400))
+
+  # Mean ratio of estimated to true discrimination should be near 1
+  ratio <- mean(fit$item_pars$a / pars$a)
+  expect_gt(ratio, 0.9)
+  expect_lt(ratio, 1.1)
 })
 
 test_that("posterior weights and expected counts have expected dimensions", {
@@ -407,6 +433,72 @@ test_that("ability-risk tuning chooses a candidate lambda and crossfits", {
   expect_s3_class(split_tuned$final_fit, "mixedsubjects_fit")
 })
 
+test_that("ability-risk tuning rejects runaway-discrimination candidates", {
+  # A candidate fit whose discrimination blows up reports a spuriously small
+  # model-based risk (collapsed covariance) and could otherwise be selected.
+  # max_discrimination must exclude it. Construct a summary-style check by
+  # stubbing fits is overkill; instead verify the guard parameter takes effect
+  # by setting an extremely low threshold so all positive-lambda fits with any
+  # discrimination > threshold are rejected, forcing lambda = 0.
+  set.seed(21)
+  pars <- data.frame(item = paste0("I", 1:4), a = c(0.8, 1.1, 1.3, 0.9),
+                     d = c(-0.2, 0.1, 0.4, -0.5))
+  observed  <- simulate_2pl(rnorm(80), pars)
+  generated <- simulate_2pl(rnorm(240), pars)
+
+  # With a threshold below the true discriminations, every fit is "degenerate";
+  # the tuner should warn and fall back to lambda = 0.
+  expect_warning(
+    tuned <- tune_lambda_ability_risk(
+      lambda_grid = c(0, 0.5),
+      observed = observed, predicted = observed, generated = generated,
+      initial_pars = pars, n_quad = 7, max_discrimination = 0.1,
+      control = list(maxit = 80)
+    ),
+    "No lambda candidate"
+  )
+  expect_equal(tuned$best_lambda, 0)
+  expect_true("max_disc" %in% names(tuned$summary))
+})
+
+test_that("crossfit separates tuning_args and final_args", {
+  set.seed(34)
+  pars <- data.frame(item = paste0("I", 1:3), a = c(1, 1.2, 0.9),
+                     d = c(0, -0.5, 0.3))
+  obs  <- simulate_2pl(rnorm(80), pars)
+  gen  <- simulate_2pl(rnorm(200), pars)
+  sid  <- rep(1:2, each = 40)
+
+  # tuning_args (slope_upper) reaches fold tuning; final_args (mml_pred_weights)
+  # reaches the MML final fit; neither leaks into the other.
+  cf <- tune_lambda_ability_risk_crossfit(
+    lambda_grid  = c(0, 0.5),
+    observed     = obs, predicted = obs, generated = gen,
+    split_id     = sid, initial_pars = pars, n_quad = 5,
+    fit_fn       = fit_mixed_subjects_mml,
+    final_fit_fn = fit_mixed_subjects_mml,
+    tuning_args  = list(slope_upper = 4),
+    final_args   = list(mml_pred_weights = "own"),
+    control      = list(maxit = 40)
+  )
+
+  expect_length(cf$lambda_by_split, 2)
+  # MML final fit collapses fold lambdas to a scalar mean
+  expect_length(cf$lambda_final, 1)
+  expect_true(isTRUE(cf$final_fit$mml))
+
+  # Legacy ... still works (routed into tuning_args) with a message
+  expect_message(
+    tune_lambda_ability_risk_crossfit(
+      lambda_grid = c(0, 0.5),
+      observed    = obs, predicted = obs, generated = gen,
+      split_id    = sid, initial_pars = pars, n_quad = 5,
+      slope_upper = 4, control = list(maxit = 40)
+    ),
+    "deprecated"
+  )
+})
+
 test_that("marginal_loss_2pl gradient matches finite differences", {
   set.seed(30)
   pars <- data.frame(item = paste0("I", 1:3), a = c(0.9, 1.1, 0.8),
@@ -455,8 +547,8 @@ test_that("fit_mixed_subjects_mml returns valid fit object", {
   expect_equal(fit$convergence, 0)
   expect_true(all(is.finite(fit$item_pars$a)))
   expect_true(all(is.finite(fit$item_pars$d)))
-  # vcov should work (posteriors stored at converged parameters)
-  Sigma <- vcov_mixed_subjects(fit)
+  # vcov() dispatches to the Louis-corrected MML covariance for scalar MML fits
+  Sigma <- stats::vcov(fit)
   expect_equal(dim(Sigma), c(8L, 8L))
   expect_true(all(is.finite(Sigma)))
 })

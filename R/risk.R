@@ -744,6 +744,12 @@ tune_lambda_ppi_score <- function(observed, predicted, item_pars, n_generated,
 #'   marginal-likelihood PPI++ estimator, which eliminates gradient asymmetry
 #'   and should select `lambda > 0` for genuinely informative predictors.
 #' @param bounds Bounds passed to [score_theta()].
+#' @param max_discrimination Upper bound on plausible item discrimination. Any
+#'   candidate fit whose maximum `|a|` exceeds this value is treated as
+#'   degenerate and excluded from selection. This guards against runaway
+#'   discrimination fits, which can "converge" with a spuriously low model-based
+#'   risk (huge discrimination collapses the item-parameter covariance). The
+#'   default of 10 is far above any realistic 2PL discrimination.
 #' @param control Control list passed to [stats::optim()].
 #' @param ... Additional arguments passed to `fit_fn`.
 #'
@@ -769,6 +775,7 @@ tune_lambda_ability_risk <- function(lambda_grid, observed, predicted, generated
                                      n_quad = 31, initial_pars = NULL,
                                      fit_fn = fit_mixed_subjects,
                                      bounds = c(-6, 6),
+                                     max_discrimination = 10,
                                      control = list(maxit = 500), ...) {
   if (!is.numeric(lambda_grid) || length(lambda_grid) == 0) {
     stop("lambda_grid must be a non-empty numeric vector.", call. = FALSE)
@@ -825,17 +832,26 @@ tune_lambda_ability_risk <- function(lambda_grid, observed, predicted, generated
       mean_param_var     = risks[[i]]$summary$mean_param_var,
       mean_squared_error = risks[[i]]$summary$mean_squared_error,
       mean_total_risk    = risks[[i]]$summary$mean_total_risk,
-      convergence        = fits[[i]]$convergence
+      convergence        = fits[[i]]$convergence,
+      max_disc           = max(abs(fits[[i]]$item_pars$a))
     )
   }
 
   summary <- do.call(rbind, rows)
 
-  # Filter: only candidates that converged AND produced finite risk are eligible.
+  # Filter ineligible candidates. A candidate is excluded if it failed to
+  # converge, produced non-finite risk, OR has a degenerate (runaway)
+  # discrimination estimate. The last guard is essential: a fit whose
+  # discrimination blows up reports huge item information, which collapses the
+  # model-based covariance and makes the ability risk g'Sigma g spuriously
+  # small. Such a fit can "converge" with the lowest apparent risk while being
+  # numerically garbage (e.g. a = 1000), so it must be rejected explicitly.
   # Keep the full summary for diagnostics; use selection_risk for argmin.
   summary$selection_risk <- summary$mean_total_risk
   summary$selection_risk[
-    !is.finite(summary$selection_risk) | summary$convergence != 0
+    !is.finite(summary$selection_risk) |
+      summary$convergence != 0 |
+      summary$max_disc > max_discrimination
   ] <- Inf
 
   if (all(is.infinite(summary$selection_risk))) {
@@ -888,11 +904,16 @@ tune_lambda_ability_risk <- function(lambda_grid, observed, predicted, generated
 #' @param fit_fn Fitting function used for each fold's ability-risk tuning
 #'   (passed to [tune_lambda_ability_risk()]). Defaults to
 #'   [fit_mixed_subjects()] (frozen expected-count). Pass
-#'   [fit_mixed_subjects_mml()] for marginal-MML fold tuning. This argument is
-#'   handled explicitly so it does not leak through `...` into `final_fit_fn`.
-#' @param ... Additional arguments forwarded to `fit_fn` (e.g. `slope_upper`).
-#'   These are NOT forwarded to `final_fit_fn`; use `final_fit_fn`'s own
-#'   argument list for arguments specific to the final fit.
+#'   [fit_mixed_subjects_mml()] for marginal-MML fold tuning.
+#' @param tuning_args Named list of extra arguments forwarded only to the
+#'   fold-level [tune_lambda_ability_risk()] calls (and through them to
+#'   `fit_fn`). For example, `tuning_args = list(slope_upper = 4)`.
+#' @param final_args Named list of extra arguments forwarded only to
+#'   `final_fit_fn`. For example, `final_args = list(mml_pred_weights = "own")`.
+#'   This keeps tuning-specific and final-fit-specific arguments cleanly
+#'   separated, avoiding the earlier `...` leakage between the two.
+#' @param ... Deprecated; forwarded to `tuning_args` for backward compatibility
+#'   with a one-time message. Prefer `tuning_args` / `final_args`.
 #'
 #' @return A list with fold-specific lambda values, fold tuning objects, and the
 #'   final fit.
@@ -905,8 +926,23 @@ tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
                                               target_mode = c("fixed", "row_aligned"),
                                               fit_fn = fit_mixed_subjects,
                                               final_fit_fn = fit_mixed_subjects_split,
+                                              tuning_args = list(),
+                                              final_args = list(),
                                               bounds = c(-6, 6),
                                               control = list(maxit = 500), ...) {
+  # Backward compatibility: route any legacy ... into tuning_args.
+  dots <- list(...)
+  if (length(dots) > 0L) {
+    message(
+      "tune_lambda_ability_risk_crossfit(): passing extra arguments via `...` ",
+      "is deprecated. Use `tuning_args` (fold tuning) or `final_args` (final ",
+      "fit) instead. Routing `...` into `tuning_args` for now."
+    )
+    tuning_args <- utils::modifyList(tuning_args, dots)
+  }
+  if (!is.list(tuning_args) || !is.list(final_args)) {
+    stop("tuning_args and final_args must be lists.", call. = FALSE)
+  }
   target_mode <- match.arg(target_mode)
 
   observed <- validate_response_matrix(observed, "observed",
@@ -967,21 +1003,23 @@ tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
       theta_train  <- theta_true       # fixed true thetas (or NULL)
     }
 
-    # Pass fit_fn explicitly so it does not need to travel through ...
-    fold_tuning[[s]] <- tune_lambda_ability_risk(
-      lambda_grid  = lambda_grid,
-      observed     = observed[train, , drop = FALSE],
-      predicted    = predicted[train, , drop = FALSE],
-      generated    = generated,
-      target_resp  = target_train,
-      theta_true   = theta_train,
-      n_quad       = n_quad,
-      initial_pars = initial_pars,
-      fit_fn       = fit_fn,
-      bounds       = bounds,
-      control      = control,
-      ...               # user's extra fitting args (slope_upper, etc.)
-    )
+    # Fold tuning receives the core args plus the user's tuning_args only.
+    fold_tuning[[s]] <- do.call(tune_lambda_ability_risk, c(
+      list(
+        lambda_grid  = lambda_grid,
+        observed     = observed[train, , drop = FALSE],
+        predicted    = predicted[train, , drop = FALSE],
+        generated    = generated,
+        target_resp  = target_train,
+        theta_true   = theta_train,
+        n_quad       = n_quad,
+        initial_pars = initial_pars,
+        fit_fn       = fit_fn,
+        bounds       = bounds,
+        control      = control
+      ),
+      tuning_args
+    ))
     lambda_by_split[s] <- fold_tuning[[s]]$best_lambda
   }
 
@@ -1006,9 +1044,8 @@ tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
     extra_split  <- list()
   }
 
-  # final_fit_fn gets only the core arguments; user's ... (e.g. slope_upper)
-  # are for fold tuning, not the final fit.  This prevents fit_fn and other
-  # tuning-only arguments from leaking into final_fit_fn and causing errors.
+  # final_fit_fn receives the core args, split metadata, plus the user's
+  # final_args only.  Tuning-specific args (fit_fn, tuning_args) never reach it.
   final_fit <- do.call(final_fit_fn, c(
     list(
       observed     = observed,
@@ -1019,7 +1056,8 @@ tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
       initial_pars = initial_pars,
       control      = control
     ),
-    extra_split
+    extra_split,
+    final_args
   ))
 
   list(
@@ -1201,6 +1239,7 @@ tune_lambda_ability_risk_item <- function(lambda_grid, observed, predicted, gene
                                           n_pass = 1,
                                           init_lambda = 0,
                                           bounds = c(-6, 6),
+                                          max_discrimination = 10,
                                           control = list(maxit = 300), ...) {
   if (!is.numeric(lambda_grid) || length(lambda_grid) == 0) {
     stop("lambda_grid must be a non-empty numeric vector.", call. = FALSE)
@@ -1244,6 +1283,10 @@ tune_lambda_ability_risk_item <- function(lambda_grid, observed, predicted, gene
           error = function(e) NULL
         )
         if (is.null(fit_j)) next
+
+        # Reject degenerate (runaway discrimination) fits before trusting their
+        # model-based risk; see tune_lambda_ability_risk() for rationale.
+        if (max(abs(fit_j$item_pars$a)) > max_discrimination) next
 
         risk_j <- tryCatch({
           Sigma_j <- stats::vcov(fit_j)

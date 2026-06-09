@@ -5,3 +5,5 @@
 ^docs$
 ^pkgdown$
 ^\.github$
+^simulations$
+^2026-.*-changes\.md$

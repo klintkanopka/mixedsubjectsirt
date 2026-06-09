@@ -336,6 +336,7 @@ tune_lambda_ability_risk_1pl <- function(lambda_grid, observed, predicted, gener
                                           n_quad = 31, initial_pars = NULL,
                                           fit_fn = fit_mixed_subjects_mml_1pl,
                                           bounds = c(-6, 6),
+                                          max_discrimination = 10,
                                           control = list(maxit = 500), ...) {
   if (!is.numeric(lambda_grid) || length(lambda_grid) == 0) {
     stop("lambda_grid must be a non-empty numeric vector.", call. = FALSE)
@@ -406,13 +407,18 @@ tune_lambda_ability_risk_1pl <- function(lambda_grid, observed, predicted, gener
       mean_param_var     = risks[[i]]$summary$mean_param_var,
       mean_squared_error = risks[[i]]$summary$mean_squared_error,
       mean_total_risk    = risks[[i]]$summary$mean_total_risk,
-      convergence        = if (is.null(fits[[i]])) 99L else fits[[i]]$convergence
+      convergence        = if (is.null(fits[[i]])) 99L else fits[[i]]$convergence,
+      max_disc           = if (is.null(fits[[i]])) Inf else
+        max(abs(fits[[i]]$item_pars$a))
     )
   }
 
   summary <- do.call(rbind, rows)
 
+  # Exclude non-converged, non-finite-risk, and degenerate (runaway
+  # discrimination) candidates; see tune_lambda_ability_risk() for rationale.
   summary$selection_risk <- summary$mean_total_risk
+  summary$selection_risk[summary$max_disc > max_discrimination] <- Inf
   summary$selection_risk[
     !is.finite(summary$selection_risk) | summary$convergence != 0
   ] <- Inf

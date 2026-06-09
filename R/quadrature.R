@@ -22,16 +22,36 @@ make_quadrature <- function(n_quad = 31, iterlim = 1e5) {
   }
 
   gh <- as.data.frame(rmutil::gauss.hermite(as.integer(n_quad), iterlim = iterlim))
-  theta <- sqrt(2) * gh$Points
-  weight <- gh$Weights / sqrt(pi)
+
+  # rmutil::gauss.hermite() returns nodes and weights ALREADY on the
+  # standard-normal (probabilists') scale: sum(W) = 1, sum(W * P) = 0, and
+  # sum(W * P^2) = 1.  Earlier versions of this function multiplied the nodes by
+  # sqrt(2) and divided the weights by sqrt(pi) (the physicists'-Hermite
+  # rescaling), which inflated the latent-trait variance to 2 and biased every
+  # discrimination estimate downward by ~1/sqrt(2).  Use the nodes/weights
+  # directly; only normalise the weights to guard against round-off.
+  theta  <- gh$Points
+  weight <- gh$Weights / sum(gh$Weights)
   o <- order(theta)
+
+  quad_var <- sum(weight[o] * theta[o]^2)
+  if (!is.finite(quad_var) || abs(quad_var - 1) > 0.05) {
+    warning(
+      sprintf(paste0(
+        "make_quadrature(): quadrature variance is %.3f, expected ~1. ",
+        "The rmutil::gauss.hermite() solver may not have converged for ",
+        "n_quad = %d (try a smaller n_quad, e.g. 21 or 31)."),
+        quad_var, n_quad),
+      call. = FALSE
+    )
+  }
 
   data.frame(
     node = seq_along(theta),
     theta = theta[o],
-    weight = weight[o] / sum(weight[o]),
+    weight = weight[o],
     X_k = theta[o],
-    A_k = weight[o] / sum(weight[o])
+    A_k = weight[o]
   )
 }
 

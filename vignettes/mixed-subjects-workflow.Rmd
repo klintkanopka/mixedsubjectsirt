@@ -197,3 +197,18 @@ tuned_fy$summary[, c("lambda", "mean_param_var", "convergence")]
 The ability risk decreases from $\lambda = 0$ to a minimum near the theoretical
 upper bound $N/(n+N) = 1200/1600 = 0.75$, confirming the estimator correctly
 identifies and exploits a highly informative predictor.
+
+## Validation
+
+A full simulation study confirms the recommended workflow behaves as intended:
+
+- **λ selection tracks predictor quality** — a perfect paired predictor (F = Y)
+  selects λ ≈ N/(n+N) = 0.75; a useless predictor selects λ ≈ 0.
+- **The Louis-corrected standard errors are honest** — `vcov()` on a scalar MML
+  fit attains nominal Wald-interval coverage for both discriminations and
+  intercepts, whereas the uncorrected EM-Hessian covariance under-covers.
+- **No harm** — tuned ability-score RMSE is never worse than the human-only
+  calibration; when the predictor is uninformative the method falls back to it.
+
+See the [Simulation Validation](simulation-validation.html) vignette for the full
+results, and `simulations/` in the source tree for the reproducible harness.
