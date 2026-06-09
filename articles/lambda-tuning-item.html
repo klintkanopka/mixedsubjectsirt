@@ -38,6 +38,7 @@
     <li><a class="dropdown-item" href="../articles/linking-comparison.html">IRT Linking and Gradient Asymmetry: Diagnostic Guide</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-subjects-1pl.html">Mixed-Subjects 1PL Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
+    <li><a class="dropdown-item" href="../articles/simulation-validation.html">Simulation Validation of the Mixed-Subjects MML Estimator</a></li>
   </ul>
 </li>
       </ul>
@@ -161,7 +162,7 @@ while items 5–8 get
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Global scalar best lambda:"</span>, <span class="va">global_tuned</span><span class="op">$</span><span class="va">best_lambda</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Global scalar best lambda: 0.2</span></span></code></pre></div>
+<span><span class="co">#&gt; Global scalar best lambda: 0.4</span></span></code></pre></div>
 <p>The global scalar is forced to a compromise — the four poor items
 constrain it to a value smaller than what items 1–4 could support.</p>
 </div>
@@ -234,14 +235,14 @@ below.</p>
 <span><span class="co">#&gt; Per-item ability-risk lambda:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>item <span class="op">=</span> <span class="va">item_tuned</span><span class="op">$</span><span class="va">item</span>, lambda <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">item_tuned</span><span class="op">$</span><span class="va">lambda</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    item lambda</span></span>
-<span><span class="co">#&gt; 1 Item1   0.75</span></span>
-<span><span class="co">#&gt; 2 Item2   0.75</span></span>
-<span><span class="co">#&gt; 3 Item3   0.75</span></span>
-<span><span class="co">#&gt; 4 Item4   0.75</span></span>
-<span><span class="co">#&gt; 5 Item5   0.00</span></span>
-<span><span class="co">#&gt; 6 Item6   0.00</span></span>
-<span><span class="co">#&gt; 7 Item7   0.00</span></span>
-<span><span class="co">#&gt; 8 Item8   0.00</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 Item1    0.4</span></span>
+<span><span class="co">#&gt; 2 Item2    0.4</span></span>
+<span><span class="co">#&gt; 3 Item3    0.4</span></span>
+<span><span class="co">#&gt; 4 Item4    0.4</span></span>
+<span><span class="co">#&gt; 5 Item5    0.0</span></span>
+<span><span class="co">#&gt; 6 Item6    0.0</span></span>
+<span><span class="co">#&gt; 7 Item7    0.0</span></span>
+<span><span class="co">#&gt; 8 Item8    0.0</span></span></code></pre></div>
 <p>Items 1–4 should receive positive
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>λ</mi><mi>j</mi></msub><annotation encoding="application/x-tex">\lambda_j</annotation></semantics></math>
 (good predictor); items 5–8 should be near zero (poor predictor).</p>
@@ -280,57 +281,57 @@ lambda</caption>
 <td align="left">Item1</td>
 <td align="right">0.800</td>
 <td align="right">0.727</td>
-<td align="right">0.523</td>
-<td align="right">0.633</td>
+<td align="right">0.752</td>
+<td align="right">0.714</td>
 </tr>
 <tr class="even">
 <td align="left">Item2</td>
 <td align="right">0.914</td>
 <td align="right">1.256</td>
-<td align="right">0.856</td>
-<td align="right">0.863</td>
+<td align="right">1.158</td>
+<td align="right">1.104</td>
 </tr>
 <tr class="odd">
 <td align="left">Item3</td>
 <td align="right">1.029</td>
 <td align="right">1.117</td>
-<td align="right">0.793</td>
-<td align="right">0.835</td>
+<td align="right">1.125</td>
+<td align="right">1.023</td>
 </tr>
 <tr class="even">
 <td align="left">Item4</td>
 <td align="right">1.143</td>
 <td align="right">1.091</td>
-<td align="right">0.754</td>
-<td align="right">0.902</td>
+<td align="right">1.039</td>
+<td align="right">1.036</td>
 </tr>
 <tr class="odd">
 <td align="left">Item5</td>
 <td align="right">1.257</td>
 <td align="right">1.758</td>
-<td align="right">1.187</td>
-<td align="right">1.586</td>
+<td align="right">1.578</td>
+<td align="right">1.766</td>
 </tr>
 <tr class="even">
 <td align="left">Item6</td>
 <td align="right">1.371</td>
 <td align="right">1.610</td>
-<td align="right">1.113</td>
-<td align="right">1.449</td>
+<td align="right">1.524</td>
+<td align="right">1.618</td>
 </tr>
 <tr class="odd">
 <td align="left">Item7</td>
 <td align="right">1.486</td>
 <td align="right">1.369</td>
-<td align="right">1.002</td>
-<td align="right">1.187</td>
+<td align="right">1.459</td>
+<td align="right">1.371</td>
 </tr>
 <tr class="even">
 <td align="left">Item8</td>
 <td align="right">1.600</td>
 <td align="right">1.925</td>
-<td align="right">1.453</td>
-<td align="right">1.683</td>
+<td align="right">2.238</td>
+<td align="right">1.921</td>
 </tr>
 </tbody>
 </table>
@@ -341,12 +342,12 @@ lambda</caption>
 <span><span class="co">#&gt; RMSE(a) human-only:    0.2645</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE(a) scalar MML:   "</span>,</span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">fit_scalar</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">a</span>, <span class="va">true_pars</span><span class="op">$</span><span class="va">a</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; RMSE(a) scalar MML:    0.277</span></span>
+<span><span class="co">#&gt; RMSE(a) scalar MML:    0.2774</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">fit_per_item</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE(a) per-item MML: "</span>,</span>
 <span>      <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">fit_per_item</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">a</span>, <span class="va">true_pars</span><span class="op">$</span><span class="va">a</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt; RMSE(a) per-item MML:  0.205</span></span></code></pre></div>
+<span><span class="co">#&gt; RMSE(a) per-item MML:  0.2476</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="important-note-on-initialisation">Important note on initialisation<a class="anchor" aria-label="anchor" href="#important-note-on-initialisation"></a>

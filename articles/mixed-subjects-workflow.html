@@ -38,6 +38,7 @@
     <li><a class="dropdown-item" href="../articles/linking-comparison.html">IRT Linking and Gradient Asymmetry: Diagnostic Guide</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-subjects-1pl.html">Mixed-Subjects 1PL Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
+    <li><a class="dropdown-item" href="../articles/simulation-validation.html">Simulation Validation of the Mixed-Subjects MML Estimator</a></li>
   </ul>
 </li>
       </ul>
@@ -155,15 +156,15 @@ human calibration.</p>
 <span><span class="co">#&gt;   estimator:  marginal MML PPI++</span></span></code></pre></div>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mixed_mml</span><span class="op">$</span><span class="va">item_pars</span></span>
-<span><span class="co">#&gt;    item         a          d          b</span></span>
-<span><span class="co">#&gt; 1 Item1 0.3892905 -1.1201778  2.8774858</span></span>
-<span><span class="co">#&gt; 2 Item2 0.7835246 -0.8527486  1.0883495</span></span>
-<span><span class="co">#&gt; 3 Item3 0.7887476 -0.1147950  0.1455409</span></span>
-<span><span class="co">#&gt; 4 Item4 0.7234563 -0.3232715  0.4468431</span></span>
-<span><span class="co">#&gt; 5 Item5 1.0983294  0.1180605 -0.1074910</span></span>
-<span><span class="co">#&gt; 6 Item6 1.1514876  0.5788988 -0.5027399</span></span>
-<span><span class="co">#&gt; 7 Item7 0.9533489  0.7575978 -0.7946700</span></span>
-<span><span class="co">#&gt; 8 Item8 1.6982913  1.4114240 -0.8310847</span></span></code></pre></div>
+<span><span class="co">#&gt;    item         a          d           b</span></span>
+<span><span class="co">#&gt; 1 Item1 0.5505445 -1.1201043  2.03453888</span></span>
+<span><span class="co">#&gt; 2 Item2 1.1082100 -0.8526648  0.76940725</span></span>
+<span><span class="co">#&gt; 3 Item3 1.1154175 -0.1146993  0.10283082</span></span>
+<span><span class="co">#&gt; 4 Item4 1.0230713 -0.3231431  0.31585586</span></span>
+<span><span class="co">#&gt; 5 Item5 1.5531629  0.1182156 -0.07611283</span></span>
+<span><span class="co">#&gt; 6 Item6 1.6283305  0.5790579 -0.35561450</span></span>
+<span><span class="co">#&gt; 7 Item7 1.3482659  0.7577307 -0.56200393</span></span>
+<span><span class="co">#&gt; 8 Item8 2.4025290  1.4121318 -0.58776887</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-3-select-lambda-by-ability-score-risk">Step 3: Select lambda by ability-score risk<a class="anchor" aria-label="anchor" href="#step-3-select-lambda-by-ability-score-risk"></a>
@@ -192,20 +193,20 @@ covariance.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ability_tuned</span><span class="op">$</span><span class="va">summary</span></span>
-<span><span class="co">#&gt;   lambda mean_param_var mean_squared_error mean_total_risk convergence</span></span>
-<span><span class="co">#&gt; 1    0.0     0.05568917                 NA      0.05568917           0</span></span>
-<span><span class="co">#&gt; 2    0.2     0.05917237                 NA      0.05917237           0</span></span>
-<span><span class="co">#&gt; 3    0.4     0.06944930                 NA      0.06944930           0</span></span>
-<span><span class="co">#&gt; 4    0.6     0.08836269                 NA      0.08836269           0</span></span>
-<span><span class="co">#&gt; 5    0.8     0.11925842                 NA      0.11925842           0</span></span>
-<span><span class="co">#&gt; 6    1.0     0.16947954                 NA      0.16947954           0</span></span>
+<span><span class="co">#&gt;   lambda mean_param_var mean_squared_error mean_total_risk convergence max_disc</span></span>
+<span><span class="co">#&gt; 1    0.0     0.05891913                 NA      0.05891913           0 1.915445</span></span>
+<span><span class="co">#&gt; 2    0.2     0.06800830                 NA      0.06800830           0 2.083627</span></span>
+<span><span class="co">#&gt; 3    0.4     0.08479981                 NA      0.08479981           0 2.285911</span></span>
+<span><span class="co">#&gt; 4    0.6     0.11031909                 NA      0.11031909           0 2.532510</span></span>
+<span><span class="co">#&gt; 5    0.8     0.14403221                 NA      0.14403221           0 2.839411</span></span>
+<span><span class="co">#&gt; 6    1.0     0.18326203                 NA      0.18326203           0 3.234803</span></span>
 <span><span class="co">#&gt;   selection_risk</span></span>
-<span><span class="co">#&gt; 1     0.05568917</span></span>
-<span><span class="co">#&gt; 2     0.05917237</span></span>
-<span><span class="co">#&gt; 3     0.06944930</span></span>
-<span><span class="co">#&gt; 4     0.08836269</span></span>
-<span><span class="co">#&gt; 5     0.11925842</span></span>
-<span><span class="co">#&gt; 6     0.16947954</span></span>
+<span><span class="co">#&gt; 1     0.05891913</span></span>
+<span><span class="co">#&gt; 2     0.06800830</span></span>
+<span><span class="co">#&gt; 3     0.08479981</span></span>
+<span><span class="co">#&gt; 4     0.11031909</span></span>
+<span><span class="co">#&gt; 5     0.14403221</span></span>
+<span><span class="co">#&gt; 6     0.18326203</span></span>
 <span><span class="va">ability_tuned</span><span class="op">$</span><span class="va">best_lambda</span></span>
 <span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
 <p>When the LLM parameters differ substantially from the human
@@ -282,18 +283,43 @@ predictor):</p>
 <span><span class="co">#&gt; [1] 0.8</span></span>
 <span><span class="va">tuned_fy</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lambda"</span>, <span class="st">"mean_param_var"</span>, <span class="st">"convergence"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   lambda mean_param_var convergence</span></span>
-<span><span class="co">#&gt; 1    0.0     0.05568917           0</span></span>
-<span><span class="co">#&gt; 2    0.2     0.03686035           0</span></span>
-<span><span class="co">#&gt; 3    0.4     0.02373423           0</span></span>
-<span><span class="co">#&gt; 4    0.6     0.01639657           0</span></span>
-<span><span class="co">#&gt; 5    0.8     0.01515798           0</span></span>
-<span><span class="co">#&gt; 6    1.0     0.02062474           0</span></span></code></pre></div>
+<span><span class="co">#&gt; 1    0.0     0.05891913           0</span></span>
+<span><span class="co">#&gt; 2    0.2     0.03825654           0</span></span>
+<span><span class="co">#&gt; 3    0.4     0.02399810           0</span></span>
+<span><span class="co">#&gt; 4    0.6     0.01606106           0</span></span>
+<span><span class="co">#&gt; 5    0.8     0.01428788           0</span></span>
+<span><span class="co">#&gt; 6    1.0     0.01856073           0</span></span></code></pre></div>
 <p>The ability risk decreases from
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
 to a minimum near the theoretical upper bound
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>1200</mn><mi>/</mi><mn>1600</mn><mo>=</mo><mn>0.75</mn></mrow><annotation encoding="application/x-tex">N/(n+N) = 1200/1600 = 0.75</annotation></semantics></math>,
 confirming the estimator correctly identifies and exploits a highly
 informative predictor.</p>
+</div>
+<div class="section level2">
+<h2 id="validation">Validation<a class="anchor" aria-label="anchor" href="#validation"></a>
+</h2>
+<p>A full simulation study confirms the recommended workflow behaves as
+intended:</p>
+<ul>
+<li>
+<strong>λ selection tracks predictor quality</strong> — a perfect
+paired predictor (F = Y) selects λ ≈ N/(n+N) = 0.75; a useless predictor
+selects λ ≈ 0.</li>
+<li>
+<strong>The Louis-corrected standard errors are honest</strong> —
+<code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> on a scalar MML fit attains nominal Wald-interval
+coverage for both discriminations and intercepts, whereas the
+uncorrected EM-Hessian covariance under-covers.</li>
+<li>
+<strong>No harm</strong> — tuned ability-score RMSE is never worse
+than the human-only calibration; when the predictor is uninformative the
+method falls back to it.</li>
+</ul>
+<p>See the <a href="simulation-validation.html">Simulation
+Validation</a> vignette for the full results, and
+<code>simulations/</code> in the source tree for the reproducible
+harness.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

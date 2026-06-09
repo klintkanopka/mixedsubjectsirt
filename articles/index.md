@@ -12,3 +12,5 @@
   Calibration](http://klintkanopka.com/mixedsubjectsirt/articles/mixed-subjects-1pl.md):
 - [Mixed-Subjects IRT
   Calibration](http://klintkanopka.com/mixedsubjectsirt/articles/mixed-subjects-workflow.md):
+- [Simulation Validation of the Mixed-Subjects MML
+  Estimator](http://klintkanopka.com/mixedsubjectsirt/articles/simulation-validation.md):

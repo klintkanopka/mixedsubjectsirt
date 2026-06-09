@@ -36,7 +36,7 @@ resp <- matrix(c(1, 0, 0, 1), nrow = 2, byrow = TRUE)
 W <- posterior_weights_2pl(resp, pars, n_quad = 5)
 counts <- summarize_expected_counts(resp, W)
 counts$N
-#>             node1    node2    node3     node4       node5
-#> Item1 0.001261709 0.202937 1.490278 0.3034757 0.002048037
-#> Item2 0.001261709 0.202937 1.490278 0.3034757 0.002048037
+#>             node1     node2    node3     node4       node5
+#> Item1 0.003717598 0.2836301 1.312301 0.3944443 0.005906825
+#> Item2 0.003717598 0.2836301 1.312301 0.3944443 0.005906825
 ```

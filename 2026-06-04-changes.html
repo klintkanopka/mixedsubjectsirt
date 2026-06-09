@@ -23,6 +23,7 @@
     <li><a class="dropdown-item" href="articles/linking-comparison.html">IRT Linking and Gradient Asymmetry: Diagnostic Guide</a></li>
     <li><a class="dropdown-item" href="articles/mixed-subjects-1pl.html">Mixed-Subjects 1PL Calibration</a></li>
     <li><a class="dropdown-item" href="articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
+    <li><a class="dropdown-item" href="articles/simulation-validation.html">Simulation Validation of the Mixed-Subjects MML Estimator</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json"></form></li>
@@ -43,6 +44,36 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a></h2>
 <p>This document records the Phase 0 diagnostic results and Phase 1 implementation changes for the <code>mixedsubjectsirt</code> package. It follows the expert reviewer feedback received on 2026-06-03 identifying three separable causes of λ = 0 and recommending a marginal-MML implementation as the principal fix.</p>
+<hr></div>
+<div class="section level2">
+<h2 id="critical-fix-2026-06-05-quadrature-variance-was-2-not-1">CRITICAL FIX (2026-06-05): quadrature variance was 2, not 1<a class="anchor" aria-label="anchor" href="#critical-fix-2026-06-05-quadrature-variance-was-2-not-1"></a></h2>
+<p><strong>Discovered by the coverage simulation (Scenario 2).</strong> The simulation exposed near-zero coverage for discrimination Wald intervals while intercept coverage was nominal. Diagnosis:</p>
+<ol style="list-style-type: decimal"><li>
+<strong>SE calibration was perfect</strong> — <code>se_over_empsd ≈ 1.0</code> for every parameter, so the Louis bread was correct.</li>
+<li>
+<strong>Discriminations were biased downward ~28%</strong> — every <code>a</code> recovered at ~0.70–0.72× its true value; intercepts unbiased. A uniform multiplicative shrinkage of all slopes with unbiased intercepts is the signature of a <strong>latent-scale error</strong>.</li>
+<li>
+<strong>Root cause: <code><a href="reference/make_quadrature.html">make_quadrature()</a></code> produced an N(0, 2) grid, not N(0, 1).</strong> <code><a href="https://rdrr.io/pkg/rmutil/man/gauss.hermite.html" class="external-link">rmutil::gauss.hermite()</a></code> already returns standard-normal nodes/weights (<code>sum(W)=1</code>, <code>sum(W·P)=0</code>, <code>sum(W·P²)=1</code>). The code additionally multiplied the nodes by <code>sqrt(2)</code> and divided weights by <code>sqrt(pi)</code> (a physicists’-Hermite rescaling that does not apply to rmutil’s output), doubling the trait variance to 2. Integrating ability over SD ≈ √2 shrinks every discrimination by ~1/√2 ≈ 0.707 — exactly the observed ratio.</li>
+</ol><p><strong>Why it evaded every prior check:</strong> λ-selection is a relative comparison (all three terms share the same quadrature); gradient finite-difference checks pass because the loss and gradient are mutually consistent even with a mis-scaled grid; intercepts are unbiased; and the Louis SE correctly reflects the <em>biased</em> estimator’s sampling distribution. Only ground-truth coverage — comparing point estimates to known true values — could expose it. The pre-existing quadrature unit test checked <code>sum</code> and <code>mean</code> but <strong>not variance</strong>, so it passed.</p>
+<p><strong>Fix (<code>R/quadrature.R</code>):</strong> use <code><a href="https://rdrr.io/pkg/rmutil/man/gauss.hermite.html" class="external-link">rmutil::gauss.hermite()</a></code> nodes/weights directly (they are already standard-normal); normalise weights only for round-off; warn if the realised quadrature variance deviates from 1 (guards against rmutil solver non-convergence, which occurs for large <code>n_quad</code> such as 51).</p>
+<p><strong>Verification:</strong> quadrature variance is now exactly 1 for n_quad ∈ {7, 11, 21, 31}; discrimination recovery ratio is 1.003 (λ=0) and 1.015 (λ=0.5) at n=3000, vs ~0.70 before.</p>
+<p><strong>Test gap closed (<code>tests/testthat/test-core.R</code>):</strong> the quadrature test now checks the variance (= 1) across several n_quad, and a new test asserts <code>fit_mixed_subjects_mml</code> recovers discrimination without scale bias on a large sample.</p>
+<p><strong>Impact / required follow-up:</strong> - This bug affected <strong>every</strong> function that uses <code>make_quadrature</code> (all MML and frozen-EC fits, posterior weights, ability scoring with default quadrature) — discriminations were systematically ~0.7× throughout the project’s history. - <strong>The Scenario 2 coverage run must be re-run</strong> with the fix; the existing <code>simulations/results/coverage.rds</code> is invalid. - Scenario 1 (λ selection) conclusions are likely qualitatively unchanged (relative comparison) but should be re-run for the record. Scenario 3 (downstream RMSE) should be re-run since absolute ability-score RMSE depends on the calibration scale. - <code>fit_2pl</code> (mirt) is unaffected — it uses mirt’s own quadrature.</p>
+<hr></div>
+<div class="section level2">
+<h2 id="robustness-fix-2026-06-09-tuner-could-select-runaway-discrimination-fits">ROBUSTNESS FIX (2026-06-09): tuner could select runaway-discrimination fits<a class="anchor" aria-label="anchor" href="#robustness-fix-2026-06-09-tuner-could-select-runaway-discrimination-fits"></a></h2>
+<p><strong>Discovered by the downstream simulation (Scenario 3).</strong> R2 (conditional-mean predictor) showed a mean discrimination bias of <code>bias_a = 5.28</code> — but this was an artifact of <strong>4 catastrophic reps out of 97</strong>, not a uniform bias (median bias was 0.026). In those 4 reps the ability-risk tuner selected λ = 0.6–0.7, where the fitted discrimination had run away to 50–200×.</p>
+<p><strong>Mechanism (confirmed by per-λ trace on a failing rep):</strong></p>
+<pre><code>λ=0.0:  max_a=1.61    risk=0.057   conv=0   ← good
+λ=0.3:  max_a=2.05    risk=0.153   conv=0
+λ=0.6:  max_a=1035    risk=0.033   conv=0   ← runaway, "converged", LOWEST risk
+λ=0.7:  max_a=637     risk=0.040   conv=0   ← runaway, "converged", low risk
+λ=0.4,0.5,0.8–1.0:    risk=NaN     conv≠0   ← already filtered</code></pre>
+<p>At λ=0.6 the fractional conditional-mean predictor drives the MML objective to a “converged” minimum with discrimination ~1035. The huge implied item information <strong>collapses the model-based covariance</strong>, so the ability risk <code>g'Σg</code> reads 0.033 — <em>lower</em> than the genuinely-good λ=0 fit (0.057). The tuner minimizes that and picks the garbage fit. The existing filters (non-convergence, non-finite risk) catch the NaN candidates but not these “converged” runaways. On held-out data the runaway fit scores <em>worse</em> (<code>rmse_tuned &gt; rmse_human</code>), confirming the model-based risk was gamed.</p>
+<p><strong>Fix (<code>R/risk.R</code>, <code>R/risk-1pl.R</code>):</strong> added a <code>max_discrimination</code> argument (default 10) to <code>tune_lambda_ability_risk</code>, <code>tune_lambda_ability_risk_1pl</code>, and <code>tune_lambda_ability_risk_item</code>. Any candidate whose maximum <code>|a|</code> exceeds the bound is treated as degenerate and excluded from selection (its <code>selection_risk</code> is set to <code>Inf</code>). A 2PL discrimination above ~10 is never a real calibration. The full candidate summary (now including a <code>max_disc</code> column) is retained for diagnostics.</p>
+<p><strong>Verification:</strong> all 4 catastrophic reps now select λ=0 with <code>max_a</code> ≈ 1.3–1.9 and <code>bias_a</code> ≈ −0.08 to 0.09 (was 50–197). New regression test confirms the guard forces λ=0 with a warning when every positive-λ fit exceeds the threshold.</p>
+<p><strong>Note:</strong> this is a <em>tuner-robustness</em> fix, not a change to the estimator. The underlying pathology — fractional/oracle predictors can make the MML objective unbounded in discrimination at large λ — is real but only matters if a degenerate fit is actually <em>selected</em>. The guard ensures it never is. Users who fix λ manually can still hit the runaway and should set <code>slope_upper</code> in that case.</p>
+<p><strong>Required follow-up:</strong> re-run Scenario 3 (downstream) with the guard; the existing <code>downstream.rds</code> R2 summary is contaminated by the 4 bad reps.</p>
 <hr></div>
 <div class="section level2">
 <h2 id="phase-0-diagnostic-results">Phase 0: Diagnostic Results<a class="anchor" aria-label="anchor" href="#phase-0-diagnostic-results"></a></h2>
@@ -227,7 +258,7 @@ Item8 +0.0210  +0.0062  +0.1662   -0.0590   ← negative (largest asymmetry)</co
 <h3 id="why-it-was-needed">Why it was needed<a class="anchor" aria-label="anchor" href="#why-it-was-needed"></a></h3>
 <p>Phase 0 confirmed the frozen expected-count gradient asymmetry is the dominant cause of λ = 0 in misaligned-LLM scenarios. The gradient <code>∇L_pred &gt;&gt; ∇L_gen</code> arises because <code>L_pred</code> uses concentrated human-MLE posteriors while <code>L_gen</code> uses diffuse LLM-specific posteriors. This is structural, not fixable by slope caps.</p>
 <p>The marginal MML PPI++ objective eliminates this by recomputing posteriors at each gradient evaluation from the current γ. The Bock-Aitkin identity guarantees:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>∇_γ L<span class="sc">^</span><span class="fu">marg</span>(γ; Y) <span class="ot">=</span> expected<span class="sc">-</span>count gradient with posteriors from current γ</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>∇_γ L<span class="sc">^</span><span class="fu">marg</span>(γ; Y) <span class="ot">=</span> expected<span class="sc">-</span>count gradient with posteriors from current γ</span></code></pre></div>
 <p>The true marginal likelihood has a unique minimum at the MML optimum. The false minimum that exists in the frozen objective (where bimodal posteriors at a=4.66 are self-consistent with the frozen expected counts) does NOT exist in the marginal objective — at a=4.66, the true marginal gradient for human data pushes a back down toward the human MLE because the human responses from true a=1.26 are genuinely inconsistent with a=4.66 in the marginal sense.</p>
 </div>
 <div class="section level3">
@@ -296,7 +327,7 @@ fit_mixed_subjects_mml with partial lambda ([0.5]*4, [0]*4):
 </div>
 <div class="section level3">
 <h3 id="recommended-workflow-for-per-item-lambda">Recommended workflow for per-item lambda<a class="anchor" aria-label="anchor" href="#recommended-workflow-for-per-item-lambda"></a></h3>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Step 1: Find global scalar optimum</span></span>
 <span><span class="va">global</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
 <span>  lambda_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span>
@@ -329,12 +360,12 @@ fit_mixed_subjects_mml with partial lambda ([0.5]*4, [0]*4):
 <h3 id="step-1-correct-marginal-mml-sandwich-covariance-vcov_mixed_subjects_mml">Step 1: Correct marginal-MML sandwich covariance (<code>vcov_mixed_subjects_mml</code>)<a class="anchor" aria-label="anchor" href="#step-1-correct-marginal-mml-sandwich-covariance-vcov_mixed_subjects_mml"></a></h3>
 <p><strong>The problem.</strong> <code><a href="reference/vcov_mixed_subjects.html">vcov_mixed_subjects()</a></code> uses <code>avg_hessian_counts()</code> — the EM complete-data Hessian — as the bread. For the frozen expected-count estimator this is correct. For the marginal-MML estimator (<code>fit_mixed_subjects_mml</code>) it is not: the complete-data Hessian over-states information by ignoring the missing information about the latent ability θ (Louis 1982).</p>
 <p><strong>The fix — Louis’ identity.</strong> The correct bread for the MML estimator is the marginal observed information:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>A_marg <span class="ot">=</span> H_comp <span class="sc">-</span> I_miss</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>A_marg <span class="ot">=</span> H_comp <span class="sc">-</span> I_miss</span></code></pre></div>
 <p>where <code>I_miss = (1/n) Σ_i Var_{w_i}(s_ik)</code> is the average within-posterior variance of the complete-data score vector at each node. The meat (marginal score outer products) is already correct in the existing implementation.</p>
 <p><strong>Implementation (<code>R/risk.R</code>):</strong></p>
 <ul><li>
 <p>Added <code>louis_missing_info(resp, weights, item_pars)</code> (internal helper). For each pair of items (j, l), computes the three second-moment matrices (aa, ad, dd) via a fully vectorised decomposition:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>sm_block <span class="ot">=</span> <span class="dv">1</span><span class="sc">/</span>n × [yy <span class="sc">-</span> yp <span class="sc">-</span> <span class="fu">t</span>(yp) <span class="sc">+</span> pp]</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>sm_block <span class="ot">=</span> <span class="dv">1</span><span class="sc">/</span>n × [yy <span class="sc">-</span> yp <span class="sc">-</span> <span class="fu">t</span>(yp) <span class="sc">+</span> pp]</span></code></pre></div>
 <p>where <code>yy</code>, <code>yp</code>, <code>pp</code> involve outer products of response columns with expected- probability matrices. Cost: O(J² × n × K) — fast (≈800K ops for J=8, n=400, K=31). The formula was verified against numerical central-difference Hessian to &lt; 6×10⁻¹⁰ error across all six parameters.</p>
 </li>
 <li><p>Added <code>vcov_mixed_subjects_mml(object, ridge = 1e-8)</code> (exported). Bread: <code>louis_bread(q_X) = avg_hessian_counts(q_X) - louis_missing_info(q_X)</code> for each of the three datasets, combined with the usual <code>+ λ*(gen - pred)</code> weighting. Meat: unchanged (marginal score covariance).</p></li>
@@ -498,6 +529,166 @@ fit_mixed_subjects_mml with partial lambda ([0.5]*4, [0]*4):
 </tr></tbody></table></div>
 <div class="section level3">
 <h3 id="test-count-after-round-5-77-pass-0-fail-0-warn-unchanged">Test count after Round 5: <strong>77 PASS, 0 FAIL, 0 WARN</strong> (unchanged)<a class="anchor" aria-label="anchor" href="#test-count-after-round-5-77-pass-0-fail-0-warn-unchanged"></a></h3>
+<hr></div>
+</div>
+<div class="section level2">
+<h2 id="round-6-fifth-reviewer-pass-sign-off--path-to-simulation-validation">Round 6 (fifth reviewer pass): Sign-off + path to simulation validation<a class="anchor" aria-label="anchor" href="#round-6-fifth-reviewer-pass-sign-off--path-to-simulation-validation"></a></h2>
+<div class="section level3">
+<h3 id="assessment-of-the-feedback">Assessment of the feedback<a class="anchor" aria-label="anchor" href="#assessment-of-the-feedback"></a></h3>
+<p>The reviewer signed off on the scalar 2PL MML + ability-risk workflow as “internally consistent enough to move into simulation validation.” This matches our own read of the state: the marginal objective, the Louis-corrected covariance dispatch, ability-risk tuning, crossfit target handling, candidate filtering, and the vignette restructuring are all in place and tested (77 passing tests).</p>
+<p>The reviewer raised five caveats. Our evaluation:</p>
+<table class="table"><colgroup><col width="10%"><col width="28%"><col width="32%"><col width="28%"></colgroup><thead><tr><th>#</th>
+<th>Caveat</th>
+<th>Verdict</th>
+<th>Action</th>
+</tr></thead><tbody><tr><td>1</td>
+<td>Crossfit cannot pass args to the final fit (the <code>...</code> leak was fixed by forwarding nothing)</td>
+<td>
+<strong>Valid.</strong> Real ergonomic gap — <code>slope_upper</code>, <code>mml_pred_weights</code> cannot reach <code>final_fit_fn</code>.</td>
+<td>Add <code>tuning_args</code> / <code>final_args</code> (Task A)</td>
+</tr><tr><td>2</td>
+<td>Test line 459 calls <code><a href="reference/vcov_mixed_subjects.html">vcov_mixed_subjects()</a></code> directly on an MML fit</td>
+<td>
+<strong>Valid.</strong> Confirmed; misleading comment too.</td>
+<td>Switch to <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> dispatch + add explicit frozen-EC path label (Task B)</td>
+</tr><tr><td>3</td>
+<td>
+<code>mml_pred_weights = "human"</code> covariance approximate</td>
+<td>Already documented honestly</td>
+<td>None</td>
+</tr><tr><td>4</td>
+<td>Per-item lambda is frozen-Q, not full MML</td>
+<td>Already documented; keep flagged experimental</td>
+<td>None</td>
+</tr><tr><td>5</td>
+<td>1PL covariance uses EM bread</td>
+<td>Already documented; deferred</td>
+<td>None</td>
+</tr></tbody></table><p>Where we go <strong>beyond</strong> the reviewer’s suggestions: their four λ-selection scenarios are necessary but not sufficient for a methods paper. Two checks matter more now that the Louis bread is implemented and are <strong>not</strong> in their list:</p>
+<ul><li>
+<strong>SE coverage.</strong> The entire purpose of the Louis correction was honest uncertainty. We must verify the Louis-corrected item-parameter and ability-score intervals attain nominal coverage in simulation. Without this, the correction is unvalidated.</li>
+<li>
+<strong>Downstream payoff + no-harm.</strong> The method’s value proposition is lower ability-score RMSE when the predictor is informative, and <em>no worse</em> than human-only when it is not. This is the headline result for the paper and must be measured directly, not inferred from λ alone.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="plan">Plan<a class="anchor" aria-label="anchor" href="#plan"></a></h3>
+<div class="section level4">
+<h4 id="task-a--crossfit-argument-separation-ergonomics-30-min">Task A — Crossfit argument separation (ergonomics, ~30 min)<a class="anchor" aria-label="anchor" href="#task-a--crossfit-argument-separation-ergonomics-30-min"></a></h4>
+<p>Replace the single <code>...</code> in <code>tune_lambda_ability_risk_crossfit()</code> with explicit <code>tuning_args = list()</code> and <code>final_args = list()</code>. Fold-level tuning receives <code>c(core_tuning_args, tuning_args)</code>; the final fit receives <code>c(core_final_args, extra_split, final_args)</code>. Keep <code>...</code> deprecated-but-accepted, routing it into <code>tuning_args</code> with a one-time message, so existing calls do not break. Document both lists with examples (<code>slope_upper</code> to tuning, <code>mml_pred_weights</code> to final).</p>
+</div>
+<div class="section level4">
+<h4 id="task-b--test-cleanup-correctness-habit-15-min">Task B — Test cleanup (correctness habit, ~15 min)<a class="anchor" aria-label="anchor" href="#task-b--test-cleanup-correctness-habit-15-min"></a></h4>
+<p>In <code>tests/testthat/test-core.R</code> line ~459 (the <code>fit_mixed_subjects_mml</code> basic-fit test): change <code>vcov_mixed_subjects(fit)</code> to <code>stats::vcov(fit)</code> and update the comment to “vcov() dispatches to the Louis-corrected MML covariance.” Confirm the deliberate frozen-EC path at line ~630 keeps its explanatory comment. Line ~338 is a genuine <code><a href="reference/fit_mixed_subjects.html">fit_mixed_subjects()</a></code> (frozen EC) fit and correctly stays as <code><a href="reference/vcov_mixed_subjects.html">vcov_mixed_subjects()</a></code>.</p>
+</div>
+<div class="section level4">
+<h4 id="task-c--simulation-validation-harness-the-main-work">Task C — Simulation validation harness (the main work)<a class="anchor" aria-label="anchor" href="#task-c--simulation-validation-harness-the-main-work"></a></h4>
+<p>Build a reproducible simulation study under a new top-level <code>simulations/</code> directory (standalone scripts, <strong>not</strong> built into the package, to keep CRAN check fast). Structure:</p>
+<ul><li>
+<code>simulations/dgp.R</code> — shared data-generating helpers (true 2PL pars; the five predictor regimes below).</li>
+<li>
+<code>simulations/run_lambda_selection.R</code> — Scenario set 1 (λ behaviour).</li>
+<li>
+<code>simulations/run_coverage.R</code> — Scenario set 2 (SE coverage).</li>
+<li>
+<code>simulations/run_downstream.R</code> — Scenario set 3 (RMSE payoff + no-harm).</li>
+<li>
+<code>simulations/figures.R</code> — render summary plots/tables from saved <code>.rds</code>.</li>
+</ul><p><strong>Predictor regimes (extends the reviewer’s four):</strong></p>
+<table class="table"><colgroup><col width="17%"><col width="27%"><col width="55%"></colgroup><thead><tr><th>Regime</th>
+<th>Construction</th>
+<th>Expected ability-risk λ*</th>
+</tr></thead><tbody><tr><td>R1 perfect (F=Y)</td>
+<td><code>predicted = observed</code></td>
+<td>λ &gt; 0, near <code>N/(n+N)</code>
+</td>
+</tr><tr><td>R2 conditional mean</td>
+<td>
+<code>plogis(a θ + d)</code> (oracle probs)</td>
+<td>high</td>
+</tr><tr><td>R3 same-DGP draw</td>
+<td>fresh <code>simulate_2pl(θ_human, true)</code>
+</td>
+<td>modest, &gt; 0 but well below R1</td>
+</tr><tr><td>R4 independent noise</td>
+<td><code>simulate_2pl(θ_human, scrambled)</code></td>
+<td>≈ 0</td>
+</tr><tr><td>R5 LLM shift</td>
+<td>attenuated <code>a</code>, shifted <code>d</code> (vignette LLM)</td>
+<td>shrinks toward 0</td>
+</tr></tbody></table><p><strong>Scenario set 1 — λ selection (50–100 reps each).</strong> For each regime, fit with <code>fit_mixed_subjects_mml</code> over a λ grid, tune by <code>tune_lambda_ability_risk</code>, record selected λ. Assert the qualitative ordering <code>λ(R1) ≳ λ(R2) &gt; λ(R3) &gt; λ(R5) ≈ λ(R4) ≈ 0</code>. Report the full selected-λ distribution, not just the mean — the same-DGP regime (R3) is the subtle one and deserves a histogram.</p>
+<p><strong>Scenario set 2 — Louis SE coverage (≥200 reps).</strong> Under R1, R3, and R5 with a known true <code>gamma</code>, compute Wald intervals from <code>vcov(fit)</code> for each item parameter and for a set of fixed ability-score targets. Report empirical coverage of nominal 90% / 95% intervals. Compare against the EM-bread covariance (<code>vcov_mixed_subjects</code> directly) to demonstrate the Louis correction restores coverage that the EM bread under-covers. This is the key validation of Round 2’s Louis work.</p>
+<p><strong>Scenario set 3 — downstream payoff + no-harm (≥100 reps).</strong> Hold out a scoring sample with known <code>theta_true</code>. Compare ability-score RMSE for: (a) human-only (λ=0), (b) MML at tuned λ, (c) MML at λ=1 (full PPI). Assert: - R1/R2: tuned-λ RMSE &lt; human-only RMSE (predictor helps). - R4/R5: tuned-λ RMSE ≤ human-only RMSE + tolerance (no harm — the criterion correctly declines a useless predictor). Also record item-parameter bias to confirm the MML estimator is unbiased at λ chosen by the criterion.</p>
+<p><strong>Deliverables:</strong> saved <code>.rds</code> result objects, a short <code>simulations/README.md</code> describing how to reproduce, and 3–4 summary figures. Optionally distil a small-rep (≈10) version into a <code>simulation-validation.Rmd</code> vignette for the docs site, gated so it does not slow the CRAN build.</p>
+</div>
+<div class="section level4">
+<h4 id="task-d--wire-results-back-into-docs-after-c">Task D — Wire results back into docs (after C)<a class="anchor" aria-label="anchor" href="#task-d--wire-results-back-into-docs-after-c"></a></h4>
+<p>Once Scenario sets 1–3 produce stable results, add a one-paragraph “Validation” section to the workflow vignette summarising the headline findings (λ ordering, coverage, RMSE payoff) with a pointer to <code>simulations/</code>.</p>
+</div>
+</div>
+<div class="section level3">
+<h3 id="sequencing">Sequencing<a class="anchor" aria-label="anchor" href="#sequencing"></a></h3>
+<p>Tasks A and B are quick and unblock nothing downstream — do them first to clear the reviewer’s actionable caveats. Task C is the substantive next phase and is where method risk actually lives; within it, <strong>Scenario set 2 (coverage) is the highest-value check</strong> because it directly tests the Louis correction that this round of work centered on. Task D is documentation polish that depends on C.</p>
+</div>
+<div class="section level3">
+<h3 id="tasks-a-and-b--completed">Tasks A and B — COMPLETED<a class="anchor" aria-label="anchor" href="#tasks-a-and-b--completed"></a></h3>
+<p><strong>Task B (test cleanup).</strong> <code>tests/testthat/test-core.R</code>: the <code>fit_mixed_subjects_mml</code> basic-fit test now calls <code>stats::vcov(fit)</code> (was <code>vcov_mixed_subjects(fit)</code>) with an updated comment. The deliberate frozen-EC bypass test and the genuine frozen-EC fit test are unchanged.</p>
+<p><strong>Task A (crossfit argument separation).</strong> <code>tune_lambda_ability_risk_crossfit()</code> now takes explicit <code>tuning_args = list()</code> and <code>final_args = list()</code>:</p>
+<ul><li>
+<code>tuning_args</code> is spliced into each fold-level <code>tune_lambda_ability_risk()</code> call (e.g. <code>tuning_args = list(slope_upper = 4)</code>).</li>
+<li>
+<code>final_args</code> is spliced into the <code>final_fit_fn</code> call only (e.g. <code>final_args = list(mml_pred_weights = "own")</code>).</li>
+<li>Legacy <code>...</code> is still accepted: it is routed into <code>tuning_args</code> with a one-time deprecation message, so existing calls do not break.</li>
+<li>Both <code>do.call</code> sites now splice the appropriate list; tuning-only arguments (<code>fit_fn</code>, <code>tuning_args</code>) can no longer reach <code>final_fit_fn</code>.</li>
+</ul><p>Added a regression test (<code>crossfit separates tuning_args and final_args</code>) verifying that both lists route correctly, that the MML final fit collapses fold lambdas to a scalar, and that the legacy <code>...</code> path fires the deprecation message.</p>
+<p><strong>Test count after Tasks A+B: 81 PASS, 0 FAIL, 0 WARN.</strong></p>
+</div>
+<div class="section level3">
+<h3 id="task-c--completed-simulation-validation-harness">Task C — COMPLETED: simulation validation harness<a class="anchor" aria-label="anchor" href="#task-c--completed-simulation-validation-harness"></a></h3>
+<p>Built a standalone simulation harness under <code>simulations/</code> (excluded from the package build via <code>.Rbuildignore</code>; generated artifacts excluded via <code>simulations/.gitignore</code>).</p>
+<p><strong>Files:</strong></p>
+<table class="table"><colgroup><col width="40%"><col width="60%"></colgroup><thead><tr><th>File</th>
+<th>Purpose</th>
+</tr></thead><tbody><tr><td><code>simulations/dgp.R</code></td>
+<td>True 2PL parameters; five predictor regimes (R1–R5); <code>generate_regime()</code>
+</td>
+</tr><tr><td><code>simulations/run_lambda_selection.R</code></td>
+<td>Scenario 1: λ selection across regimes</td>
+</tr><tr><td><code>simulations/run_coverage.R</code></td>
+<td>Scenario 2: Louis vs EM SE coverage (the key check)</td>
+</tr><tr><td><code>simulations/run_downstream.R</code></td>
+<td>Scenario 3: ability-score RMSE payoff + no-harm</td>
+</tr><tr><td><code>simulations/figures.R</code></td>
+<td>Render tables/figures from saved <code>.rds</code>
+</td>
+</tr><tr><td><code>simulations/README.md</code></td>
+<td>Reproduction guide + interpretation notes</td>
+</tr></tbody></table><p><strong>Five predictor regimes</strong> (ordered best→worst): R1 perfect (F=Y), R2 conditional mean (oracle probabilities), R3 same-DGP draw, R4 independent noise, R5 LLM shift. Each <code>run_*.R</code> takes the rep count as a CLI argument.</p>
+<p><strong>Design decisions worth recording:</strong></p>
+<ul><li>
+<strong>Coverage restricted to R1 and R3.</strong> Coverage of the true DGP parameters is only meaningful where the combined estimator is consistent for <code>true_pars</code>. That holds for R1 (paired = observed, generated from true) and R3 (both from true) at any λ, but NOT for R5 at λ &gt; 0 (generated comes from shifted parameters → biased estimand). The coverage script therefore uses a fixed λ = 0.5 on R1/R3 only.</li>
+<li>
+<strong>Louis vs EM contrast.</strong> The coverage script compares <code>stats::vcov(fit)</code> (Louis-corrected, via dispatch) against <code>vcov_mixed_subjects(fit)</code> (EM bread, deliberate bypass) on the same fits, isolating the effect of the Louis correction.</li>
+</ul><p><strong>Smoke-test findings (NOT inferential — tiny rep counts):</strong> All three scenarios execute end-to-end and produce qualitatively correct output.</p>
+<ul><li>Scenario 1 (2 reps): selected λ ordering was R1 ≈ 0.70 (PPI score 0.75 ≈ N/(n+N)) &gt; R3 ≈ 0.25 &gt; R2 = R4 = R5 = 0. R3 ≈ 0.25 matches the Bernoulli noise-floor prediction from the Phase 0 diagnostic.</li>
+<li>Scenario 2 (3 reps): Louis SEs ≈ 1.6× wider than EM SEs, and Louis coverage exceeded EM coverage in every cell — the correct qualitative direction. The full 200-rep run is needed for absolute coverage numbers.</li>
+<li>Scenario 3 (reduced config): produced interpretable RMSE comparisons across regimes.</li>
+</ul><p><strong>Notable scientific finding to follow up in the full run:</strong> R2 (oracle conditional-mean predictor) selected λ ≈ 0, not the naively-expected high value. This reproduces the Phase 0 diagnostic: at the human-MLE evaluation point, the gradient cross-covariance between the human score and a deterministic conditional-mean prediction is near zero, so the control-variate benefit does not appear in the person-level score formulation. The full λ-selection run will quantify how often this occurs. This is documented in <code>simulations/README.md</code>.</p>
+<p><strong>Compute note:</strong> the downstream scenario is expensive (each rep does 11 grid-point MML tunes, each fitting MML + Louis vcov + scoring the target sample), so full runs are intended to be launched by the user with the rep count as a CLI argument; smoke tests confirm execution only.</p>
+</div>
+<div class="section level3">
+<h3 id="task-d--completed-2026-06-09">Task D — COMPLETED (2026-06-09)<a class="anchor" aria-label="anchor" href="#task-d--completed-2026-06-09"></a></h3>
+<p>Full runs executed (λ-selection 100 reps, coverage 200 reps, downstream 100 reps), all post-quadrature-fix and post-runaway-guard. Headline results:</p>
+<ul><li>
+<strong>λ selection:</strong> R1 perfect → 0.750 (= N/(n+N)); R4 noise → ~0; R3/R5 → ~0.10; R2 conditional-mean → ~0 (documented oracle-predictor caveat).</li>
+<li>
+<strong>Coverage (the key result):</strong> Louis-corrected Wald intervals attain nominal coverage for BOTH parameter types — discrimination <code>a</code> 0.91/0.96, intercept <code>d</code> 0.91/0.95 — while the EM bread under-covers (a ~0.60, d ~0.84). This validates the Louis marginal-information bread end-to-end. (Pre-quadrature-fix, <code>a</code> coverage was 0.04; the fix raised it to 0.91.)</li>
+<li>
+<strong>Downstream:</strong> no-harm holds everywhere (tuned RMSE ≤ human-only); discrimination unbiased at the selected λ (|bias_a| ≤ 0.04); RMSE gains modest because the 8-item test is measurement-limited (the larger payoff is in item-parameter precision, i.e. the coverage result).</li>
+</ul><p>Deliverables: - New vignette <code>vignettes/simulation-validation.Rmd</code> presents and interprets all three scenarios with static tables (embeds the actual numbers so it builds without the gitignored <code>.rds</code> files; verified it knits and the R chunks execute). - <code>vignettes/mixed-subjects-workflow.Rmd</code> gained a short “Validation” section summarising the three findings with a pointer to the new vignette and to <code>simulations/</code>.</p>
+</div>
+<div class="section level3">
+<h3 id="items-intentionally-deferred-unchanged">Items intentionally deferred (unchanged)<a class="anchor" aria-label="anchor" href="#items-intentionally-deferred-unchanged"></a></h3>
+<p>Louis correction under item-level missingness; Louis-corrected 1PL bread; EAP-based ability risk; split-sample <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>. None block simulation validation of the scalar 2PL workflow.</p>
 <hr></div>
 </div>
 <div class="section level2">

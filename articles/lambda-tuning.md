@@ -135,11 +135,11 @@ ability_tuned_mml <- tune_lambda_ability_risk(
 ability_tuned_mml$summary[, c("lambda", "mean_param_var", "mean_total_risk",
                                "convergence", "selection_risk")]
 #>   lambda mean_param_var mean_total_risk convergence selection_risk
-#> 1   0.00      0.4956965       0.4956965           0      0.4956965
-#> 2   0.25      0.5191099       0.5191099           0      0.5191099
-#> 3   0.50      0.8566765       0.8566765           0      0.8566765
-#> 4   0.75      0.6529404       0.6529404           0      0.6529404
-#> 5   1.00      1.1593661       1.1593661           0      1.1593661
+#> 1   0.00      0.4341733       0.4341733           0      0.4341733
+#> 2   0.25      0.4402754       0.4402754           0      0.4402754
+#> 3   0.50      0.6286167       0.6286167           0      0.6286167
+#> 4   0.75      0.6339994       0.6339994           0            Inf
+#> 5   1.00      1.3329374       1.3329374           0            Inf
 ability_tuned_mml$best_lambda
 #> [1] 0
 ```
@@ -168,7 +168,7 @@ risk <- ability_risk(
 )
 risk$summary
 #>   mean_param_var mean_squared_error mean_total_risk
-#> 1      0.4956965                 NA       0.4956965
+#> 1      0.4341733                 NA       0.4341733
 ```
 
 `mean_squared_error` is `NA` because `theta_true` was not supplied; it
@@ -197,11 +197,11 @@ ability_tuned_truth <- tune_lambda_ability_risk(
 ability_tuned_truth$summary[, c("lambda", "mean_param_var",
                                  "mean_squared_error", "mean_total_risk")]
 #>   lambda mean_param_var mean_squared_error mean_total_risk
-#> 1   0.00      0.4956965           5.081952        5.577649
-#> 2   0.25      0.5191099           5.048405        5.567515
-#> 3   0.50      0.8566765           4.972780        5.829457
-#> 4   0.75      0.6529404           4.746004        5.398944
-#> 5   1.00      1.1593661           4.736825        5.896191
+#> 1   0.00      0.4341733           4.689478        5.123652
+#> 2   0.25      0.4402754           4.676972        5.117247
+#> 3   0.50      0.6286167           4.650725        5.279342
+#> 4   0.75      0.6339994           4.575805        5.209805
+#> 5   1.00      1.3329374           4.595487        5.928425
 ```
 
 ## Step 4: Cross-fitted ability-risk tuning

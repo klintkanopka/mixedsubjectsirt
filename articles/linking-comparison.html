@@ -38,6 +38,7 @@
     <li><a class="dropdown-item" href="../articles/linking-comparison.html">IRT Linking and Gradient Asymmetry: Diagnostic Guide</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-subjects-1pl.html">Mixed-Subjects 1PL Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
+    <li><a class="dropdown-item" href="../articles/simulation-validation.html">Simulation Validation of the Mixed-Subjects MML Estimator</a></li>
   </ul>
 </li>
       </ul>
@@ -604,66 +605,66 @@ upward.</caption>
 <tr class="odd">
 <td align="left">unlinked</td>
 <td align="left">Item5</td>
-<td align="right">0.0131</td>
-<td align="right">0.0538</td>
-<td align="right">0.1767</td>
-<td align="right">-0.0484</td>
+<td align="right">-6e-04</td>
+<td align="right">0.0381</td>
+<td align="right">0.1304</td>
+<td align="right">-0.0468</td>
 </tr>
 <tr class="even">
 <td align="left">unlinked</td>
 <td align="left">Item8</td>
-<td align="right">0.0217</td>
-<td align="right">0.0059</td>
-<td align="right">0.1653</td>
-<td align="right">-0.0580</td>
+<td align="right">2e-04</td>
+<td align="right">-0.0068</td>
+<td align="right">0.1158</td>
+<td align="right">-0.0611</td>
 </tr>
 <tr class="odd">
 <td align="left">mean_mean</td>
 <td align="left">Item5</td>
-<td align="right">0.0131</td>
-<td align="right">0.1021</td>
-<td align="right">0.1767</td>
-<td align="right">-0.0242</td>
+<td align="right">-6e-04</td>
+<td align="right">0.0769</td>
+<td align="right">0.1304</td>
+<td align="right">-0.0274</td>
 </tr>
 <tr class="even">
 <td align="left">mean_mean</td>
 <td align="left">Item8</td>
-<td align="right">0.0217</td>
-<td align="right">-0.0071</td>
-<td align="right">0.1653</td>
-<td align="right">-0.0646</td>
+<td align="right">2e-04</td>
+<td align="right">-0.0183</td>
+<td align="right">0.1158</td>
+<td align="right">-0.0668</td>
 </tr>
 <tr class="odd">
 <td align="left">mean_sigma</td>
 <td align="left">Item5</td>
-<td align="right">0.0131</td>
-<td align="right">0.1056</td>
-<td align="right">0.1767</td>
-<td align="right">-0.0225</td>
+<td align="right">-6e-04</td>
+<td align="right">0.0793</td>
+<td align="right">0.1304</td>
+<td align="right">-0.0262</td>
 </tr>
 <tr class="even">
 <td align="left">mean_sigma</td>
 <td align="left">Item8</td>
-<td align="right">0.0217</td>
-<td align="right">-0.0051</td>
-<td align="right">0.1653</td>
-<td align="right">-0.0635</td>
+<td align="right">2e-04</td>
+<td align="right">-0.0167</td>
+<td align="right">0.1158</td>
+<td align="right">-0.0660</td>
 </tr>
 <tr class="odd">
 <td align="left">stocking_lord</td>
 <td align="left">Item5</td>
-<td align="right">0.0131</td>
-<td align="right">0.1000</td>
-<td align="right">0.1767</td>
-<td align="right">-0.0253</td>
+<td align="right">-6e-04</td>
+<td align="right">0.0755</td>
+<td align="right">0.1304</td>
+<td align="right">-0.0281</td>
 </tr>
 <tr class="even">
 <td align="left">stocking_lord</td>
 <td align="left">Item8</td>
-<td align="right">0.0217</td>
-<td align="right">-0.0084</td>
-<td align="right">0.1653</td>
-<td align="right">-0.0652</td>
+<td align="right">2e-04</td>
+<td align="right">-0.0192</td>
+<td align="right">0.1158</td>
+<td align="right">-0.0673</td>
 </tr>
 </tbody>
 </table>
@@ -757,10 +758,6 @@ inflating discrimination estimates.</p>
 <span><span class="va">sweep_results</span><span class="op">$</span><span class="va">method_f</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">sweep_results</span><span class="op">$</span><span class="va">method</span>,</span>
 <span>  levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"unlinked"</span>,<span class="st">"mean_mean"</span>,<span class="st">"mean_sigma"</span>,<span class="st">"stocking_lord"</span><span class="op">)</span>,</span>
 <span>  labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Unlinked"</span>,<span class="st">"Mean-mean"</span>,<span class="st">"Mean-sigma"</span>,<span class="st">"Stocking-Lord"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Warning: Removed 1 row containing missing values or values outside the scale range</span></span>
-<span><span class="co">#&gt; (`geom_line()`).</span></span>
-<span><span class="co">#&gt; Warning: Removed 1 row containing missing values or values outside the scale range</span></span>
-<span><span class="co">#&gt; (`geom_point()`).</span></span></code></pre>
 <p><img src="linking-comparison_files/figure-html/lambda-sweep-plot-1.png" class="r-plt" alt="" width="672"></p>
 <table class="table">
 <caption>Parameter recovery at selected λ values — matched ability
@@ -776,142 +773,142 @@ distribution</caption>
 <tr class="odd">
 <td align="left">Unlinked</td>
 <td align="right">0.00</td>
-<td align="right">0.1989</td>
-<td align="right">0.1459</td>
-<td align="right">1.683</td>
+<td align="right">0.2667</td>
+<td align="right">0.1447</td>
+<td align="right">1.921</td>
 </tr>
 <tr class="even">
 <td align="left">Unlinked</td>
 <td align="right">0.05</td>
-<td align="right">0.2196</td>
-<td align="right">0.1503</td>
-<td align="right">1.775</td>
+<td align="right">0.3071</td>
+<td align="right">0.1481</td>
+<td align="right">2.014</td>
 </tr>
 <tr class="odd">
 <td align="left">Unlinked</td>
 <td align="right">0.10</td>
-<td align="right">0.2525</td>
-<td align="right">0.1563</td>
-<td align="right">1.876</td>
-</tr>
-<tr class="even">
-<td align="left">Unlinked</td>
-<td align="right">0.20</td>
 <td align="right">0.3528</td>
-<td align="right">0.1731</td>
+<td align="right">0.1530</td>
 <td align="right">2.117</td>
 </tr>
+<tr class="even">
+<td align="left">Unlinked</td>
+<td align="right">0.20</td>
+<td align="right">0.4606</td>
+<td align="right">0.1676</td>
+<td align="right">2.352</td>
+</tr>
 <tr class="odd">
 <td align="left">Unlinked</td>
 <td align="right">0.50</td>
-<td align="right">1.2399</td>
-<td align="right">0.2663</td>
-<td align="right">3.901</td>
+<td align="right">0.9663</td>
+<td align="right">0.2579</td>
+<td align="right">3.480</td>
 </tr>
 <tr class="even">
 <td align="left">Mean-mean</td>
 <td align="right">0.00</td>
-<td align="right">0.1989</td>
-<td align="right">0.1459</td>
-<td align="right">1.683</td>
+<td align="right">0.2667</td>
+<td align="right">0.1447</td>
+<td align="right">1.921</td>
 </tr>
 <tr class="odd">
 <td align="left">Mean-mean</td>
 <td align="right">0.05</td>
-<td align="right">0.2112</td>
-<td align="right">0.1502</td>
-<td align="right">1.782</td>
+<td align="right">0.3008</td>
+<td align="right">0.1481</td>
+<td align="right">2.024</td>
 </tr>
 <tr class="even">
 <td align="left">Mean-mean</td>
 <td align="right">0.10</td>
-<td align="right">0.2354</td>
-<td align="right">0.1561</td>
-<td align="right">1.893</td>
+<td align="right">0.3411</td>
+<td align="right">0.1531</td>
+<td align="right">2.137</td>
 </tr>
 <tr class="odd">
 <td align="left">Mean-mean</td>
 <td align="right">0.20</td>
-<td align="right">0.3195</td>
-<td align="right">0.1733</td>
-<td align="right">2.162</td>
+<td align="right">0.4408</td>
+<td align="right">0.1685</td>
+<td align="right">2.401</td>
 </tr>
 <tr class="even">
 <td align="left">Mean-mean</td>
 <td align="right">0.50</td>
-<td align="right">1.9691</td>
-<td align="right">0.2683</td>
-<td align="right">6.970</td>
+<td align="right">0.9569</td>
+<td align="right">0.2665</td>
+<td align="right">3.767</td>
 </tr>
 <tr class="odd">
 <td align="left">Mean-sigma</td>
 <td align="right">0.00</td>
-<td align="right">0.1989</td>
-<td align="right">0.1459</td>
-<td align="right">1.683</td>
+<td align="right">0.2667</td>
+<td align="right">0.1447</td>
+<td align="right">1.921</td>
 </tr>
 <tr class="even">
 <td align="left">Mean-sigma</td>
 <td align="right">0.05</td>
-<td align="right">0.2107</td>
-<td align="right">0.1502</td>
-<td align="right">1.781</td>
+<td align="right">0.3000</td>
+<td align="right">0.1481</td>
+<td align="right">2.023</td>
 </tr>
 <tr class="odd">
 <td align="left">Mean-sigma</td>
 <td align="right">0.10</td>
-<td align="right">0.2340</td>
-<td align="right">0.1562</td>
-<td align="right">1.891</td>
+<td align="right">0.3393</td>
+<td align="right">0.1532</td>
+<td align="right">2.135</td>
 </tr>
 <tr class="even">
 <td align="left">Mean-sigma</td>
 <td align="right">0.20</td>
-<td align="right">0.3151</td>
-<td align="right">0.1735</td>
-<td align="right">2.156</td>
+<td align="right">0.4365</td>
+<td align="right">0.1686</td>
+<td align="right">2.395</td>
 </tr>
 <tr class="odd">
 <td align="left">Mean-sigma</td>
 <td align="right">0.50</td>
-<td align="right">1.3254</td>
-<td align="right">0.2681</td>
-<td align="right">5.073</td>
+<td align="right">0.9351</td>
+<td align="right">0.2658</td>
+<td align="right">3.722</td>
 </tr>
 <tr class="even">
 <td align="left">Stocking-Lord</td>
 <td align="right">0.00</td>
-<td align="right">0.1989</td>
-<td align="right">0.1459</td>
-<td align="right">1.683</td>
+<td align="right">0.2667</td>
+<td align="right">0.1447</td>
+<td align="right">1.921</td>
 </tr>
 <tr class="odd">
 <td align="left">Stocking-Lord</td>
 <td align="right">0.05</td>
-<td align="right">0.2115</td>
-<td align="right">0.1501</td>
-<td align="right">1.783</td>
+<td align="right">0.3013</td>
+<td align="right">0.1481</td>
+<td align="right">2.024</td>
 </tr>
 <tr class="even">
 <td align="left">Stocking-Lord</td>
 <td align="right">0.10</td>
-<td align="right">0.2363</td>
-<td align="right">0.1561</td>
-<td align="right">1.895</td>
+<td align="right">0.3422</td>
+<td align="right">0.1531</td>
+<td align="right">2.138</td>
 </tr>
 <tr class="odd">
 <td align="left">Stocking-Lord</td>
 <td align="right">0.20</td>
-<td align="right">0.3222</td>
-<td align="right">0.1733</td>
-<td align="right">2.166</td>
+<td align="right">0.4435</td>
+<td align="right">0.1685</td>
+<td align="right">2.405</td>
 </tr>
 <tr class="even">
 <td align="left">Stocking-Lord</td>
 <td align="right">0.50</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
-<td align="right">NA</td>
+<td align="right">0.9707</td>
+<td align="right">0.2669</td>
+<td align="right">3.795</td>
 </tr>
 </tbody>
 </table>
@@ -954,7 +951,7 @@ The ability-risk criterion naturally selects small
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 when the LLM is misaligned, effectively recovering the human-only
 estimate in the worst case.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Recommended workflow: mean-sigma linking for the generated E-step,</span></span>
 <span><span class="co"># human parameters for observed and predicted E-steps, then power-tune lambda.</span></span>
 <span><span class="va">ms_linked_pars</span> <span class="op">&lt;-</span> <span class="va">all_links</span><span class="op">$</span><span class="va">matched</span><span class="op">$</span><span class="va">mean_sigma</span><span class="op">$</span><span class="va">pars</span></span>
@@ -1016,33 +1013,33 @@ matched case</caption>
 <tbody>
 <tr class="odd">
 <td align="right">0.00</td>
-<td align="right">0.1989</td>
-<td align="right">0.013561</td>
+<td align="right">0.2667</td>
+<td align="right">0.015323</td>
 </tr>
 <tr class="even">
 <td align="right">0.05</td>
-<td align="right">0.2107</td>
-<td align="right">0.013886</td>
+<td align="right">0.3000</td>
+<td align="right">0.015655</td>
 </tr>
 <tr class="odd">
 <td align="right">0.10</td>
-<td align="right">0.2340</td>
-<td align="right">0.014488</td>
+<td align="right">0.3393</td>
+<td align="right">0.016227</td>
 </tr>
 <tr class="even">
 <td align="right">0.20</td>
-<td align="right">0.3151</td>
-<td align="right">0.016629</td>
+<td align="right">0.4365</td>
+<td align="right">0.018147</td>
 </tr>
 <tr class="odd">
 <td align="right">0.30</td>
-<td align="right">0.4449</td>
-<td align="right">0.020594</td>
+<td align="right">0.5610</td>
+<td align="right">0.021256</td>
 </tr>
 <tr class="even">
 <td align="right">0.50</td>
-<td align="right">0.9841</td>
-<td align="right">0.040722</td>
+<td align="right">0.9351</td>
+<td align="right">0.032166</td>
 </tr>
 </tbody>
 </table>
@@ -1124,7 +1121,7 @@ weights, giving a typical PPI++
 for 2PL items with moderate discrimination.</li>
 </ul>
 <p>We verify these predictions using three benchmark tests.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Use human_pars (fitted human 2PL MLE) as evaluation point</span></span>
 <span><span class="va">n_generated_val</span> <span class="op">&lt;-</span> <span class="va">n_generated</span>  <span class="co"># 1200</span></span>
 <span><span class="va">upper_bound</span>     <span class="op">&lt;-</span> <span class="va">n_generated</span> <span class="op">/</span> <span class="op">(</span><span class="va">n_human</span> <span class="op">+</span> <span class="va">n_generated</span><span class="op">)</span>  <span class="co"># N/(n+N)</span></span></code></pre></div>
@@ -1137,7 +1134,7 @@ bound: every prediction exactly matches the human response, so
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>F</mi><mi>i</mi></msub><mo>=</mo><msub><mi>Y</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">F_i = Y_i</annotation></semantics></math>
 for all subjects. The PPI++ formula reduces to
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>λ</mi><mo>*</mo></msup><mo>=</mo><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\lambda^* = N/(n+N)</annotation></semantics></math>.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">generated_A</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_generated</span><span class="op">)</span>, <span class="va">true_pars</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ppi_A</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ppi_score</span><span class="op">(</span></span>
@@ -1172,7 +1169,7 @@ creates a predictor that is intermediate in quality. The PPI++
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>λ</mi><mo>*</mo></msup><annotation encoding="application/x-tex">\lambda^*</annotation></semantics></math>
 increases monotonically with overlap fraction, confirming the formula
 tracks prediction quality.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2026</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co"># 50% of responses match observed, 50% are independent LLM draws</span></span>
 <span><span class="va">pred_fresh</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="va">theta_human</span>, <span class="va">true_pars</span><span class="op">)</span>  <span class="co"># fresh independent draw</span></span>
@@ -1193,7 +1190,7 @@ tracks prediction quality.</p>
 <span><span class="co">#&gt; Test B — 50% overlap predictions:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  PPI++ lambda* ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">ppi_B</span><span class="op">$</span><span class="va">lambda</span>, <span class="fl">3</span><span class="op">)</span>,</span>
 <span>    <span class="st">"  (expect: between 0 and N/(n+N) ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">upper_bound</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">")\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   PPI++ lambda* = 0.233   (expect: between 0 and N/(n+N) = 0.75 )</span></span>
+<span><span class="co">#&gt;   PPI++ lambda* = 0.258   (expect: between 0 and N/(n+N) = 0.75 )</span></span>
 <span></span>
 <span><span class="va">risk_B</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
 <span>  lambda_grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span>, by <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span>
@@ -1221,7 +1218,7 @@ gradient variance reduction in the expected-count IRT formulation. The
 ability-risk criterion remains useful because it asks a different
 question: does adding LLM data reduce scoring uncertainty for the target
 population?</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">predicted_C</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="va">theta_human</span>, <span class="va">true_pars</span><span class="op">)</span>  <span class="co"># independent draw, same DGP</span></span>
 <span><span class="va">generated_C</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_generated</span><span class="op">)</span>, <span class="va">true_pars</span><span class="op">)</span></span>
 <span></span>
@@ -1277,7 +1274,7 @@ Sigma_gamma g].</caption>
 </tr>
 <tr class="even">
 <td align="left">B: 50% overlap</td>
-<td align="right">0.233</td>
+<td align="right">0.258</td>
 <td align="right">0.2</td>
 <td align="left">0 &lt; lambda &lt; N/(n+N)</td>
 </tr>
@@ -1346,26 +1343,26 @@ ability case</caption>
 <tr class="odd">
 <td align="left">unlinked</td>
 <td align="right">0</td>
-<td align="right">0.1989</td>
-<td align="right">1.683</td>
+<td align="right">0.2667</td>
+<td align="right">1.921</td>
 </tr>
 <tr class="even">
 <td align="left">mean_mean</td>
 <td align="right">0</td>
-<td align="right">0.1989</td>
-<td align="right">1.683</td>
+<td align="right">0.2667</td>
+<td align="right">1.921</td>
 </tr>
 <tr class="odd">
 <td align="left">mean_sigma</td>
 <td align="right">0</td>
-<td align="right">0.1989</td>
-<td align="right">1.683</td>
+<td align="right">0.2667</td>
+<td align="right">1.921</td>
 </tr>
 <tr class="even">
 <td align="left">stocking_lord</td>
 <td align="right">0</td>
-<td align="right">0.1989</td>
-<td align="right">1.683</td>
+<td align="right">0.2667</td>
+<td align="right">1.921</td>
 </tr>
 </tbody>
 </table>
@@ -1448,7 +1445,7 @@ are both zero (Fisher consistency), so there is no systematic asymmetry.
 The false minimum at large
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>a</mi><annotation encoding="application/x-tex">a</annotation></semantics></math>
 does not exist in the marginal-likelihood landscape.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Direct comparison: frozen EC with slope cap vs MML without cap</span></span>
 <span><span class="va">fit_frozen</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_mixed_subjects.html">fit_mixed_subjects</a></span><span class="op">(</span></span>
 <span>  observed <span class="op">=</span> <span class="va">observed</span>, predicted <span class="op">=</span> <span class="va">predicted</span>, generated <span class="op">=</span> <span class="va">generated_matched</span>,</span>
@@ -1481,54 +1478,54 @@ at lambda=0.2</caption>
 <tr class="odd">
 <td align="left">Item1</td>
 <td align="right">0.8000000</td>
-<td align="right">0.689</td>
-<td align="right">0.463</td>
+<td align="right">0.790</td>
+<td align="right">0.654</td>
 </tr>
 <tr class="even">
 <td align="left">Item2</td>
 <td align="right">0.9142857</td>
-<td align="right">1.259</td>
-<td align="right">0.844</td>
+<td align="right">1.425</td>
+<td align="right">1.193</td>
 </tr>
 <tr class="odd">
 <td align="left">Item3</td>
 <td align="right">1.0285714</td>
-<td align="right">1.055</td>
-<td align="right">0.792</td>
+<td align="right">1.199</td>
+<td align="right">1.120</td>
 </tr>
 <tr class="even">
 <td align="left">Item4</td>
 <td align="right">1.1428571</td>
-<td align="right">1.052</td>
-<td align="right">0.752</td>
+<td align="right">1.212</td>
+<td align="right">1.064</td>
 </tr>
 <tr class="odd">
 <td align="left">Item5</td>
 <td align="right">1.2571429</td>
-<td align="right">1.944</td>
-<td align="right">1.194</td>
+<td align="right">2.055</td>
+<td align="right">1.688</td>
 </tr>
 <tr class="even">
 <td align="left">Item6</td>
 <td align="right">1.3714286</td>
-<td align="right">1.668</td>
-<td align="right">1.152</td>
+<td align="right">1.820</td>
+<td align="right">1.629</td>
 </tr>
 <tr class="odd">
 <td align="left">Item7</td>
 <td align="right">1.4857143</td>
-<td align="right">1.316</td>
-<td align="right">0.966</td>
+<td align="right">1.504</td>
+<td align="right">1.366</td>
 </tr>
 <tr class="even">
 <td align="left">Item8</td>
 <td align="right">1.6000000</td>
-<td align="right">2.117</td>
-<td align="right">1.473</td>
+<td align="right">2.352</td>
+<td align="right">2.084</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Lambda sweep: MML without slope cap</span></span>
 <span><span class="va">mml_sweep</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">rbind</span>, <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">lambda_grid</span>, <span class="kw">function</span><span class="op">(</span><span class="va">lam</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span></span>
@@ -1560,43 +1557,43 @@ needed</caption>
 <tbody>
 <tr class="odd">
 <td align="right">0.00</td>
-<td align="right">0.2843</td>
-<td align="right">1.354</td>
+<td align="right">0.2705</td>
+<td align="right">1.915</td>
 </tr>
 <tr class="even">
 <td align="right">0.02</td>
-<td align="right">0.2844</td>
-<td align="right">1.365</td>
+<td align="right">0.2698</td>
+<td align="right">1.930</td>
 </tr>
 <tr class="odd">
 <td align="right">0.05</td>
-<td align="right">0.2846</td>
-<td align="right">1.382</td>
+<td align="right">0.2696</td>
+<td align="right">1.954</td>
 </tr>
 <tr class="even">
 <td align="right">0.10</td>
-<td align="right">0.2854</td>
-<td align="right">1.411</td>
+<td align="right">0.2703</td>
+<td align="right">1.996</td>
 </tr>
 <tr class="odd">
 <td align="right">0.15</td>
-<td align="right">0.2867</td>
-<td align="right">1.442</td>
+<td align="right">0.2727</td>
+<td align="right">2.039</td>
 </tr>
 <tr class="even">
 <td align="right">0.20</td>
-<td align="right">0.2885</td>
-<td align="right">1.473</td>
+<td align="right">0.2770</td>
+<td align="right">2.084</td>
 </tr>
 <tr class="odd">
 <td align="right">0.30</td>
-<td align="right">0.2940</td>
-<td align="right">1.542</td>
+<td align="right">0.2913</td>
+<td align="right">2.180</td>
 </tr>
 <tr class="even">
 <td align="right">0.50</td>
-<td align="right">0.3134</td>
-<td align="right">1.698</td>
+<td align="right">0.3425</td>
+<td align="right">2.403</td>
 </tr>
 </tbody>
 </table>

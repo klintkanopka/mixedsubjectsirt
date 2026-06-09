@@ -68,7 +68,7 @@ pars <- data.frame(a = c(1, 1.2), d = c(0, -0.5))
 resp <- matrix(c(1, 0, 0, 1), nrow = 2, byrow = TRUE)
 q <- mixed_subjects_quadrature(resp, item_pars = pars, N_quad = 5)
 fit_mixed_subjects_from_quadrature(q, q, q, lambda = 0.5)$item_pars
-#>    item         a             d          b
-#> 1 Item1 0.0001000 -4.264335e-06 0.04264335
-#> 2 Item2 0.1999984 -1.952450e-02 0.09762325
+#>    item         a             d           b
+#> 1 Item1 0.0001000  2.446106e-06 -0.02446106
+#> 2 Item2 0.1999931 -1.564259e-02  0.07821564
 ```

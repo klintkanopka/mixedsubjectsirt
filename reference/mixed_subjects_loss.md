@@ -52,5 +52,5 @@ pars <- data.frame(a = c(1, 1.2), d = c(0, -0.5))
 resp <- matrix(c(1, 0, 0, 1), nrow = 2, byrow = TRUE)
 q <- mixed_subjects_quadrature(resp, item_pars = pars, N_quad = 5)
 mixed_subjects_loss(c(pars$a, pars$d), q, q, q, lambda = 0.5)
-#> [1] 1.639302
+#> [1] 1.57952
 ```

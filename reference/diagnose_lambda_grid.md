@@ -62,6 +62,6 @@ tuned <- diagnose_lambda_grid(
 )
 tuned$summary
 #>   lambda mixed_loss observed_loss convergence
-#> 1    0.0   1.570232      1.570232           0
-#> 2    0.5   1.721877      1.599580           0
+#> 1    0.0   1.654606      1.654606           0
+#> 2    0.5   1.793915      1.684653           0
 ```

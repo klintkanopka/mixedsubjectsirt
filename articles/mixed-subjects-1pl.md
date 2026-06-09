@@ -64,19 +64,19 @@ IRT marginal likelihood under a standard-normal ability prior.
 
 fit1 <- fit_1pl(observed, n_quad = 15)
 cat("Shared a:", round(fit1$pars$a[1], 3), " (true:", true_1pl$a[1], ")\n")
-#> Shared a: 0.91  (true: 1.2 )
+#> Shared a: 1.287  (true: 1.2 )
 cat("Convergence:", fit1$convergence, "\n\n")
 #> Convergence: 0
 fit1$pars
-#>    item         a          d          b
-#> 1 Item1 0.9097256 -1.1603640  1.2755099
-#> 2 Item2 0.9097256 -0.8619176  0.9474479
-#> 3 Item3 0.9097256 -0.1643224  0.1806285
-#> 4 Item4 0.9097256 -0.4177925  0.4592511
-#> 5 Item5 0.9097256  0.1133261 -0.1245717
-#> 6 Item6 0.9097256  0.5983263 -0.6576997
-#> 7 Item7 0.9097256  0.8240649 -0.9058390
-#> 8 Item8 0.9097256  1.3131301 -1.4434353
+#>    item        a          d           b
+#> 1 Item1 1.286555 -1.1603124  0.90187542
+#> 2 Item2 1.286555 -0.8618391  0.66988122
+#> 3 Item3 1.286555 -0.1642846  0.12769343
+#> 4 Item4 1.286555 -0.4177364  0.32469371
+#> 5 Item5 1.286555  0.1133618 -0.08811268
+#> 6 Item6 1.286555  0.5983198 -0.46505573
+#> 7 Item7 1.286555  0.8240620 -0.64051824
+#> 8 Item8 1.286555  1.3131182 -1.02064664
 ```
 
 All items in the output have the same `a` value, confirming the 1PL
@@ -104,21 +104,21 @@ fit_mml_1pl <- fit_mixed_subjects_mml_1pl(
 print(fit_mml_1pl)
 #> mixedsubjectsirt 1PL fit
 #>   items:      8
-#>   a (shared): 0.9384
+#>   a (shared): 1.327
 #>   lambda:     0.5
 #>   loss:       4.72331
 #>   convergence: 0 
 #>   estimator:  marginal MML PPI++ (1PL)
 fit_mml_1pl$item_pars
-#>    item         a          d          b
-#> 1 Item1 0.9384128 -1.2025364  1.2814578
-#> 2 Item2 0.9384128 -0.8728160  0.9300981
-#> 3 Item3 0.9384128 -0.1832532  0.1952799
-#> 4 Item4 0.9384128 -0.4426467  0.4716972
-#> 5 Item5 0.9384128  0.2318069 -0.2470202
-#> 6 Item6 0.9384128  0.6473791 -0.6898660
-#> 7 Item7 0.9384128  0.8889663 -0.9473084
-#> 8 Item8 0.9384128  1.5297256 -1.6301201
+#>    item        a          d          b
+#> 1 Item1 1.327115 -1.2025380  0.9061297
+#> 2 Item2 1.327115 -0.8728234  0.6576850
+#> 3 Item3 1.327115 -0.1832574  0.1380871
+#> 4 Item4 1.327115 -0.4426497  0.3335429
+#> 5 Item5 1.327115  0.2317895 -0.1746567
+#> 6 Item6 1.327115  0.6473713 -0.4878036
+#> 7 Item7 1.327115  0.8889582 -0.6698428
+#> 8 Item8 1.327115  1.5297000 -1.1526510
 ```
 
 ## Step 3: Correct covariance — $`(J+1) \times (J+1)`$ sandwich
@@ -160,14 +160,14 @@ tuned_1pl <- tune_lambda_ability_risk_1pl(
 tuned_1pl$summary[, c("lambda", "mean_param_var", "mean_total_risk",
                        "convergence")]
 #>   lambda mean_param_var mean_total_risk convergence
-#> 1    0.0    0.003935272     0.003935272           0
-#> 2    0.2    0.003516583     0.003516583           0
-#> 3    0.4    0.003486139     0.003486139           0
-#> 4    0.6    0.003832438     0.003832438           0
-#> 5    0.8    0.004547599     0.004547599           0
-#> 6    1.0    0.005628503     0.005628503           0
+#> 1    0.0    0.003293615     0.003293615           0
+#> 2    0.2    0.002997535     0.002997535           0
+#> 3    0.4    0.003032710     0.003032710           0
+#> 4    0.6    0.003395853     0.003395853           0
+#> 5    0.8    0.004086590     0.004086590           0
+#> 6    1.0    0.005108417     0.005108417           0
 tuned_1pl$best_lambda
-#> [1] 0.4
+#> [1] 0.2
 ```
 
 ## Step 5: Verify — F = Y gives lambda \> 0
@@ -192,12 +192,12 @@ cat("F=Y best lambda:", tuned_fy$best_lambda,
 #> F=Y best lambda: 0.8  (theory: N/(n+N) = 0.75 )
 tuned_fy$summary[, c("lambda", "mean_param_var")]
 #>   lambda mean_param_var
-#> 1    0.0    0.003935272
-#> 2    0.2    0.002656713
-#> 3    0.4    0.001723479
-#> 4    0.6    0.001176384
-#> 5    0.8    0.001058917
-#> 6    1.0    0.001417485
+#> 1    0.0   0.0032936154
+#> 2    0.2   0.0022043602
+#> 3    0.4   0.0014197985
+#> 4    0.6   0.0009634564
+#> 5    0.8   0.0008625318
+#> 6    1.0   0.0011476931
 ```
 
 ## Compare 1PL and 2PL
@@ -218,15 +218,15 @@ fit_2pl_mml <- fit_mixed_subjects_mml(
 
 rmse <- function(x, y) sqrt(mean((x - y)^2))
 cat("1PL RMSE(a):", round(rmse(tuned_1pl$best_fit$item_pars$a, true_1pl$a), 4), "\n")
-#> 1PL RMSE(a): 0.2676
+#> 1PL RMSE(a): 0.1021
 cat("2PL RMSE(a):", round(rmse(fit_2pl_mml$item_pars$a, true_1pl$a), 4), "\n")
-#> 2PL RMSE(a): 0.3235
+#> 2PL RMSE(a): 0.292
 
 # Difficulty recovery
 cat("1PL RMSE(d):", round(rmse(tuned_1pl$best_fit$item_pars$d, true_1pl$d), 4), "\n")
-#> 1PL RMSE(d): 0.2139
+#> 1PL RMSE(d): 0.1901
 cat("2PL RMSE(d):", round(rmse(fit_2pl_mml$item_pars$d, true_1pl$d), 4), "\n")
-#> 2PL RMSE(d): 0.2294
+#> 2PL RMSE(d): 0.196
 ```
 
 The 1PL uses fewer parameters ($`J+1`$ vs $`2J`$), which can give lower
@@ -247,7 +247,7 @@ risk_1pl <- ability_risk_1pl(observed, tuned_1pl$best_fit)
 risk_2pl <- ability_risk(observed, fit_2pl_mml, vcov = Sigma_2pl)
 
 cat("1PL mean param_var:", round(risk_1pl$summary$mean_param_var, 5), "\n")
-#> 1PL mean param_var: 0.00349
+#> 1PL mean param_var: 0.003
 cat("2PL mean param_var:", round(risk_2pl$summary$mean_param_var, 5), "\n")
-#> 2PL mean param_var: 0.06096
+#> 2PL mean param_var: 0.04243
 ```

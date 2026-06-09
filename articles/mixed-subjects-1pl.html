@@ -38,6 +38,7 @@
     <li><a class="dropdown-item" href="../articles/linking-comparison.html">IRT Linking and Gradient Asymmetry: Diagnostic Guide</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-subjects-1pl.html">Mixed-Subjects 1PL Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
+    <li><a class="dropdown-item" href="../articles/simulation-validation.html">Simulation Validation of the Mixed-Subjects MML Estimator</a></li>
   </ul>
 </li>
       </ul>
@@ -135,19 +136,19 @@ ability prior.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu">fit_1pl</span><span class="op">(</span><span class="va">observed</span>, n_quad <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Shared a:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">$</span><span class="va">pars</span><span class="op">$</span><span class="va">a</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">" (true:"</span>, <span class="va">true_1pl</span><span class="op">$</span><span class="va">a</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="st">")\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Shared a: 0.91  (true: 1.2 )</span></span>
+<span><span class="co">#&gt; Shared a: 1.287  (true: 1.2 )</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Convergence:"</span>, <span class="va">fit1</span><span class="op">$</span><span class="va">convergence</span>, <span class="st">"\n\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Convergence: 0</span></span>
 <span><span class="va">fit1</span><span class="op">$</span><span class="va">pars</span></span>
-<span><span class="co">#&gt;    item         a          d          b</span></span>
-<span><span class="co">#&gt; 1 Item1 0.9097256 -1.1603640  1.2755099</span></span>
-<span><span class="co">#&gt; 2 Item2 0.9097256 -0.8619176  0.9474479</span></span>
-<span><span class="co">#&gt; 3 Item3 0.9097256 -0.1643224  0.1806285</span></span>
-<span><span class="co">#&gt; 4 Item4 0.9097256 -0.4177925  0.4592511</span></span>
-<span><span class="co">#&gt; 5 Item5 0.9097256  0.1133261 -0.1245717</span></span>
-<span><span class="co">#&gt; 6 Item6 0.9097256  0.5983263 -0.6576997</span></span>
-<span><span class="co">#&gt; 7 Item7 0.9097256  0.8240649 -0.9058390</span></span>
-<span><span class="co">#&gt; 8 Item8 0.9097256  1.3131301 -1.4434353</span></span></code></pre></div>
+<span><span class="co">#&gt;    item        a          d           b</span></span>
+<span><span class="co">#&gt; 1 Item1 1.286555 -1.1603124  0.90187542</span></span>
+<span><span class="co">#&gt; 2 Item2 1.286555 -0.8618391  0.66988122</span></span>
+<span><span class="co">#&gt; 3 Item3 1.286555 -0.1642846  0.12769343</span></span>
+<span><span class="co">#&gt; 4 Item4 1.286555 -0.4177364  0.32469371</span></span>
+<span><span class="co">#&gt; 5 Item5 1.286555  0.1133618 -0.08811268</span></span>
+<span><span class="co">#&gt; 6 Item6 1.286555  0.5983198 -0.46505573</span></span>
+<span><span class="co">#&gt; 7 Item7 1.286555  0.8240620 -0.64051824</span></span>
+<span><span class="co">#&gt; 8 Item8 1.286555  1.3131182 -1.02064664</span></span></code></pre></div>
 <p>All items in the output have the same <code>a</code> value,
 confirming the 1PL constraint.</p>
 </div>
@@ -173,21 +174,21 @@ items, while each intercept has its own gradient.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit_mml_1pl</span><span class="op">)</span></span>
 <span><span class="co">#&gt; mixedsubjectsirt 1PL fit</span></span>
 <span><span class="co">#&gt;   items:      8</span></span>
-<span><span class="co">#&gt;   a (shared): 0.9384</span></span>
+<span><span class="co">#&gt;   a (shared): 1.327</span></span>
 <span><span class="co">#&gt;   lambda:     0.5</span></span>
 <span><span class="co">#&gt;   loss:       4.72331</span></span>
 <span><span class="co">#&gt;   convergence: 0 </span></span>
 <span><span class="co">#&gt;   estimator:  marginal MML PPI++ (1PL)</span></span>
 <span><span class="va">fit_mml_1pl</span><span class="op">$</span><span class="va">item_pars</span></span>
-<span><span class="co">#&gt;    item         a          d          b</span></span>
-<span><span class="co">#&gt; 1 Item1 0.9384128 -1.2025364  1.2814578</span></span>
-<span><span class="co">#&gt; 2 Item2 0.9384128 -0.8728160  0.9300981</span></span>
-<span><span class="co">#&gt; 3 Item3 0.9384128 -0.1832532  0.1952799</span></span>
-<span><span class="co">#&gt; 4 Item4 0.9384128 -0.4426467  0.4716972</span></span>
-<span><span class="co">#&gt; 5 Item5 0.9384128  0.2318069 -0.2470202</span></span>
-<span><span class="co">#&gt; 6 Item6 0.9384128  0.6473791 -0.6898660</span></span>
-<span><span class="co">#&gt; 7 Item7 0.9384128  0.8889663 -0.9473084</span></span>
-<span><span class="co">#&gt; 8 Item8 0.9384128  1.5297256 -1.6301201</span></span></code></pre></div>
+<span><span class="co">#&gt;    item        a          d          b</span></span>
+<span><span class="co">#&gt; 1 Item1 1.327115 -1.2025380  0.9061297</span></span>
+<span><span class="co">#&gt; 2 Item2 1.327115 -0.8728234  0.6576850</span></span>
+<span><span class="co">#&gt; 3 Item3 1.327115 -0.1832574  0.1380871</span></span>
+<span><span class="co">#&gt; 4 Item4 1.327115 -0.4426497  0.3335429</span></span>
+<span><span class="co">#&gt; 5 Item5 1.327115  0.2317895 -0.1746567</span></span>
+<span><span class="co">#&gt; 6 Item6 1.327115  0.6473713 -0.4878036</span></span>
+<span><span class="co">#&gt; 7 Item7 1.327115  0.8889582 -0.6698428</span></span>
+<span><span class="co">#&gt; 8 Item8 1.327115  1.5297000 -1.1526510</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-3-correct-covariance-j1-times-j1-sandwich">Step 3: Correct covariance —
@@ -229,14 +230,14 @@ for the ability-score risk. The chain rule gives
 <span><span class="va">tuned_1pl</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lambda"</span>, <span class="st">"mean_param_var"</span>, <span class="st">"mean_total_risk"</span>,</span>
 <span>                       <span class="st">"convergence"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   lambda mean_param_var mean_total_risk convergence</span></span>
-<span><span class="co">#&gt; 1    0.0    0.003935272     0.003935272           0</span></span>
-<span><span class="co">#&gt; 2    0.2    0.003516583     0.003516583           0</span></span>
-<span><span class="co">#&gt; 3    0.4    0.003486139     0.003486139           0</span></span>
-<span><span class="co">#&gt; 4    0.6    0.003832438     0.003832438           0</span></span>
-<span><span class="co">#&gt; 5    0.8    0.004547599     0.004547599           0</span></span>
-<span><span class="co">#&gt; 6    1.0    0.005628503     0.005628503           0</span></span>
+<span><span class="co">#&gt; 1    0.0    0.003293615     0.003293615           0</span></span>
+<span><span class="co">#&gt; 2    0.2    0.002997535     0.002997535           0</span></span>
+<span><span class="co">#&gt; 3    0.4    0.003032710     0.003032710           0</span></span>
+<span><span class="co">#&gt; 4    0.6    0.003395853     0.003395853           0</span></span>
+<span><span class="co">#&gt; 5    0.8    0.004086590     0.004086590           0</span></span>
+<span><span class="co">#&gt; 6    1.0    0.005108417     0.005108417           0</span></span>
 <span><span class="va">tuned_1pl</span><span class="op">$</span><span class="va">best_lambda</span></span>
-<span><span class="co">#&gt; [1] 0.4</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.2</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-5-verify-f-y-gives-lambda-0">Step 5: Verify — F = Y gives lambda &gt; 0<a class="anchor" aria-label="anchor" href="#step-5-verify-f-y-gives-lambda-0"></a>
@@ -259,12 +260,12 @@ the ability-risk criterion should select a positive lambda.</p>
 <span><span class="co">#&gt; F=Y best lambda: 0.8  (theory: N/(n+N) = 0.75 )</span></span>
 <span><span class="va">tuned_fy</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lambda"</span>, <span class="st">"mean_param_var"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   lambda mean_param_var</span></span>
-<span><span class="co">#&gt; 1    0.0    0.003935272</span></span>
-<span><span class="co">#&gt; 2    0.2    0.002656713</span></span>
-<span><span class="co">#&gt; 3    0.4    0.001723479</span></span>
-<span><span class="co">#&gt; 4    0.6    0.001176384</span></span>
-<span><span class="co">#&gt; 5    0.8    0.001058917</span></span>
-<span><span class="co">#&gt; 6    1.0    0.001417485</span></span></code></pre></div>
+<span><span class="co">#&gt; 1    0.0   0.0032936154</span></span>
+<span><span class="co">#&gt; 2    0.2   0.0022043602</span></span>
+<span><span class="co">#&gt; 3    0.4   0.0014197985</span></span>
+<span><span class="co">#&gt; 4    0.6   0.0009634564</span></span>
+<span><span class="co">#&gt; 5    0.8   0.0008625318</span></span>
+<span><span class="co">#&gt; 6    1.0   0.0011476931</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="compare-1pl-and-2pl">Compare 1PL and 2PL<a class="anchor" aria-label="anchor" href="#compare-1pl-and-2pl"></a>
@@ -284,15 +285,15 @@ compare?</p>
 <span></span>
 <span><span class="va">rmse</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">x</span> <span class="op">-</span> <span class="va">y</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"1PL RMSE(a):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">tuned_1pl</span><span class="op">$</span><span class="va">best_fit</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">a</span>, <span class="va">true_1pl</span><span class="op">$</span><span class="va">a</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 1PL RMSE(a): 0.2676</span></span>
+<span><span class="co">#&gt; 1PL RMSE(a): 0.1021</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"2PL RMSE(a):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">fit_2pl_mml</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">a</span>, <span class="va">true_1pl</span><span class="op">$</span><span class="va">a</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2PL RMSE(a): 0.3235</span></span>
+<span><span class="co">#&gt; 2PL RMSE(a): 0.292</span></span>
 <span></span>
 <span><span class="co"># Difficulty recovery</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"1PL RMSE(d):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">tuned_1pl</span><span class="op">$</span><span class="va">best_fit</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">d</span>, <span class="va">true_1pl</span><span class="op">$</span><span class="va">d</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 1PL RMSE(d): 0.2139</span></span>
+<span><span class="co">#&gt; 1PL RMSE(d): 0.1901</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"2PL RMSE(d):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">fit_2pl_mml</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">d</span>, <span class="va">true_1pl</span><span class="op">$</span><span class="va">d</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2PL RMSE(d): 0.2294</span></span></code></pre></div>
+<span><span class="co">#&gt; 2PL RMSE(d): 0.196</span></span></code></pre></div>
 <p>The 1PL uses fewer parameters
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>J</mi><mo>+</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">J+1</annotation></semantics></math>
 vs
@@ -316,9 +317,9 @@ concentrates all discrimination information in a single parameter.</p>
 <span><span class="va">risk_2pl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ability_risk.html">ability_risk</a></span><span class="op">(</span><span class="va">observed</span>, <span class="va">fit_2pl_mml</span>, vcov <span class="op">=</span> <span class="va">Sigma_2pl</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"1PL mean param_var:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">risk_1pl</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">mean_param_var</span>, <span class="fl">5</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 1PL mean param_var: 0.00349</span></span>
+<span><span class="co">#&gt; 1PL mean param_var: 0.003</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"2PL mean param_var:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">risk_2pl</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">mean_param_var</span>, <span class="fl">5</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2PL mean param_var: 0.06096</span></span></code></pre></div>
+<span><span class="co">#&gt; 2PL mean param_var: 0.04243</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

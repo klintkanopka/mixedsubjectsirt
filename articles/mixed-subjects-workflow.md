@@ -95,15 +95,15 @@ mixed_mml
 ``` r
 
 mixed_mml$item_pars
-#>    item         a          d          b
-#> 1 Item1 0.3892905 -1.1201778  2.8774858
-#> 2 Item2 0.7835246 -0.8527486  1.0883495
-#> 3 Item3 0.7887476 -0.1147950  0.1455409
-#> 4 Item4 0.7234563 -0.3232715  0.4468431
-#> 5 Item5 1.0983294  0.1180605 -0.1074910
-#> 6 Item6 1.1514876  0.5788988 -0.5027399
-#> 7 Item7 0.9533489  0.7575978 -0.7946700
-#> 8 Item8 1.6982913  1.4114240 -0.8310847
+#>    item         a          d           b
+#> 1 Item1 0.5505445 -1.1201043  2.03453888
+#> 2 Item2 1.1082100 -0.8526648  0.76940725
+#> 3 Item3 1.1154175 -0.1146993  0.10283082
+#> 4 Item4 1.0230713 -0.3231431  0.31585586
+#> 5 Item5 1.5531629  0.1182156 -0.07611283
+#> 6 Item6 1.6283305  0.5790579 -0.35561450
+#> 7 Item7 1.3482659  0.7577307 -0.56200393
+#> 8 Item8 2.4025290  1.4121318 -0.58776887
 ```
 
 ## Step 3: Select lambda by ability-score risk
@@ -129,20 +129,20 @@ ability_tuned <- tune_lambda_ability_risk(
 )
 
 ability_tuned$summary
-#>   lambda mean_param_var mean_squared_error mean_total_risk convergence
-#> 1    0.0     0.05568917                 NA      0.05568917           0
-#> 2    0.2     0.05917237                 NA      0.05917237           0
-#> 3    0.4     0.06944930                 NA      0.06944930           0
-#> 4    0.6     0.08836269                 NA      0.08836269           0
-#> 5    0.8     0.11925842                 NA      0.11925842           0
-#> 6    1.0     0.16947954                 NA      0.16947954           0
+#>   lambda mean_param_var mean_squared_error mean_total_risk convergence max_disc
+#> 1    0.0     0.05891913                 NA      0.05891913           0 1.915445
+#> 2    0.2     0.06800830                 NA      0.06800830           0 2.083627
+#> 3    0.4     0.08479981                 NA      0.08479981           0 2.285911
+#> 4    0.6     0.11031909                 NA      0.11031909           0 2.532510
+#> 5    0.8     0.14403221                 NA      0.14403221           0 2.839411
+#> 6    1.0     0.18326203                 NA      0.18326203           0 3.234803
 #>   selection_risk
-#> 1     0.05568917
-#> 2     0.05917237
-#> 3     0.06944930
-#> 4     0.08836269
-#> 5     0.11925842
-#> 6     0.16947954
+#> 1     0.05891913
+#> 2     0.06800830
+#> 3     0.08479981
+#> 4     0.11031909
+#> 5     0.14403221
+#> 6     0.18326203
 ability_tuned$best_lambda
 #> [1] 0
 ```
@@ -223,15 +223,36 @@ tuned_fy$best_lambda   # expect > 0, near N/(n+N) = 0.75
 #> [1] 0.8
 tuned_fy$summary[, c("lambda", "mean_param_var", "convergence")]
 #>   lambda mean_param_var convergence
-#> 1    0.0     0.05568917           0
-#> 2    0.2     0.03686035           0
-#> 3    0.4     0.02373423           0
-#> 4    0.6     0.01639657           0
-#> 5    0.8     0.01515798           0
-#> 6    1.0     0.02062474           0
+#> 1    0.0     0.05891913           0
+#> 2    0.2     0.03825654           0
+#> 3    0.4     0.02399810           0
+#> 4    0.6     0.01606106           0
+#> 5    0.8     0.01428788           0
+#> 6    1.0     0.01856073           0
 ```
 
 The ability risk decreases from $`\lambda = 0`$ to a minimum near the
 theoretical upper bound $`N/(n+N) = 1200/1600 = 0.75`$, confirming the
 estimator correctly identifies and exploits a highly informative
 predictor.
+
+## Validation
+
+A full simulation study confirms the recommended workflow behaves as
+intended:
+
+- **λ selection tracks predictor quality** — a perfect paired predictor
+  (F = Y) selects λ ≈ N/(n+N) = 0.75; a useless predictor selects λ ≈ 0.
+- **The Louis-corrected standard errors are honest** —
+  [`vcov()`](https://rdrr.io/r/stats/vcov.html) on a scalar MML fit
+  attains nominal Wald-interval coverage for both discriminations and
+  intercepts, whereas the uncorrected EM-Hessian covariance
+  under-covers.
+- **No harm** — tuned ability-score RMSE is never worse than the
+  human-only calibration; when the predictor is uninformative the method
+  falls back to it.
+
+See the [Simulation
+Validation](http://klintkanopka.com/mixedsubjectsirt/articles/simulation-validation.md)
+vignette for the full results, and `simulations/` in the source tree for
+the reproducible harness.

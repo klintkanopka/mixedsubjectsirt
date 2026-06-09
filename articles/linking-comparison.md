@@ -384,14 +384,14 @@ knitr::kable(grad_items, row.names = FALSE,
 
 | Config        | Item  | ∇L_obs |  ∇L_gen | ∇L_pred | Combined (λ=0.5) |
 |:--------------|:------|-------:|--------:|--------:|-----------------:|
-| unlinked      | Item5 | 0.0131 |  0.0538 |  0.1767 |          -0.0484 |
-| unlinked      | Item8 | 0.0217 |  0.0059 |  0.1653 |          -0.0580 |
-| mean_mean     | Item5 | 0.0131 |  0.1021 |  0.1767 |          -0.0242 |
-| mean_mean     | Item8 | 0.0217 | -0.0071 |  0.1653 |          -0.0646 |
-| mean_sigma    | Item5 | 0.0131 |  0.1056 |  0.1767 |          -0.0225 |
-| mean_sigma    | Item8 | 0.0217 | -0.0051 |  0.1653 |          -0.0635 |
-| stocking_lord | Item5 | 0.0131 |  0.1000 |  0.1767 |          -0.0253 |
-| stocking_lord | Item8 | 0.0217 | -0.0084 |  0.1653 |          -0.0652 |
+| unlinked      | Item5 | -6e-04 |  0.0381 |  0.1304 |          -0.0468 |
+| unlinked      | Item8 |  2e-04 | -0.0068 |  0.1158 |          -0.0611 |
+| mean_mean     | Item5 | -6e-04 |  0.0769 |  0.1304 |          -0.0274 |
+| mean_mean     | Item8 |  2e-04 | -0.0183 |  0.1158 |          -0.0668 |
+| mean_sigma    | Item5 | -6e-04 |  0.0793 |  0.1304 |          -0.0262 |
+| mean_sigma    | Item8 |  2e-04 | -0.0167 |  0.1158 |          -0.0660 |
+| stocking_lord | Item5 | -6e-04 |  0.0755 |  0.1304 |          -0.0281 |
+| stocking_lord | Item8 |  2e-04 | -0.0192 |  0.1158 |          -0.0673 |
 
 Gradient of discrimination a for the two problematic items at starting
 parameters. Negative combined gradient pushes a upward. {.table}
@@ -474,35 +474,30 @@ sweep_results$method_f <- factor(sweep_results$method,
   labels = c("Unlinked","Mean-mean","Mean-sigma","Stocking-Lord"))
 ```
 
-    #> Warning: Removed 1 row containing missing values or values outside the scale range
-    #> (`geom_line()`).
-    #> Warning: Removed 1 row containing missing values or values outside the scale range
-    #> (`geom_point()`).
-
 ![](linking-comparison_files/figure-html/lambda-sweep-plot-1.png)
 
 | Method        |    λ | RMSE(a) | RMSE(d) | max(a) |
 |:--------------|-----:|--------:|--------:|-------:|
-| Unlinked      | 0.00 |  0.1989 |  0.1459 |  1.683 |
-| Unlinked      | 0.05 |  0.2196 |  0.1503 |  1.775 |
-| Unlinked      | 0.10 |  0.2525 |  0.1563 |  1.876 |
-| Unlinked      | 0.20 |  0.3528 |  0.1731 |  2.117 |
-| Unlinked      | 0.50 |  1.2399 |  0.2663 |  3.901 |
-| Mean-mean     | 0.00 |  0.1989 |  0.1459 |  1.683 |
-| Mean-mean     | 0.05 |  0.2112 |  0.1502 |  1.782 |
-| Mean-mean     | 0.10 |  0.2354 |  0.1561 |  1.893 |
-| Mean-mean     | 0.20 |  0.3195 |  0.1733 |  2.162 |
-| Mean-mean     | 0.50 |  1.9691 |  0.2683 |  6.970 |
-| Mean-sigma    | 0.00 |  0.1989 |  0.1459 |  1.683 |
-| Mean-sigma    | 0.05 |  0.2107 |  0.1502 |  1.781 |
-| Mean-sigma    | 0.10 |  0.2340 |  0.1562 |  1.891 |
-| Mean-sigma    | 0.20 |  0.3151 |  0.1735 |  2.156 |
-| Mean-sigma    | 0.50 |  1.3254 |  0.2681 |  5.073 |
-| Stocking-Lord | 0.00 |  0.1989 |  0.1459 |  1.683 |
-| Stocking-Lord | 0.05 |  0.2115 |  0.1501 |  1.783 |
-| Stocking-Lord | 0.10 |  0.2363 |  0.1561 |  1.895 |
-| Stocking-Lord | 0.20 |  0.3222 |  0.1733 |  2.166 |
-| Stocking-Lord | 0.50 |      NA |      NA |     NA |
+| Unlinked      | 0.00 |  0.2667 |  0.1447 |  1.921 |
+| Unlinked      | 0.05 |  0.3071 |  0.1481 |  2.014 |
+| Unlinked      | 0.10 |  0.3528 |  0.1530 |  2.117 |
+| Unlinked      | 0.20 |  0.4606 |  0.1676 |  2.352 |
+| Unlinked      | 0.50 |  0.9663 |  0.2579 |  3.480 |
+| Mean-mean     | 0.00 |  0.2667 |  0.1447 |  1.921 |
+| Mean-mean     | 0.05 |  0.3008 |  0.1481 |  2.024 |
+| Mean-mean     | 0.10 |  0.3411 |  0.1531 |  2.137 |
+| Mean-mean     | 0.20 |  0.4408 |  0.1685 |  2.401 |
+| Mean-mean     | 0.50 |  0.9569 |  0.2665 |  3.767 |
+| Mean-sigma    | 0.00 |  0.2667 |  0.1447 |  1.921 |
+| Mean-sigma    | 0.05 |  0.3000 |  0.1481 |  2.023 |
+| Mean-sigma    | 0.10 |  0.3393 |  0.1532 |  2.135 |
+| Mean-sigma    | 0.20 |  0.4365 |  0.1686 |  2.395 |
+| Mean-sigma    | 0.50 |  0.9351 |  0.2658 |  3.722 |
+| Stocking-Lord | 0.00 |  0.2667 |  0.1447 |  1.921 |
+| Stocking-Lord | 0.05 |  0.3013 |  0.1481 |  2.024 |
+| Stocking-Lord | 0.10 |  0.3422 |  0.1531 |  2.138 |
+| Stocking-Lord | 0.20 |  0.4435 |  0.1685 |  2.405 |
+| Stocking-Lord | 0.50 |  0.9707 |  0.2669 |  3.795 |
 
 Parameter recovery at selected λ values — matched ability distribution
 {.table}
@@ -590,12 +585,12 @@ knitr::kable(risk_tab, row.names = FALSE,
 
 |    λ | RMSE(a) | Mean ability-score risk |
 |-----:|--------:|------------------------:|
-| 0.00 |  0.1989 |                0.013561 |
-| 0.05 |  0.2107 |                0.013886 |
-| 0.10 |  0.2340 |                0.014488 |
-| 0.20 |  0.3151 |                0.016629 |
-| 0.30 |  0.4449 |                0.020594 |
-| 0.50 |  0.9841 |                0.040722 |
+| 0.00 |  0.2667 |                0.015323 |
+| 0.05 |  0.3000 |                0.015655 |
+| 0.10 |  0.3393 |                0.016227 |
+| 0.20 |  0.4365 |                0.018147 |
+| 0.30 |  0.5610 |                0.021256 |
+| 0.50 |  0.9351 |                0.032166 |
 
 Ability-score risk and parameter recovery — mean-sigma linking, matched
 case {.table}
@@ -722,7 +717,7 @@ cat("Test B — 50% overlap predictions:\n")
 #> Test B — 50% overlap predictions:
 cat("  PPI++ lambda* =", round(ppi_B$lambda, 3),
     "  (expect: between 0 and N/(n+N) =", round(upper_bound, 3), ")\n")
-#>   PPI++ lambda* = 0.233   (expect: between 0 and N/(n+N) = 0.75 )
+#>   PPI++ lambda* = 0.258   (expect: between 0 and N/(n+N) = 0.75 )
 
 risk_B <- tune_lambda_ability_risk(
   lambda_grid = seq(0, 0.5, by = 0.1),
@@ -786,7 +781,7 @@ cat("  Ability-risk lambda* =", risk_C$best_lambda, "\n")
 | Test | PPI++ lambda\* | Ability-risk lambda\* | Theory |
 |:---|---:|---:|:---|
 | A: F=Y (upper bound) | 0.750 | 0.8 | N/(n+N) = 0.75 |
-| B: 50% overlap | 0.233 | 0.2 | 0 \< lambda \< N/(n+N) |
+| B: 50% overlap | 0.258 | 0.2 | 0 \< lambda \< N/(n+N) |
 | C: independent LLM draws | 0.000 | 0.0 | ~0 (no gradient covariance) |
 
 PPI++ score lambda vs. ability-risk lambda. PPI++ lambda minimises
@@ -824,10 +819,10 @@ $`\lambda = 0`$ as optimal for all methods in this scenario.
 
 | Method        | Best λ | RMSE(a) at best λ | max(a) at best λ |
 |:--------------|-------:|------------------:|-----------------:|
-| unlinked      |      0 |            0.1989 |            1.683 |
-| mean_mean     |      0 |            0.1989 |            1.683 |
-| mean_sigma    |      0 |            0.1989 |            1.683 |
-| stocking_lord |      0 |            0.1989 |            1.683 |
+| unlinked      |      0 |            0.2667 |            1.921 |
+| mean_mean     |      0 |            0.2667 |            1.921 |
+| mean_sigma    |      0 |            0.2667 |            1.921 |
+| stocking_lord |      0 |            0.2667 |            1.921 |
 
 Best achievable RMSE(a) and the λ that achieves it — matched ability
 case {.table}
@@ -927,14 +922,14 @@ knitr::kable(comp, row.names = FALSE,
 
 | item  |    true_a | frozen_a | mml_a |
 |:------|----------:|---------:|------:|
-| Item1 | 0.8000000 |    0.689 | 0.463 |
-| Item2 | 0.9142857 |    1.259 | 0.844 |
-| Item3 | 1.0285714 |    1.055 | 0.792 |
-| Item4 | 1.1428571 |    1.052 | 0.752 |
-| Item5 | 1.2571429 |    1.944 | 1.194 |
-| Item6 | 1.3714286 |    1.668 | 1.152 |
-| Item7 | 1.4857143 |    1.316 | 0.966 |
-| Item8 | 1.6000000 |    2.117 | 1.473 |
+| Item1 | 0.8000000 |    0.790 | 0.654 |
+| Item2 | 0.9142857 |    1.425 | 1.193 |
+| Item3 | 1.0285714 |    1.199 | 1.120 |
+| Item4 | 1.1428571 |    1.212 | 1.064 |
+| Item5 | 1.2571429 |    2.055 | 1.688 |
+| Item6 | 1.3714286 |    1.820 | 1.629 |
+| Item7 | 1.4857143 |    1.504 | 1.366 |
+| Item8 | 1.6000000 |    2.352 | 2.084 |
 
 Item discrimination: true vs. frozen-EC (slope_upper=4) vs. MML at
 lambda=0.2 {.table}
@@ -965,14 +960,14 @@ knitr::kable(mml_sweep, row.names = FALSE,
 
 |    λ | RMSE(a) | max(a) |
 |-----:|--------:|-------:|
-| 0.00 |  0.2843 |  1.354 |
-| 0.02 |  0.2844 |  1.365 |
-| 0.05 |  0.2846 |  1.382 |
-| 0.10 |  0.2854 |  1.411 |
-| 0.15 |  0.2867 |  1.442 |
-| 0.20 |  0.2885 |  1.473 |
-| 0.30 |  0.2940 |  1.542 |
-| 0.50 |  0.3134 |  1.698 |
+| 0.00 |  0.2705 |  1.915 |
+| 0.02 |  0.2698 |  1.930 |
+| 0.05 |  0.2696 |  1.954 |
+| 0.10 |  0.2703 |  1.996 |
+| 0.15 |  0.2727 |  2.039 |
+| 0.20 |  0.2770 |  2.084 |
+| 0.30 |  0.2913 |  2.180 |
+| 0.50 |  0.3425 |  2.403 |
 
 MML parameter recovery across lambda — no slope_upper needed {.table}
 

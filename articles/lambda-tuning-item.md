@@ -89,7 +89,7 @@ global_tuned <- tune_lambda_ability_risk(
 )
 
 cat("Global scalar best lambda:", global_tuned$best_lambda, "\n")
-#> Global scalar best lambda: 0.2
+#> Global scalar best lambda: 0.4
 ```
 
 The global scalar is forced to a compromise — the four poor items
@@ -159,14 +159,14 @@ cat("Per-item ability-risk lambda:\n")
 #> Per-item ability-risk lambda:
 print(data.frame(item = item_tuned$item, lambda = round(item_tuned$lambda, 3)))
 #>    item lambda
-#> 1 Item1   0.75
-#> 2 Item2   0.75
-#> 3 Item3   0.75
-#> 4 Item4   0.75
-#> 5 Item5   0.00
-#> 6 Item6   0.00
-#> 7 Item7   0.00
-#> 8 Item8   0.00
+#> 1 Item1    0.4
+#> 2 Item2    0.4
+#> 3 Item3    0.4
+#> 4 Item4    0.4
+#> 5 Item5    0.0
+#> 6 Item6    0.0
+#> 7 Item7    0.0
+#> 8 Item8    0.0
 ```
 
 Items 1–4 should receive positive $`\lambda_j`$ (good predictor); items
@@ -195,14 +195,14 @@ knitr::kable(comparison, row.names = FALSE,
 
 | item  | true_a | human_a | scalar_a | item_a |
 |:------|-------:|--------:|---------:|-------:|
-| Item1 |  0.800 |   0.727 |    0.523 |  0.633 |
-| Item2 |  0.914 |   1.256 |    0.856 |  0.863 |
-| Item3 |  1.029 |   1.117 |    0.793 |  0.835 |
-| Item4 |  1.143 |   1.091 |    0.754 |  0.902 |
-| Item5 |  1.257 |   1.758 |    1.187 |  1.586 |
-| Item6 |  1.371 |   1.610 |    1.113 |  1.449 |
-| Item7 |  1.486 |   1.369 |    1.002 |  1.187 |
-| Item8 |  1.600 |   1.925 |    1.453 |  1.683 |
+| Item1 |  0.800 |   0.727 |    0.752 |  0.714 |
+| Item2 |  0.914 |   1.256 |    1.158 |  1.104 |
+| Item3 |  1.029 |   1.117 |    1.125 |  1.023 |
+| Item4 |  1.143 |   1.091 |    1.039 |  1.036 |
+| Item5 |  1.257 |   1.758 |    1.578 |  1.766 |
+| Item6 |  1.371 |   1.610 |    1.524 |  1.618 |
+| Item7 |  1.486 |   1.369 |    1.459 |  1.371 |
+| Item8 |  1.600 |   1.925 |    2.238 |  1.921 |
 
 Discrimination recovery: scalar lambda vs. per-item lambda {.table}
 
@@ -214,12 +214,12 @@ cat("RMSE(a) human-only:   ",
 #> RMSE(a) human-only:    0.2645
 cat("RMSE(a) scalar MML:   ",
     round(rmse(fit_scalar$item_pars$a, true_pars$a), 4), "\n")
-#> RMSE(a) scalar MML:    0.277
+#> RMSE(a) scalar MML:    0.2774
 if (!is.null(fit_per_item)) {
   cat("RMSE(a) per-item MML: ",
       round(rmse(fit_per_item$item_pars$a, true_pars$a), 4), "\n")
 }
-#> RMSE(a) per-item MML:  0.205
+#> RMSE(a) per-item MML:  0.2476
 ```
 
 ## Important note on initialisation
