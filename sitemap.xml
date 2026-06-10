@@ -12,11 +12,18 @@
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/authors.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/index.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/ability_gradient.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/ability_gradient_1pl.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/ability_risk.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/ability_risk_1pl.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/diagnose_lambda_grid.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/fit_1pl.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_1pl.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_from_quadrature.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_iterative.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml_1pl.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/index.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/link_item_parameters.html</loc></url>
@@ -27,9 +34,15 @@
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/score_theta.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/simulate_2pl.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/summarize_expected_counts.html</loc></url>
-<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability.html</loc></url>
-<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_crossfit.html</loc></url>
-<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_grid.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_1pl.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score_1pl.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score_item.html</loc></url>
 <url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_1pl.html</loc></url>
+<url><loc>http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.html</loc></url>
 </urlset>
 

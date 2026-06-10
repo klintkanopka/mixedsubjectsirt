@@ -6,8 +6,8 @@ or
 [`fit_mixed_subjects_split()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.md)
 over a set of candidate lambda values. The returned summary reports the
 fitted mixed-subjects objective and the observed human expected-count
-loss for each candidate. This is a sensitivity diagnostic, not a
-statistically valid PPI++ tuning rule.
+loss for each candidate. This is a sensitivity diagnostic, not a valid
+tuning rule.
 
 ## Usage
 

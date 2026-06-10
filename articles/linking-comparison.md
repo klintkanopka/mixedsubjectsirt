@@ -8,9 +8,10 @@ that occurs when the LLM item parameters differ from human parameters
 and evaluates IRT scale-linking methods as a partial remedy. For the
 **recommended workflow**, see the [Mixed-Subjects IRT
 Calibration](http://klintkanopka.com/mixedsubjectsirt/articles/mixed-subjects-workflow.md)
-vignette, which uses `fit_mixed_subjects_mml()` — the marginal-MML
-estimator that eliminates the gradient asymmetry without requiring a
-linking pre-processing step.
+vignette, which uses
+[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+— the marginal-MML estimator that eliminates the gradient asymmetry
+without requiring a linking pre-processing step.
 
 ------------------------------------------------------------------------
 
@@ -37,9 +38,9 @@ evaluates three classical linking methods:
 |-------------------|------------------------------------------------------|
 | **Mean-mean**     | Mean discrimination and mean difficulty              |
 | **Mean-sigma**    | Mean and SD of difficulty                            |
-| **Stocking-Lord** | Numerically minimised weighted TCC squared deviation |
+| **Stocking-Lord** | Numerically minimized weighted TCC squared deviation |
 
-We characterise both how well each method aligns the LLM parameters to
+We characterize both how well each method aligns the LLM parameters to
 the human scale and — crucially — how the residual misalignment
 interacts with the power-tuning parameter $`\lambda`$.
 
@@ -95,9 +96,9 @@ link_mean_sigma <- function(source, target) {
   apply_link(source, A, B)
 }
 
-# Stocking-Lord with bounded optimisation to prevent item-level overcorrection.
+# Stocking-Lord with bounded optimization to prevent item-level overcorrection.
 # A is constrained to [0.4, 2.5]; large-variance items can otherwise receive
-# inflated linked discriminations that destabilise the downstream M-step.
+# inflated linked discriminations that destabilize the downstream M-step.
 link_stocking_lord <- function(source, target,
                                 theta_grid = seq(-4, 4, by = 0.05),
                                 A_bounds   = c(0.4, 2.5),
@@ -421,7 +422,7 @@ from the group mean.
 
 Since linking reduces but does not eliminate the gradient asymmetry, the
 optimal $`\lambda`$ for this scenario is much smaller than 0.5. We sweep
-$`\lambda`$ from 0 to 0.5 to characterise the tradeoff between using LLM
+$`\lambda`$ from 0 to 0.5 to characterize the tradeoff between using LLM
 data and inflating discrimination estimates.
 
 ``` r
@@ -505,7 +506,7 @@ Parameter recovery at selected λ values — matched ability distribution
 The plot reveals three regimes:
 
 1.  **$`\lambda \approx 0`$ (human-only)**: all linking methods give the
-    same human-only estimate, which is the target behaviour when LLM
+    same human-only estimate, which is the target behavior when LLM
     alignment is uncertain.
 2.  **Small $`\lambda`$ (0.05–0.15)**: all linking methods add modest
     noise but stay close to the human-only estimate. Linked methods
@@ -535,7 +536,7 @@ case.
 # human parameters for observed and predicted E-steps, then power-tune lambda.
 ms_linked_pars <- all_links$matched$mean_sigma$pars
 
-# Build the three quadrature summaries with the correct parameterisation for each.
+# Build the three quadrature summaries with the correct parameterization for each.
 # q_obs and q_pred use human parameters; q_gen uses the linked LLM parameters.
 q_gen_linked <- mixedsubjectsirt:::build_quadrature_summary(
   generated_matched, ms_linked_pars, quad)
@@ -612,15 +613,16 @@ A common misconception is that $`\lambda^*`$ should approach 1 when the
 LLM exactly reproduces the human DGP. This conflates two different
 objectives:
 
-- **`tune_lambda_ppi_score()`** returns the PPI++ Proposition 2
-  estimate: the $`\lambda`$ that minimises the *trace of the
-  item-parameter covariance matrix* $`\text{Tr}(\Sigma_\gamma)`$. This
-  is a measure of item-parameter estimation efficiency.
-- **`tune_lambda_ability_risk()`** returns the $`\lambda`$ that
-  minimises the *propagated ability-score risk*
-  $`\mathbb{E}[g' \Sigma_\gamma g]`$, where $`g`$ is the gradient of the
-  ability estimate with respect to item parameters. This is the quantity
-  that matters for test scoring.
+- **[`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)**
+  returns the PPI++ Proposition 2 estimate: the $`\lambda`$ that
+  minimizes the *trace of the item-parameter covariance matrix*
+  $`\text{Tr}(\Sigma_\gamma)`$. This is a measure of item-parameter
+  estimation efficiency.
+- **[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)**
+  returns the $`\lambda`$ that minimizes the *propagated ability-score
+  risk* $`\mathbb{E}[g' \Sigma_\gamma g]`$, where $`g`$ is the gradient
+  of the ability estimate with respect to item parameters. This is the
+  quantity that matters for test scoring.
 
 **These are different objectives and generally yield different
 $`\lambda`$ values. In practice, users should select $`\lambda`$ by
@@ -784,8 +786,8 @@ cat("  Ability-risk lambda* =", risk_C$best_lambda, "\n")
 | B: 50% overlap | 0.258 | 0.2 | 0 \< lambda \< N/(n+N) |
 | C: independent LLM draws | 0.000 | 0.0 | ~0 (no gradient covariance) |
 
-PPI++ score lambda vs. ability-risk lambda. PPI++ lambda minimises
-Tr(Sigma_gamma). Ability-risk lambda minimises E\[g’ Sigma_gamma g\].
+PPI++ score lambda vs. ability-risk lambda. PPI++ lambda minimizes
+Tr(Sigma_gamma). Ability-risk lambda minimizes E\[g’ Sigma_gamma g\].
 {.table}
 
 **Key finding.** `tune_lambda_ppi_score` correctly tracks predictor
@@ -798,9 +800,10 @@ The ability-risk criterion (`tune_lambda_ability_risk`) selects
 $`\lambda`$ based on scoring accuracy rather than gradient covariance,
 and may choose nonzero $`\lambda`$ even when the PPI++ score gives 0,
 when adding LLM data reduces scoring uncertainty. **For psychometric
-applications, always use `tune_lambda_ability_risk()` to select
-$`\lambda`$.** The PPI++ score is provided as a method diagnostic and
-implementation validation tool.
+applications, always use
+[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+to select $`\lambda`$.** The PPI++ score is provided as a method
+diagnostic and implementation validation tool.
 
 ------------------------------------------------------------------------
 
@@ -864,9 +867,9 @@ estimates close to the human-only baseline.
   the mean-sigma and Stocking-Lord implementations in this vignette use
   local helper functions defined in the `{r helpers}` chunk.
 
-- *Stocking-Lord* minimises TCC deviation directly, which is
+- *Stocking-Lord* minimizes TCC deviation directly, which is
   conceptually closest to the expected-count criterion. However, it
-  requires bounded numerical optimisation (the A-bounds safeguard in
+  requires bounded numerical optimization (the A-bounds safeguard in
   this implementation is essential) and can still overcorrect for
   individual items when one item’s LLM discrimination is already close
   to or exceeds the human value. The TCC improvement does not translate
@@ -973,7 +976,7 @@ MML parameter recovery across lambda — no slope_upper needed {.table}
 
 The MML estimator converges at all $`\lambda`$ values without a slope
 cap, and the discriminations do not inflate. Ability-risk tuning with
-MML selects the $`\lambda`$ that minimises scoring uncertainty directly
+MML selects the $`\lambda`$ that minimizes scoring uncertainty directly
 — there is no need for a linking pre-processing step when using the MML
 estimator.
 

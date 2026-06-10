@@ -15,6 +15,7 @@ fit_mixed_subjects_from_quadrature(
   lambda = 1,
   initial_pars = NULL,
   slope_lower = 1e-04,
+  slope_upper = NULL,
   control = list(maxit = 500)
 )
 ```
@@ -51,6 +52,11 @@ fit_mixed_subjects_from_quadrature(
 
   Lower bound for discrimination parameters during optimization. Use
   `NULL` for no lower bound.
+
+- slope_upper:
+
+  Upper bound for discrimination parameters during optimization. Use
+  `NULL` (the default) for no upper bound.
 
 - control:
 

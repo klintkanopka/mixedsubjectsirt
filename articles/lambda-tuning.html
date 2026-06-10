@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Choosing Lambda in Mixed-Subjects IRT • mixedsubjectsirt</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -16,7 +16,7 @@
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">mixedsubjectsirt</a>
 
@@ -33,12 +33,11 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/lambda-tuning-item.html">Per-Item Lambda (Experimental)</a></li>
+<li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
-    <li><a class="dropdown-item" href="../articles/linking-comparison.html">IRT Linking and Gradient Asymmetry: Diagnostic Guide</a></li>
-    <li><a class="dropdown-item" href="../articles/mixed-subjects-1pl.html">Mixed-Subjects 1PL Calibration</a></li>
-    <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/simulation-validation.html">Simulation Validation of the Mixed-Subjects MML Estimator</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
       </ul>
@@ -46,6 +45,14 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
@@ -68,7 +75,7 @@
 
     
     
-<p>The mixed-subjects estimator calibrates a 2PL model by minimising a
+<p>The mixed-subjects estimator calibrates a 2PL model by minimizing a
 PPI++-style combined loss over observed human responses, paired LLM
 responses, and additional generated LLM responses.</p>
 <p>This vignette explains how to choose
@@ -86,7 +93,7 @@ and which functions to use. The short answer:</p>
 <tbody>
 <tr class="odd">
 <td>Theoretical diagnostic</td>
-<td><code>tune_lambda_ppi_score()</code></td>
+<td><code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code></td>
 </tr>
 <tr class="even">
 <td><strong>Recommended practical tuning</strong></td>
@@ -95,16 +102,16 @@ and which functions to use. The short answer:</p>
 <tr class="odd">
 <td>Frozen EC (fast approximation)</td>
 <td>
-<code>tune_lambda_ability_risk()</code> (default
+<code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> (default
 <code>fit_fn</code>)</td>
 </tr>
 <tr class="even">
 <td>Cross-fitted tuning</td>
-<td><code>tune_lambda_ability_risk_crossfit()</code></td>
+<td><code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code></td>
 </tr>
 <tr class="odd">
 <td>Per-item tuning (experimental)</td>
-<td><code>tune_lambda_ability_risk_item()</code></td>
+<td><code><a href="../reference/tune_lambda_ability_risk_item.html">tune_lambda_ability_risk_item()</a></code></td>
 </tr>
 </tbody>
 </table>
@@ -113,13 +120,13 @@ and which functions to use. The short answer:</p>
 </h2>
 <p><strong>Why there are two lambda objectives:</strong></p>
 <ul>
-<li><p><code>tune_lambda_ppi_score()</code> minimises
+<li><p><code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code> minimizes
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Tr</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\text{Tr}(\Sigma_\gamma)</annotation></semantics></math>
 — the trace of the item-parameter covariance matrix (PPI++ Proposition
 2). This is a <em>theoretical diagnostic</em>: it measures whether the
 LLM prediction reduces item-parameter variance. It answers “is the
 predictor statistically useful?”</p></li>
-<li><p><code>tune_lambda_ability_risk()</code> minimises
+<li><p><code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> minimizes
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">E[g'\Sigma_\gamma g]</annotation></semantics></math>
 — the propagated ability-score risk. This is the <em>practical
 criterion</em>: it answers “does using the LLM improve downstream test
@@ -133,7 +140,7 @@ inflating discriminations and driving
 <code>tune_lambda_ability_risk</code> to select
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
 even when the LLM is genuinely informative.</p>
-<p><code>fit_mixed_subjects_mml()</code> recomputes posteriors at every
+<p><code><a href="../reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code> recomputes posteriors at every
 gradient evaluation, eliminating this asymmetry. Its sandwich covariance
 (<code>vcov_mixed_subjects_mml</code>, called automatically via
 <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>) uses Louis’ (1982) observed-information correction
@@ -176,12 +183,12 @@ for speed.</p>
 <div class="section level2">
 <h2 id="step-1-ppi-score-diagnostic">Step 1: PPI++ score diagnostic<a class="anchor" aria-label="anchor" href="#step-1-ppi-score-diagnostic"></a>
 </h2>
-<p><code>tune_lambda_ppi_score()</code> estimates the PPI++ Proposition
+<p><code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code> estimates the PPI++ Proposition
 2 lambda using the same human posterior weights for both human and
 paired-LLM score vectors. F = Y (identical predictions) gives exactly
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">N/(n+N)</annotation></semantics></math>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ppi_score</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ppi_score</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">ppi_score</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score</a></span><span class="op">(</span></span>
 <span>  observed    <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted   <span class="op">=</span> <span class="va">predicted</span>,</span>
 <span>  item_pars   <span class="op">=</span> <span class="va">human_pars</span>,</span>
@@ -211,7 +218,7 @@ asymmetry. With a good predictor (F = Y),
 <code>tune_lambda_ability_risk</code> with MML correctly selects
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda &gt; 0</annotation></semantics></math>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ability_tuned_mml</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">ability_tuned_mml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="va">lambda_grid</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted    <span class="op">=</span> <span class="va">predicted</span>,</span>
@@ -259,11 +266,11 @@ covariance:</p>
 <code>theta_true</code> was not supplied; it is only computed in
 simulation studies. <code>mean_param_var</code> is the propagated
 item-parameter uncertainty — the criterion that
-<code>tune_lambda_ability_risk</code> minimises.</p>
+<code>tune_lambda_ability_risk</code> minimizes.</p>
 <p>In simulation studies, pass <code>theta_true = theta_human</code> to
 also include squared ability-estimation error:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ability_tuned_truth</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">ability_tuned_truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="va">lambda_grid</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted    <span class="op">=</span> <span class="va">predicted</span>,</span>
@@ -288,7 +295,7 @@ also include squared ability-estimation error:</p>
 <div class="section level2">
 <h2 id="step-4-cross-fitted-ability-risk-tuning">Step 4: Cross-fitted ability-risk tuning<a class="anchor" aria-label="anchor" href="#step-4-cross-fitted-ability-risk-tuning"></a>
 </h2>
-<p><code>tune_lambda_ability_risk_crossfit()</code> estimates
+<p><code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code> estimates
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 per fold on training data, then fits a final split-sample model. Two
 important arguments:</p>
@@ -306,7 +313,7 @@ independent of the calibration sample.</li>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">split_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">observed</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">crossfit_tuned</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk_crossfit</span><span class="op">(</span></span>
+<span><span class="va">crossfit_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.5</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted    <span class="op">=</span> <span class="va">predicted</span>,</span>
@@ -330,7 +337,7 @@ driving
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>→</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda \to 0</annotation></semantics></math>
 even when the LLM is informative.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ability_tuned_ec</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">ability_tuned_ec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="va">lambda_grid</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted    <span class="op">=</span> <span class="va">predicted</span>,</span>
@@ -364,7 +371,7 @@ no false minimum at large discrimination values.</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>tune_lambda_ppi_score()</code></td>
+<td><code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code></td>
 <td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Tr</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\text{Tr}(\Sigma_\gamma)</annotation></semantics></math></td>
 <td>Method diagnostics only</td>
 </tr>
@@ -377,19 +384,19 @@ Louis bread</td>
 </tr>
 <tr class="odd">
 <td>
-<code>tune_lambda_ability_risk()</code> (default
+<code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> (default
 <code>fit_fn</code>)</td>
 <td>Same risk, EM bread</td>
 <td>Fast approximation; requires <code>slope_upper</code>
 </td>
 </tr>
 <tr class="even">
-<td><code>tune_lambda_ability_risk_crossfit()</code></td>
+<td><code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code></td>
 <td>Out-of-sample risk</td>
 <td>Final inferential analyses</td>
 </tr>
 <tr class="odd">
-<td><code>tune_lambda_ability_risk_item()</code></td>
+<td><code><a href="../reference/tune_lambda_ability_risk_item.html">tune_lambda_ability_risk_item()</a></code></td>
 <td>Per-item risk (approx.)</td>
 <td>Experimental; some items poor predictors</td>
 </tr>

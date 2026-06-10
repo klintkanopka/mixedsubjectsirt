@@ -17,10 +17,12 @@ are designed to be equally discriminating. - Tests built from a single
 item pool with homogeneous item characteristics. - When the 2PL
 discrimination estimates are very noisy (small $`n`$).
 
-> **Note on vcov.** `vcov_mixed_subjects_1pl()` currently uses the EM
-> complete-data Hessian (not Louis’ marginal-information correction).
-> The uncertainty estimates are slightly over-precise. A Louis-corrected
-> 1PL bread is planned for a future release.
+> **Note on vcov.**
+> [`vcov_mixed_subjects_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_1pl.md)
+> currently uses the EM complete-data Hessian (not Louis’
+> marginal-information correction). The uncertainty estimates are
+> slightly over-precise. A Louis-corrected 1PL bread is planned for a
+> future release.
 
 ## Simulate a 1PL test
 
@@ -57,8 +59,9 @@ generated <- simulate_2pl(rnorm(n_generated), llm_1pl)
 
 ## Step 1: Fit the 1PL baseline
 
-`fit_1pl()` estimates $`a`$ and $`d_1, \ldots, d_J`$ by maximising the
-IRT marginal likelihood under a standard-normal ability prior.
+[`fit_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_1pl.md)
+estimates $`a`$ and $`d_1, \ldots, d_J`$ by maximizing the IRT marginal
+likelihood under a standard-normal ability prior.
 
 ``` r
 
@@ -84,10 +87,10 @@ constraint.
 
 ## Step 2: Fit mixed-subjects MML (1PL)
 
-`fit_mixed_subjects_mml_1pl()` uses the true marginal likelihood with a
-1PL-specific gradient: the shared discrimination gradient accumulates
-contributions from all $`J`$ items, while each intercept has its own
-gradient.
+[`fit_mixed_subjects_mml_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml_1pl.md)
+uses the true marginal likelihood with a 1PL-specific gradient: the
+shared discrimination gradient accumulates contributions from all $`J`$
+items, while each intercept has its own gradient.
 
 ``` r
 
@@ -124,9 +127,9 @@ fit_mml_1pl$item_pars
 ## Step 3: Correct covariance — $`(J+1) \times (J+1)`$ sandwich
 
 [`vcov()`](https://rdrr.io/r/stats/vcov.html) dispatches to
-`vcov_mixed_subjects_1pl()` for 1PL fits, returning a
-$`(J+1) \times (J+1)`$ matrix with `a_shared` and per-item `d_j` as
-rows/columns.
+[`vcov_mixed_subjects_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_1pl.md)
+for 1PL fits, returning a $`(J+1) \times (J+1)`$ matrix with `a_shared`
+and per-item `d_j` as rows/columns.
 
 ``` r
 
@@ -140,7 +143,8 @@ rownames(Sigma_1pl)
 
 ## Step 4: Ability-score risk and lambda tuning
 
-`tune_lambda_ability_risk_1pl()` uses the 1PL-parameterised gradient
+[`tune_lambda_ability_risk_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_1pl.md)
+uses the 1PL-parameterized gradient
 $`\partial\hat\theta / \partial (a_\text{shared}, d_1, \ldots, d_J)`$
 for the ability-score risk. The chain rule gives
 $`\partial\hat\theta / \partial a_\text{shared} = \sum_j \partial\hat\theta / \partial a_j`$.
@@ -233,7 +237,7 @@ The 1PL uses fewer parameters ($`J+1`$ vs $`2J`$), which can give lower
 RMSE on a test generated from a true 1PL DGP — especially for small
 $`n`$.
 
-## Ability-score risk: 1PL vs 2PL parameterisation
+## Ability-score risk: 1PL vs 2PL parameterization
 
 The 1PL ability-score risk is smaller in the $`(J+1)`$-parameter space
 because the shared $`a`$ concentrates all discrimination information in

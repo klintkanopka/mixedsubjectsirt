@@ -25,6 +25,7 @@ fit_mixed_subjects_split(
   common_predicted_weights = TRUE,
   paired_missing = c("match_observed", "allow"),
   slope_lower = 1e-04,
+  slope_upper = NULL,
   control = list(maxit = 500),
   ...
 )
@@ -39,13 +40,16 @@ fit_mixed_subjects_split(
 
 - predicted:
 
-  LLM responses or probabilities for the same rows and items as
-  `observed`.
+  Binary LLM responses (0/1) for the same rows and items as `observed`.
+  Probabilities are not accepted: fractional values are not a valid
+  likelihood input for the marginal IRT objective and break the PPI
+  correction, so sample binary responses from any probabilities first
+  (e.g. `rbinom`).
 
 - generated:
 
-  Generated or unlabeled LLM responses or probabilities for the same
-  item columns.
+  Binary generated or unlabeled LLM responses (0/1) for the same item
+  columns. Probabilities are not accepted (see `predicted`).
 
 - lambda:
 
@@ -96,6 +100,11 @@ fit_mixed_subjects_split(
 
   Lower bound for discrimination parameters during optimization. Use
   `NULL` for no lower bound.
+
+- slope_upper:
+
+  Upper bound for discrimination parameters during optimization. Use
+  `NULL` (the default) for no upper bound.
 
 - control:
 

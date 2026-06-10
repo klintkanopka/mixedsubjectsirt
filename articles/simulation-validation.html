@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Simulation Validation of the Mixed-Subjects MML Estimator • mixedsubjectsirt</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -16,7 +16,7 @@
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">mixedsubjectsirt</a>
 
@@ -33,12 +33,11 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/lambda-tuning-item.html">Per-Item Lambda (Experimental)</a></li>
+<li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
-    <li><a class="dropdown-item" href="../articles/linking-comparison.html">IRT Linking and Gradient Asymmetry: Diagnostic Guide</a></li>
-    <li><a class="dropdown-item" href="../articles/mixed-subjects-1pl.html">Mixed-Subjects 1PL Calibration</a></li>
-    <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/simulation-validation.html">Simulation Validation of the Mixed-Subjects MML Estimator</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
       </ul>
@@ -46,6 +45,14 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
@@ -73,19 +80,23 @@ marginal maximum-likelihood (MML) PPI++ estimator
 (<code>fit_mixed_subjects_mml</code>) and its ability-risk tuning
 (<code>tune_lambda_ability_risk</code>). The full reproducible harness
 lives in the package’s <code>simulations/</code> directory; the tables
-below report results from runs with the rep counts noted in each
-section.</p>
-<p>The study answers three questions:</p>
+below load the most recent run from <code>simulations/results/</code>
+when available and otherwise show cached values. Rep counts: λ-selection
+100, coverage 200, downstream 100, cross-fit 100.</p>
+<p>The study answers four questions:</p>
 <ol style="list-style-type: decimal">
 <li>
 <strong>Does λ-selection track predictor quality?</strong> (Scenario
 1)</li>
 <li>
-<strong>Are the Louis-corrected standard errors honest?</strong>
-(Scenario 2 — the key check)</li>
+<strong>Are the Louis-corrected standard errors honest, including
+under a biased LLM?</strong> (Scenario 2 — the key check)</li>
 <li>
-<strong>Does the method improve downstream scoring without ever
-harming it?</strong> (Scenario 3)</li>
+<strong>Does the method improve downstream scoring without harming
+it on average?</strong> (Scenario 3)</li>
+<li>
+<strong>Does cross-fitting change the conclusions?</strong>
+(Scenario 4)</li>
 </ol>
 <div class="section level2">
 <h2 id="design">Design<a class="anchor" aria-label="anchor" href="#design"></a>
@@ -93,74 +104,64 @@ harming it?</strong> (Scenario 3)</li>
 <p>Human responses come from a true 8-item 2PL model
 (<code>a ∈ [0.8, 1.6]</code>, <code>d ∈ [-1.1, 1.1]</code>) with
 <code>n = 400</code> human subjects and <code>N = 1200</code> generated
-subjects, abilities drawn from a standard normal. Five predictor regimes
+subjects, abilities drawn from a standard normal. Four predictor regimes
 vary the quality of the paired LLM predictions <code>F</code>:</p>
 <table class="table">
-<caption>Five predictor regimes, ordered best to worst.</caption>
+<caption>Four predictor regimes (all binary).</caption>
 <colgroup>
-<col width="24%">
-<col width="48%">
-<col width="27%">
+<col width="22%">
+<col width="49%">
+<col width="28%">
 </colgroup>
 <thead><tr class="header">
 <th align="left">Regime</th>
 <th align="left">Predicted F</th>
-<th align="left">Predictor quality</th>
+<th align="left">Role</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td align="left">R1 perfect (F=Y)</td>
 <td align="left">predicted = observed (exact)</td>
-<td align="left">perfect</td>
+<td align="left">perfect predictor</td>
 </tr>
 <tr class="even">
-<td align="left">R2 conditional mean</td>
-<td align="left">true probabilities p(theta) (fractional)</td>
-<td align="left">oracle (but see below)</td>
+<td align="left">R2 same-DGP draw</td>
+<td align="left">fresh binary draw from the true model</td>
+<td align="left">modest real signal</td>
 </tr>
 <tr class="odd">
-<td align="left">R3 same-DGP draw</td>
-<td align="left">fresh draw from the true model</td>
-<td align="left">modest</td>
+<td align="left">R3 independent noise</td>
+<td align="left">binary draw from scrambled item parameters</td>
+<td align="left">useless LLM</td>
 </tr>
 <tr class="even">
-<td align="left">R4 independent noise</td>
-<td align="left">draw from scrambled item parameters</td>
-<td align="left">none</td>
-</tr>
-<tr class="odd">
-<td align="left">R5 LLM shift</td>
-<td align="left">draw from attenuated/shifted parameters</td>
-<td align="left">low</td>
+<td align="left">R4 LLM shift</td>
+<td align="left">binary draw from attenuated/shifted parameters</td>
+<td align="left">biased but informative LLM</td>
 </tr>
 </tbody>
 </table>
-<p>The control parameter λ ∈ [0, 1] sets how strongly the generated LLM
-sample is used after subtracting the paired LLM correction; λ = 0 is the
-human-only calibration.</p>
+<p>All predictors are <strong>binary 0/1 responses</strong> — the
+package does not accept probability (fractional) predictions for
+<code>predicted</code>/<code>generated</code> (see the note at the end
+of Scenario 1). The control parameter λ ∈ [0, 1] sets how strongly the
+generated LLM sample is used after subtracting the paired LLM
+correction; λ = 0 is the human-only calibration.</p>
 </div>
 <div class="section level2">
-<h2 id="scenario-1-λ-selection-100-reps">Scenario 1: λ selection (100 reps)<a class="anchor" aria-label="anchor" href="#scenario-1-%CE%BB-selection-100-reps"></a>
+<h2 id="scenario-1-λ-selection">Scenario 1: λ selection<a class="anchor" aria-label="anchor" href="#scenario-1-%CE%BB-selection"></a>
 </h2>
 <p>For each regime we tune λ by ability-score risk and record the
-selected value. We also report the theoretical PPI++-score λ for
+selected value; we also report the theoretical PPI++-score λ for
 reference.</p>
 <table class="table">
-<caption>Selected lambda by regime (ability-risk tuning, 100
-reps).</caption>
-<colgroup>
-<col width="29%">
-<col width="16%">
-<col width="9%">
-<col width="19%">
-<col width="23%">
-</colgroup>
+<caption>Selected lambda by regime (ability-risk tuning).</caption>
 <thead><tr class="header">
-<th align="left">Regime</th>
-<th align="right">mean lambda</th>
-<th align="right">median</th>
-<th align="right">prop lambda=0</th>
-<th align="right">PPI score lambda</th>
+<th align="left">label</th>
+<th align="right">mean_risk</th>
+<th align="right">median_risk</th>
+<th align="right">prop_zero</th>
+<th align="right">mean_ppi</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -171,31 +172,24 @@ reps).</caption>
 <td align="right">0.750</td>
 </tr>
 <tr class="even">
-<td align="left">R2 conditional mean</td>
-<td align="right">0.028</td>
-<td align="right">0.00</td>
-<td align="right">0.96</td>
-<td align="right">0.016</td>
-</tr>
-<tr class="odd">
-<td align="left">R3 same-DGP draw</td>
-<td align="right">0.108</td>
+<td align="left">R2 same-DGP draw</td>
+<td align="right">0.118</td>
 <td align="right">0.10</td>
-<td align="right">0.26</td>
+<td align="right">0.22</td>
 <td align="right">0.004</td>
 </tr>
-<tr class="even">
-<td align="left">R4 independent noise</td>
-<td align="right">0.032</td>
+<tr class="odd">
+<td align="left">R3 independent noise</td>
+<td align="right">0.062</td>
 <td align="right">0.00</td>
-<td align="right">0.74</td>
+<td align="right">0.55</td>
 <td align="right">0.000</td>
 </tr>
-<tr class="odd">
-<td align="left">R5 LLM shift</td>
-<td align="right">0.102</td>
+<tr class="even">
+<td align="left">R4 LLM shift</td>
+<td align="right">0.107</td>
 <td align="right">0.10</td>
-<td align="right">0.31</td>
+<td align="right">0.27</td>
 <td align="right">0.002</td>
 </tr>
 </tbody>
@@ -207,60 +201,73 @@ reps).</caption>
 <code>N / (n + N) = 1200 / 1600</code>, the theoretical maximum for a
 perfect paired predictor. The PPI++-score λ agrees to the decimal.</li>
 <li>
-<strong>R4 independent noise → λ ≈ 0</strong> (74% of reps select
-0): a useless predictor is correctly rejected.</li>
+<strong>R3 independent noise → λ ≈ 0.06</strong> (median 0; about
+half the reps select 0): a useless predictor is correctly down-weighted
+to near zero.</li>
 <li>
-<strong>R3 same-DGP and R5 LLM shift → λ ≈ 0.10</strong>: fresh real
-responses (R3) and a correlated-but-biased LLM (R5) each carry a little
-signal, and the criterion uses a little of it.</li>
-<li>
-<strong>R2 conditional mean → λ ≈ 0</strong> (96% of reps select 0).
-This is the one counterintuitive result and is discussed next.</li>
+<strong>R2 same-DGP and R4 LLM shift → λ ≈ 0.11</strong>: fresh real
+responses (R2) and a correlated-but-biased LLM (R4) each carry a little
+score-level signal, and the criterion uses a little of it.</li>
 </ul>
 <div class="section level3">
-<h3 id="why-the-oracle-predictor-r2-is-declined">Why the “oracle” predictor (R2) is declined<a class="anchor" aria-label="anchor" href="#why-the-oracle-predictor-r2-is-declined"></a>
+<h3 id="predictions-must-be-sampled-responses-not-probabilities">Predictions must be sampled responses, not probabilities<a class="anchor" aria-label="anchor" href="#predictions-must-be-sampled-responses-not-probabilities"></a>
 </h3>
-<p>R2 feeds the method the exact true probability of a correct response
-for each person — seemingly the best possible predictor. Yet λ is almost
-always 0. The reason: PPI++ extracts information from the
-<strong>residuals</strong> between actual answers and the model’s
-expectation. A real 0/1 response carries a residual; the
-conditional-mean prediction <em>is</em> the expectation, so its residual
-is zero and it carries nothing to correct with. A <em>noisier</em>
-predictor that emits actual responses (R3) is therefore more useful than
-a <em>perfect</em> one that emits smooth probabilities (R2). The
-practical lesson for applications: to benefit from synthetic/LLM data,
-have it produce sampled responses, not averaged probabilities.</p>
+<p>The package requires <strong>binary</strong>
+<code>predicted</code>/<code>generated</code> and rejects probability
+inputs. This is not a convenience restriction — it removes a genuine
+failure mode. A fractional value such as a conditional mean
+<code>p(θ)</code> is not a coherent likelihood term for the marginal IRT
+objective: the response vector enters inside a log-sum over quadrature
+points, so feeding probabilities breaks the identity
+<code>E[∇L_gen] = E[∇L_pred]</code> that makes the PPI correction
+mean-zero. The estimator then becomes biased at λ &gt; 0, and at
+moderate λ the objective is even <em>unbounded</em> in discrimination
+(<code>a → ∞</code>), so the fit diverges. An earlier version of this
+study included a “conditional-mean” regime that exhibited exactly this
+pathology; it has been removed along with probability support. The
+practical rule: if you have LLM-derived probabilities,
+<strong>sample</strong> binary responses from them
+(e.g. <code>rbinom</code>) before calibrating.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="scenario-2-louis-corrected-se-coverage-200-reps-the-key-check">Scenario 2: Louis-corrected SE coverage (200 reps) — the key
-check<a class="anchor" aria-label="anchor" href="#scenario-2-louis-corrected-se-coverage-200-reps-the-key-check"></a>
+<h2 id="scenario-2-louis-corrected-se-coverage-the-key-check">Scenario 2: Louis-corrected SE coverage — the key check<a class="anchor" aria-label="anchor" href="#scenario-2-louis-corrected-se-coverage-the-key-check"></a>
 </h2>
-<p>We fix λ = 0.5 in the two regimes where the combined estimator is
-consistent for the true parameters (R1 and R3), and compare empirical
-coverage of Wald intervals built from two covariance estimates of the
-<em>same</em> fit: the Louis-corrected marginal sandwich
-(<code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> dispatch) and the EM complete-data Hessian bread
-(<code><a href="../reference/vcov_mixed_subjects.html">vcov_mixed_subjects()</a></code>, a deliberate bypass).</p>
-<table class="table">
-<caption>Item-parameter CI coverage (200 reps). Nominal targets 0.90 and
-0.95.</caption>
+<p>We fix λ = 0.5 and compare empirical coverage of Wald intervals built
+from two covariance estimates of the <em>same</em> fit: the
+Louis-corrected marginal sandwich (<code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> dispatch) and the
+EM complete-data Hessian bread (<code><a href="../reference/vcov_mixed_subjects.html">vcov_mixed_subjects()</a></code>, a
+deliberate bypass).</p>
+<p><strong>Consistency for the true parameters — even under a biased
+LLM.</strong> The PPI correction <code>λ(L_gen − L_pred)</code> is
+<em>mean-zero</em> whenever the paired and generated pseudo-responses
+are drawn from the same distribution with the same ability spread:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo stretchy="false" form="prefix">[</mo><mi mathvariant="normal">Ψ</mi><mo stretchy="false" form="prefix">(</mo><msup><mi>γ</mi><mo>⋆</mo></msup><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">]</mo><mo>=</mo><munder><munder><mrow><mi>E</mi><mo stretchy="false" form="prefix">[</mo><mi>∇</mi><msub><mi>L</mi><mtext mathvariant="normal">obs</mtext></msub><mo stretchy="false" form="postfix">]</mo></mrow><mo accent="true">⏟</mo></munder><mrow><mo>=</mo><mn>0</mn></mrow></munder><mo>+</mo><mi>λ</mi><mspace width="0.167em"></mspace><mo stretchy="false" form="prefix">(</mo><mspace width="0.167em"></mspace><munder><munder><mrow><mi>E</mi><mo stretchy="false" form="prefix">[</mo><mi>∇</mi><msub><mi>L</mi><mtext mathvariant="normal">gen</mtext></msub><mo stretchy="false" form="postfix">]</mo><mo>−</mo><mi>E</mi><mo stretchy="false" form="prefix">[</mo><mi>∇</mi><msub><mi>L</mi><mtext mathvariant="normal">pred</mtext></msub><mo stretchy="false" form="postfix">]</mo></mrow><mo accent="true">⏟</mo></munder><mrow><mo>=</mo><mn>0</mn></mrow></munder><mspace width="0.167em"></mspace><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>0</mn><mi>.</mi></mrow><annotation encoding="application/x-tex">E[\Psi(\gamma^\star)] = \underbrace{E[\nabla L_{\text{obs}}]}_{=0}
+ + \lambda\,(\,\underbrace{E[\nabla L_{\text{gen}}] - E[\nabla L_{\text{pred}}]}_{=0}\,) = 0.</annotation></semantics></math></p>
+<p>So the human term anchors the estimand to the <strong>true</strong>
+parameters. This holds for every (binary) regime — R1, R2, R3 (useless
+LLM) and R4 (biased LLM) — so the estimator stays consistent for the
+truth even when the LLM is wrong. <strong>R3 and R4 covering nominally
+is the flagship demonstration that PPI corrects biased LLM
+outputs.</strong></p>
+<table style="width:100%;" class="table">
+<caption>Item-parameter CI coverage, all four regimes (200 reps).
+Nominal targets 0.90 and 0.95.</caption>
 <colgroup>
-<col width="23%">
-<col width="14%">
-<col width="14%">
-<col width="9%">
-<col width="9%">
-<col width="28%">
+<col width="25%">
+<col width="16%">
+<col width="16%">
+<col width="12%">
+<col width="12%">
+<col width="17%">
 </colgroup>
 <thead><tr class="header">
-<th align="left">Regime</th>
-<th align="right">Louis 90%</th>
-<th align="right">Louis 95%</th>
-<th align="right">EM 90%</th>
-<th align="right">EM 95%</th>
-<th align="right">SE ratio (Louis/EM)</th>
+<th align="left">label</th>
+<th align="right">louis_cov_90</th>
+<th align="right">louis_cov_95</th>
+<th align="right">em_cov_90</th>
+<th align="right">em_cov_95</th>
+<th align="right">mean_se_ratio</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -269,93 +276,97 @@ coverage of Wald intervals built from two covariance estimates of the
 <td align="right">0.955</td>
 <td align="right">0.713</td>
 <td align="right">0.787</td>
-<td align="right">1.63</td>
+<td align="right">1.626</td>
 </tr>
 <tr class="even">
-<td align="left">R3 same-DGP draw</td>
+<td align="left">R2 same-DGP draw</td>
 <td align="right">0.916</td>
 <td align="right">0.957</td>
 <td align="right">0.727</td>
 <td align="right">0.797</td>
-<td align="right">1.62</td>
+<td align="right">1.616</td>
+</tr>
+<tr class="odd">
+<td align="left">R3 independent noise</td>
+<td align="right">0.914</td>
+<td align="right">0.961</td>
+<td align="right">0.721</td>
+<td align="right">0.795</td>
+<td align="right">1.651</td>
+</tr>
+<tr class="even">
+<td align="left">R4 LLM shift</td>
+<td align="right">0.905</td>
+<td align="right">0.954</td>
+<td align="right">0.726</td>
+<td align="right">0.792</td>
+<td align="right">1.622</td>
 </tr>
 </tbody>
 </table>
 <p><strong>The Louis correction restores nominal coverage; the EM bread
-under-covers.</strong> Louis intervals attain 0.909/0.955 and
-0.916/0.957 against nominal 0.90/0.95, while the EM bread covers only
-~0.71/0.79 — it understates uncertainty because it ignores the missing
-information about each subject’s latent ability. The Louis standard
-errors are ~1.6× wider, which is the difference between an honest
-interval and an overconfident one.</p>
-<p>Coverage broken down by parameter type confirms the correction works
-uniformly:</p>
-<table class="table">
-<caption>Coverage by parameter type (averaged over R1 and R3).</caption>
-<thead><tr class="header">
-<th align="left">Parameter</th>
-<th align="right">Louis 90%</th>
-<th align="right">Louis 95%</th>
-<th align="right">EM 90%</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">discrimination a</td>
-<td align="right">0.91</td>
-<td align="right">0.96</td>
-<td align="right">0.60</td>
-</tr>
-<tr class="even">
-<td align="left">intercept d</td>
-<td align="right">0.91</td>
-<td align="right">0.95</td>
-<td align="right">0.84</td>
-</tr>
-</tbody>
-</table>
+under-covers.</strong> Across all four regimes — including the useless
+LLM (R3) and the biased LLM (R4) — Louis intervals attain ~0.91/0.96
+against nominal 0.90/0.95, while the EM bread covers only ~0.71/0.79; it
+understates uncertainty because it ignores the missing information about
+each subject’s latent ability. The Louis standard errors are ~1.6×
+wider, the difference between an honest interval and an overconfident
+one. That R3 and R4 cover nominally — with all 200 reps usable — is the
+concrete demonstration that PPI keeps inference valid even when the LLM
+is wrong.</p>
 <div class="section level3">
 <h3 id="a-bug-this-scenario-caught">A bug this scenario caught<a class="anchor" aria-label="anchor" href="#a-bug-this-scenario-caught"></a>
 </h3>
-<p>An earlier version of this scenario showed near-zero coverage for
-discrimination while intercept coverage was nominal. That pattern — a
-uniform downward bias in all slopes with unbiased intercepts — is the
-signature of a latent-scale error, and it traced to
-<code><a href="../reference/make_quadrature.html">make_quadrature()</a></code> building an N(0, 2) ability grid instead
-of N(0, 1) (a spurious √2 rescaling of standard-normal Gauss–Hermite
-nodes). Every discrimination in the package had been biased downward by
+<p>An earlier version showed near-zero coverage for discrimination while
+intercept coverage was nominal — a uniform downward bias in all slopes
+with unbiased intercepts, the signature of a latent-scale error. It
+traced to <code><a href="../reference/make_quadrature.html">make_quadrature()</a></code> building an N(0, 2) ability
+grid instead of N(0, 1) (a spurious √2 rescaling of standard-normal
+Gauss–Hermite nodes); every discrimination had been biased downward by
 ~1/√2 ≈ 0.71. The bug was invisible to relative checks (λ-selection), to
 gradient finite-difference checks (loss and gradient were mutually
-consistent), and to the standard-error calibration itself (the SEs
-correctly described the <em>biased</em> estimator). Only coverage
-against ground truth exposed it. After the fix, discrimination coverage
-rose from 0.04 to 0.91. This is the strongest argument for ground-truth
-simulation validation: it catches errors that internal consistency
-checks cannot.</p>
+consistent), and to the SE calibration itself (the SEs correctly
+described the <em>biased</em> estimator). Only coverage against ground
+truth exposed it; after the fix, discrimination coverage rose from 0.04
+to 0.91. This is the strongest argument for ground-truth simulation
+validation: it catches errors that internal-consistency checks
+cannot.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="scenario-3-downstream-payoff-and-no-harm-100-reps">Scenario 3: downstream payoff and no-harm (100 reps)<a class="anchor" aria-label="anchor" href="#scenario-3-downstream-payoff-and-no-harm-100-reps"></a>
+<h2 id="scenario-3-downstream-payoff-and-no-harm">Scenario 3: downstream payoff and no-harm<a class="anchor" aria-label="anchor" href="#scenario-3-downstream-payoff-and-no-harm"></a>
 </h2>
 <p>We score a held-out sample of 1000 subjects with known ability and
 compare ability-score RMSE for the human-only calibration (λ = 0) and
-the tuned MML calibration.</p>
+the tuned MML calibration.
+<code>mean_delta = RMSE(tuned) − RMSE(human)</code>; negative is an
+improvement. We report the paired 95% CI of <code>mean_delta</code> and
+<code>prop_improve</code> (the fraction of replications where tuned
+beats human-only) so a small stable effect can be told apart from
+noise.</p>
 <table class="table">
-<caption>Downstream ability-score RMSE (100 reps).</caption>
+<caption>Downstream ability-score RMSE.</caption>
 <colgroup>
-<col width="25%">
-<col width="14%">
-<col width="13%">
-<col width="13%">
-<col width="24%">
+<col width="20%">
+<col width="11%">
+<col width="10%">
+<col width="10%">
+<col width="10%">
 <col width="8%">
+<col width="8%">
+<col width="12%">
+<col width="6%">
 </colgroup>
 <thead><tr class="header">
-<th align="left">Regime</th>
-<th align="right">mean lambda</th>
-<th align="right">RMSE human</th>
-<th align="right">RMSE tuned</th>
-<th align="right">delta (tuned-human)</th>
-<th align="right">bias a</th>
+<th align="left">label</th>
+<th align="right">mean_lambda</th>
+<th align="right">rmse_human</th>
+<th align="right">rmse_tuned</th>
+<th align="right">mean_delta</th>
+<th align="right">delta_lo</th>
+<th align="right">delta_hi</th>
+<th align="right">prop_improve</th>
+<th align="right">bias_a</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -364,49 +375,61 @@ the tuned MML calibration.</p>
 <td align="right">1.4961</td>
 <td align="right">1.4921</td>
 <td align="right">-0.0040</td>
+<td align="right">-0.0075</td>
+<td align="right">-0.0005</td>
+<td align="right">0.48</td>
 <td align="right">0.011</td>
 </tr>
 <tr class="even">
-<td align="left">R2 conditional mean</td>
-<td align="right">0.000</td>
-<td align="right">1.4958</td>
-<td align="right">1.4958</td>
-<td align="right">0.0000</td>
-<td align="right">0.019</td>
+<td align="left">R2 same-DGP draw</td>
+<td align="right">0.118</td>
+<td align="right">1.5023</td>
+<td align="right">1.5004</td>
+<td align="right">-0.0019</td>
+<td align="right">-0.0027</td>
+<td align="right">-0.0011</td>
+<td align="right">0.54</td>
+<td align="right">0.025</td>
 </tr>
 <tr class="odd">
-<td align="left">R3 same-DGP draw</td>
-<td align="right">0.108</td>
-<td align="right">1.5020</td>
-<td align="right">1.5010</td>
-<td align="right">-0.0010</td>
-<td align="right">0.038</td>
+<td align="left">R3 independent noise</td>
+<td align="right">0.062</td>
+<td align="right">1.5037</td>
+<td align="right">1.5031</td>
+<td align="right">-0.0006</td>
+<td align="right">-0.0009</td>
+<td align="right">-0.0003</td>
+<td align="right">0.35</td>
+<td align="right">0.035</td>
 </tr>
 <tr class="even">
-<td align="left">R4 independent noise</td>
-<td align="right">0.032</td>
+<td align="left">R4 LLM shift</td>
+<td align="right">0.107</td>
 <td align="right">1.5064</td>
-<td align="right">1.5060</td>
-<td align="right">-0.0004</td>
-<td align="right">0.005</td>
-</tr>
-<tr class="odd">
-<td align="left">R5 LLM shift</td>
-<td align="right">0.102</td>
-<td align="right">1.4994</td>
-<td align="right">1.4981</td>
-<td align="right">-0.0013</td>
-<td align="right">0.031</td>
+<td align="right">1.5046</td>
+<td align="right">-0.0018</td>
+<td align="right">-0.0030</td>
+<td align="right">-0.0007</td>
+<td align="right">0.45</td>
+<td align="right">0.008</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Findings.</strong></p>
 <ul>
 <li>
-<strong>No harm anywhere.</strong> The tuned RMSE is never worse
-than human-only (delta ≤ 0 in every regime). When the predictor is
-useless (R2, R4) the method falls back to the human-only estimate; when
-it helps (R1, R3, R5) it improves, modestly.</li>
+<strong>No average harm.</strong> In these simulations the tuned
+RMSE did not increase average held-out RMSE relative to human-only in
+any regime — every <code>mean_delta</code> is negative and its paired
+95% CI excludes zero. This is evidence <em>for these simulated
+conditions</em>, not a general guarantee: the non-asymptotic PPI++
+literature shows that power-tuned estimators can underperform classical
+estimation when pseudo-label correlation is very weak. The
+<code>prop_improve</code> column keeps the claim honest at the
+per-replication level — only a third to a half of individual
+replications improve (0.35–0.54), so “no harm” is an average statement;
+the gains are consistent in aggregate but small relative to rep-level
+noise.</li>
 <li>
 <strong>Discrimination is unbiased</strong> at the selected λ
 (|bias_a| ≤ 0.04 everywhere), confirming the quadrature fix and that the
@@ -414,26 +437,106 @@ tuner is not selecting degenerate fits.</li>
 <li>
 <strong>The RMSE gains are small</strong> because an 8-item test is
 measurement-limited: ability scoring is dominated by the irreducible
-measurement error of a short test, so even a perfect predictor (R1)
-moves the scoring RMSE only from 1.4961 to 1.4921. The method’s larger
-payoff is in <strong>item-parameter precision</strong> — visible in the
-Scenario 2 standard errors — which matters most when calibration
-uncertainty propagates into operational use.</li>
+measurement error of a short test. The method’s larger payoff is in
+<strong>item-parameter precision</strong> — the Scenario 2 standard
+errors — which matters most when calibration uncertainty propagates into
+operational use.</li>
 </ul>
 <div class="section level3">
 <h3 id="a-robustness-guard">A robustness guard<a class="anchor" aria-label="anchor" href="#a-robustness-guard"></a>
 </h3>
-<p>Building this scenario surfaced a failure mode: with the fractional
-R2 predictor at large λ, the MML objective has a “converged” minimum at
-runaway discrimination (a ≈ 1000). Such a fit reports huge item
-information, which collapses its covariance and makes the model-based
-ability risk spuriously small — so the tuner could select it even though
-it scores worse on held-out data. The ability-risk tuners now reject any
-candidate whose maximum discrimination exceeds
-<code>max_discrimination</code> (default 10); a 2PL discrimination above
-that is never a real calibration. With the guard, all R2 reps correctly
-select λ = 0.</p>
+<p>The ability-risk tuners carry a defensive guard: any candidate fit
+whose maximum discrimination exceeds <code>max_discrimination</code>
+(default 10) is excluded from selection. A runaway-discrimination fit
+reports huge item information, which collapses its covariance and makes
+the model-based ability risk spuriously small, so an unguarded tuner
+could select it even though it scores worse on held-out data. A 2PL
+discrimination above 10 is never a real calibration. With binary inputs
+the operational regimes never approach this bound, but the guard keeps
+the tuner safe against pathological optimizer behavior.</p>
 </div>
+</div>
+<div class="section level2">
+<h2 id="scenario-4-cross-fitted-vs-non-cross-fitted-tuning">Scenario 4: cross-fitted vs non-cross-fitted tuning<a class="anchor" aria-label="anchor" href="#scenario-4-cross-fitted-vs-non-cross-fitted-tuning"></a>
+</h2>
+<p>Cross-fitting tunes λ on held-out folds so a fold’s own labels are
+not used to tune the λ applied to its paired correction. We compare the
+non-cross-fitted tuner against
+<code>tune_lambda_ability_risk_crossfit</code> (MML per-fold tuning,
+scalar-mean MML final fit) on selected λ, item-parameter bias, 95% Wald
+coverage, and held-out RMSE.</p>
+<table style="width:100%;" class="table">
+<caption>Cross-fitted vs non-cross-fitted tuning (100 reps,
+R1/R2/R4).</caption>
+<colgroup>
+<col width="17%">
+<col width="12%">
+<col width="10%">
+<col width="12%">
+<col width="10%">
+<col width="10%">
+<col width="8%">
+<col width="11%">
+<col width="9%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">label</th>
+<th align="right">lambda_nocf</th>
+<th align="right">lambda_cf</th>
+<th align="right">bias_a_nocf</th>
+<th align="right">bias_a_cf</th>
+<th align="right">rmse_nocf</th>
+<th align="right">rmse_cf</th>
+<th align="right">cover_nocf</th>
+<th align="right">cover_cf</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">R1 perfect (F=Y)</td>
+<td align="right">0.750</td>
+<td align="right">0.871</td>
+<td align="right">0.011</td>
+<td align="right">0.011</td>
+<td align="right">1.4921</td>
+<td align="right">1.4925</td>
+<td align="right">0.954</td>
+<td align="right">0.948</td>
+</tr>
+<tr class="even">
+<td align="left">R2 same-DGP draw</td>
+<td align="right">0.118</td>
+<td align="right">0.134</td>
+<td align="right">0.025</td>
+<td align="right">0.026</td>
+<td align="right">1.5004</td>
+<td align="right">1.5004</td>
+<td align="right">0.955</td>
+<td align="right">0.956</td>
+</tr>
+<tr class="odd">
+<td align="left">R4 LLM shift</td>
+<td align="right">0.095</td>
+<td align="right">0.113</td>
+<td align="right">0.038</td>
+<td align="right">0.037</td>
+<td align="right">1.5027</td>
+<td align="right">1.5028</td>
+<td align="right">0.954</td>
+<td align="right">0.954</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cross-fitting does not change the conclusions.</strong>
+Item-parameter bias, held-out RMSE, and 95% Wald coverage are
+essentially identical between the non-cross-fitted and cross-fitted
+tuners (differences in the fourth decimal). The one systematic
+difference is the selected λ: cross-fitting picks a slightly
+<em>higher</em> value (e.g. R1 0.75 → 0.87) because it tunes on held-out
+folds and so avoids the mild downward optimism of using a fold’s own
+labels to both tune and fit. Because the downstream quantities are
+unchanged, the cheaper non-cross-fitted tuner is an adequate default;
+cross-fitting is the more principled choice when the selected λ itself
+is reported.</p>
 </div>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
@@ -455,31 +558,37 @@ positive</td>
 </tr>
 <tr class="even">
 <td>Are the Louis SEs honest?</td>
-<td>Yes: nominal coverage for both <code>a</code> and <code>d</code>;
-the EM bread under-covers</td>
+<td>Yes: nominal coverage, including under a biased LLM (R3/R4); EM
+bread under-covers</td>
 </tr>
 <tr class="odd">
-<td>Does the method ever harm scoring?</td>
-<td>No: tuned RMSE ≤ human-only in every regime</td>
+<td>Does the method harm scoring?</td>
+<td>No average harm in these simulations; per-rep improvement is a third
+to a half of reps</td>
+</tr>
+<tr class="even">
+<td>Does cross-fitting change conclusions?</td>
+<td>No: bias/RMSE/coverage unchanged; cross-fit selects a slightly
+higher λ</td>
 </tr>
 </tbody>
 </table>
-<p>The headline practical guidance: use
-<code>fit_mixed_subjects_mml</code> with
+<p>Practical guidance: use <code>fit_mixed_subjects_mml</code> with
 <code>tune_lambda_ability_risk</code>, rely on <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>
-(Louis-corrected) for inference, have synthetic data emit sampled
-responses rather than probabilities, and treat the conditional-mean and
-runaway-discrimination behaviours as the two documented edge cases.</p>
+(Louis-corrected) for inference, and have synthetic/LLM data emit
+<strong>sampled binary responses</strong>, not probabilities — the
+package enforces this, and it is what keeps the PPI correction
+well-behaved.</p>
 </div>
 <div class="section level2">
 <h2 id="reproducing-these-results">Reproducing these results<a class="anchor" aria-label="anchor" href="#reproducing-these-results"></a>
 </h2>
-<p>From the package root:</p>
+<p>From the package root (second argument is the number of cores):</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># rep counts used above; second argument is the number of cores</span></span>
-<span><span class="co"># Rscript simulations/run_lambda_selection.R 100 8</span></span>
+<code class="sourceCode R"><span><span class="co"># Rscript simulations/run_lambda_selection.R 100 8</span></span>
 <span><span class="co"># Rscript simulations/run_coverage.R 200 8</span></span>
 <span><span class="co"># Rscript simulations/run_downstream.R 100 8</span></span>
+<span><span class="co"># Rscript simulations/run_crossfit.R 50 8</span></span>
 <span><span class="co"># Rscript simulations/figures.R</span></span></code></pre></div>
 <p>See <code>simulations/README.md</code> for the full design, the
 deterministic per-task seeding (results are identical serially or in

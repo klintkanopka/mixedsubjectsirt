@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Per-Item Lambda (Experimental) • mixedsubjectsirt</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -16,7 +16,7 @@
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">mixedsubjectsirt</a>
 
@@ -33,12 +33,11 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/lambda-tuning-item.html">Per-Item Lambda (Experimental)</a></li>
+<li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
-    <li><a class="dropdown-item" href="../articles/linking-comparison.html">IRT Linking and Gradient Asymmetry: Diagnostic Guide</a></li>
-    <li><a class="dropdown-item" href="../articles/mixed-subjects-1pl.html">Mixed-Subjects 1PL Calibration</a></li>
-    <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/simulation-validation.html">Simulation Validation of the Mixed-Subjects MML Estimator</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
       </ul>
@@ -46,6 +45,14 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
@@ -76,7 +83,7 @@ and does not decompose item-wise, so a theoretically principled per-item
 marginal objective does not yet exist in this package. Results from
 per-item tuning should be treated as approximate and validated against
 the scalar-lambda MML baseline. See the documentation of
-<code>tune_lambda_ability_risk_item()</code> for details.</p>
+<code><a href="../reference/tune_lambda_ability_risk_item.html">tune_lambda_ability_risk_item()</a></code> for details.</p>
 </blockquote>
 <div class="section level2">
 <h2 id="why-per-item-lambda">Why per-item lambda?<a class="anchor" aria-label="anchor" href="#why-per-item-lambda"></a>
@@ -150,7 +157,7 @@ while items 5–8 get
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">human_pars</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">observed</span>, technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>NCYCLES <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">pars</span></span>
 <span></span>
-<span><span class="va">global_tuned</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk</span><span class="op">(</span></span>
+<span><span class="va">global_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted    <span class="op">=</span> <span class="va">predicted</span>,</span>
@@ -169,13 +176,13 @@ constrain it to a value smaller than what items 1–4 could support.</p>
 <div class="section level2">
 <h2 id="step-2-ppi-score-per-item-fast-diagnostic">Step 2: PPI++ score per item (fast diagnostic)<a class="anchor" aria-label="anchor" href="#step-2-ppi-score-per-item-fast-diagnostic"></a>
 </h2>
-<p><code>tune_lambda_ppi_score_item()</code> applies the Proposition 2
+<p><code><a href="../reference/tune_lambda_ppi_score_item.html">tune_lambda_ppi_score_item()</a></code> applies the Proposition 2
 formula independently per item using the 2×2 diagonal block of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msup><mi>H</mi><mrow><mi>−</mi><mn>1</mn></mrow></msup><annotation encoding="application/x-tex">H^{-1}</annotation></semantics></math>
 and the item-level sub-vectors of the score matrices. This is fast (no
 fitting required) and shows which items are well-predicted.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ppi_item</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ppi_score_item</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">ppi_item</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ppi_score_item.html">tune_lambda_ppi_score_item</a></span><span class="op">(</span></span>
 <span>  observed    <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted   <span class="op">=</span> <span class="va">predicted</span>,</span>
 <span>  item_pars   <span class="op">=</span> <span class="va">human_pars</span>,</span>
@@ -205,12 +212,12 @@ items 5–8 (random LLM) should show
 <div class="section level2">
 <h2 id="step-3-per-item-ability-risk-tuning">Step 3: Per-item ability-risk tuning<a class="anchor" aria-label="anchor" href="#step-3-per-item-ability-risk-tuning"></a>
 </h2>
-<p><code>tune_lambda_ability_risk_item()</code> uses coordinate descent:
+<p><code><a href="../reference/tune_lambda_ability_risk_item.html">tune_lambda_ability_risk_item()</a></code> uses coordinate descent:
 for each item
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>,
 it finds the
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>λ</mi><mi>j</mi></msub><annotation encoding="application/x-tex">\lambda_j</annotation></semantics></math>
-in <code>lambda_grid</code> that minimises ability-score risk while
+in <code>lambda_grid</code> that minimizes ability-score risk while
 holding all other
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>λ</mi><msup><mi>j</mi><mo>′</mo></msup></msub><annotation encoding="application/x-tex">\lambda_{j'}</annotation></semantics></math>
 fixed. Each evaluation fits with the <strong>frozen expected-count
@@ -219,7 +226,7 @@ IRT marginal likelihood does not decompose item-wise. Starting from the
 global scalar optimum (not from all-zeros) is essential — see the note
 below.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">item_tuned</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk_item</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">item_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk_item.html">tune_lambda_ability_risk_item</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.25</span><span class="op">)</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted    <span class="op">=</span> <span class="va">predicted</span>,</span>
@@ -362,7 +369,7 @@ is:</p>
 <li>Fit the scalar global optimum with
 <code>tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects_mml)</code>.</li>
 <li>Pass that global value as <code>init_lambda</code> to
-<code>tune_lambda_ability_risk_item()</code>.</li>
+<code><a href="../reference/tune_lambda_ability_risk_item.html">tune_lambda_ability_risk_item()</a></code>.</li>
 <li>The coordinate descent then identifies which items should deviate
 from the global default — raising
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>λ</mi><mi>j</mi></msub><annotation encoding="application/x-tex">\lambda_j</annotation></semantics></math>

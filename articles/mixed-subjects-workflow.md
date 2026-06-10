@@ -1,27 +1,36 @@
 # Mixed-Subjects IRT Calibration
 
 This vignette shows the recommended mixed-subjects workflow for a
-unidimensional 2PL model using the **marginal maximum-likelihood PPI++
+unidimensional 2PL model using the **marginal maximum-likelihood-based
 estimator** (`fit_mixed_subjects_mml`). The package expects three
 response matrices with the same item columns:
 
-- `observed`: binary human responses.
-- `predicted`: LLM responses or probabilities for the same human rows.
-- `generated`: additional generated or unlabeled LLM responses.
+- `observed`: $`n`$ rows of binary human responses
+- `predicted`: $`n`$ rows of binary predicted LLM-generated responses
+  that correspond to the observed human data
+- `generated`: $`N`$ rows of additional binary LLM-generated responses
+  (typically $`N \gg n`$)
+
+All three matrices must contain binary 0/1 responses. Probability
+(fractional) predictions are not accepted — they are not a valid
+likelihood input for the marginal IRT objective and break the PPI
+correction — so if you have LLM-derived probabilities, sample binary
+responses from them first (e.g. `rbinom`).
 
 The fitted objective is
 
 ``` math
-L_h^{\mathrm{marg}}(\gamma) + \lambda\bigl[ L_g^{\mathrm{marg}}(\gamma) - L_p^{\mathrm{marg}}(\gamma)\bigr]
+L_o^{\mathrm{marg}}(\gamma) + \lambda\bigl[ L_g^{\mathrm{marg}}(\gamma) - L_p^{\mathrm{marg}}(\gamma)\bigr]
 ```
 
-where each \$L^\\mathrm{marg}\$ is the true IRT marginal negative
-log-likelihood, with posteriors recomputed from the current candidate
-\$\\gamma\$ at every gradient step. Setting \$\\lambda = 0\$ recovers
-the human-only MML calibration. See the [Choosing
+where $`\gamma`$ is a vector of item parameters and each
+$`L^\mathrm{marg}`$ is the true IRT marginal negative log-likelihood,
+with posteriors recomputed from the current candidate $`\gamma`$ at
+every gradient step. Setting $`\lambda = 0`$ recovers the human-only MML
+calibration. See the [Choosing
 Lambda](http://klintkanopka.com/mixedsubjectsirt/articles/lambda-tuning.md)
-vignette for the scientific background on why the marginal-MML objective
-is preferred over the older frozen expected-count estimator.
+vignette for the specific background on why the marginal-MML objective
+is preferred over the previous frozen expected-count estimator.
 
 ## Simulate example data
 
@@ -65,9 +74,9 @@ human_start <- fit_2pl(observed, technical = list(NCYCLES = 500))
 
 ## Step 2: Fit the marginal-MML mixed-subjects model
 
-`fit_mixed_subjects_mml()` recomputes posterior weights at every
-gradient evaluation, eliminating the frozen-posterior gradient asymmetry
-that causes the older
+[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+recomputes posterior weights at every gradient evaluation, eliminating
+the frozen-posterior gradient asymmetry that causes the older
 [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
 to inflate item discriminations when the LLM parameters differ from the
 human calibration.
@@ -108,11 +117,11 @@ mixed_mml$item_pars
 
 ## Step 3: Select lambda by ability-score risk
 
-`tune_lambda_ability_risk()` with `fit_fn = fit_mixed_subjects_mml`
-evaluates candidates on the MML objective and selects the $`\lambda`$
-that minimises propagated ability-score risk $`E[g'\Sigma_\gamma g]`$,
-where $`\Sigma_\gamma`$ is the **Louis-corrected** marginal sandwich
-covariance.
+[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+with `fit_fn = fit_mixed_subjects_mml` evaluates candidates on the MML
+objective and selects the $`\lambda`$ that minimizes propagated
+ability-score risk $`E[g'\Sigma_\gamma g]`$, where $`\Sigma_\gamma`$ is
+the **Louis-corrected** marginal sandwich covariance.
 
 ``` r
 
@@ -153,13 +162,64 @@ recovering the human-only estimate. The `selection_risk` column shows
 `Inf` for any candidate that failed to converge, so the selection is
 protected against numerical failures.
 
+## Step 3b (recommended): cross-fitted $`\lambda`$ tuning
+
+[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+above selects $`\lambda`$ and fits the final model on the **same** data.
+There is no free lunch in doing so: *no-free-lunch* analyses of tuned
+prediction-powered inference show that choosing the power parameter on
+the data you also estimate with is optimistic — the selected $`\lambda`$
+is biased toward looking more helpful than it is, and Wald intervals
+built around it can be anti-conservative.
+
+[`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md)
+removes this optimism by tuning $`\lambda`$ on held-out folds: each
+fold’s $`\lambda`$ is chosen using only the *other* folds’ labels, and
+the final fit combines them. Pass `fit_fn = fit_mixed_subjects_mml` for
+the per-fold tuning and `final_fit_fn = fit_mixed_subjects_mml` so the
+final fit is a single scalar-$`\lambda`$ MML model (the fold
+$`\lambda`$’s are averaged, weighted by fold size) that
+[`vcov()`](https://rdrr.io/r/stats/vcov.html) handles exactly as in Step
+4.
+
+``` r
+
+cf_tuned <- tune_lambda_ability_risk_crossfit(
+  lambda_grid  = seq(0, 1, by = 0.2),
+  observed     = observed,
+  predicted    = predicted,
+  generated    = generated,
+  initial_pars = human_start$pars,
+  fit_fn       = fit_mixed_subjects_mml,
+  final_fit_fn = fit_mixed_subjects_mml,
+  n_splits     = 5,
+  n_quad       = 11,
+  control      = list(maxit = 200)
+)
+
+cf_tuned$lambda_by_split   # one tuned lambda per held-out fold
+#> [1] 0 0 0 0 0
+cf_tuned$lambda_final      # fold-size-weighted scalar used for the final fit
+#> [1] 0
+```
+
+`cf_tuned$final_fit` is the calibration to report, and
+`vcov(cf_tuned$final_fit)` gives its Louis-corrected covariance. In the
+package’s simulation study, cross-fitting leaves item-parameter bias,
+held-out scoring RMSE, and 95% interval coverage essentially unchanged
+relative to the same-data tuner, while selecting a slightly higher — and
+more honest — $`\lambda`$. The cheaper same-data tuner in Step 3 is fine
+for exploration; prefer the cross-fitted estimate whenever the selected
+$`\lambda`$ or its uncertainty is part of what you report.
+
 ## Step 4: Inspect the covariance
 
 [`vcov()`](https://rdrr.io/r/stats/vcov.html) on a scalar-lambda MML fit
-automatically uses `vcov_mixed_subjects_mml()`, which applies Louis’
-(1982) observed-information correction — the marginal bread is
-$`H_\mathrm{comp} - I_\mathrm{miss}`$ rather than the EM complete-data
-Hessian alone.
+automatically uses
+[`vcov_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.md),
+which applies Louis’ (1982) observed-information correction — the
+marginal bread is $`H_\mathrm{comp} - I_\mathrm{miss}`$ rather than the
+EM complete-data Hessian alone.
 
 ``` r
 
@@ -224,11 +284,11 @@ tuned_fy$best_lambda   # expect > 0, near N/(n+N) = 0.75
 tuned_fy$summary[, c("lambda", "mean_param_var", "convergence")]
 #>   lambda mean_param_var convergence
 #> 1    0.0     0.05891913           0
-#> 2    0.2     0.03825654           0
-#> 3    0.4     0.02399810           0
-#> 4    0.6     0.01606106           0
-#> 5    0.8     0.01428788           0
-#> 6    1.0     0.01856073           0
+#> 2    0.2     0.03748241           0
+#> 3    0.4     0.02308376           0
+#> 4    0.6     0.01518342           0
+#> 5    0.8     0.01337880           0
+#> 6    1.0     0.01763035           0
 ```
 
 The ability risk decreases from $`\lambda = 0`$ to a minimum near the
@@ -242,15 +302,17 @@ A full simulation study confirms the recommended workflow behaves as
 intended:
 
 - **λ selection tracks predictor quality** — a perfect paired predictor
-  (F = Y) selects λ ≈ N/(n+N) = 0.75; a useless predictor selects λ ≈ 0.
-- **The Louis-corrected standard errors are honest** —
+  (F = Y) selects λ ≈ N/(n+N) = 0.75; a useless predictor is
+  down-weighted to λ ≈ 0.
+- **The Louis-corrected standard errors are honest** — across all
+  regimes, including a useless or biased LLM,
   [`vcov()`](https://rdrr.io/r/stats/vcov.html) on a scalar MML fit
-  attains nominal Wald-interval coverage for both discriminations and
-  intercepts, whereas the uncorrected EM-Hessian covariance
-  under-covers.
-- **No harm** — tuned ability-score RMSE is never worse than the
-  human-only calibration; when the predictor is uninformative the method
-  falls back to it.
+  attains nominal Wald-interval coverage (~0.91/0.96) for both
+  discriminations and intercepts, whereas the uncorrected EM-Hessian
+  covariance under-covers (~0.71/0.79).
+- **No average harm** — tuned ability-score RMSE is no worse than the
+  human-only calibration on average (every regime’s mean ΔRMSE is ≤ 0);
+  when the predictor is uninformative the method down-weights toward it.
 
 See the [Simulation
 Validation](http://klintkanopka.com/mixedsubjectsirt/articles/simulation-validation.md)

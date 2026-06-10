@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Mixed-Subjects 1PL Calibration • mixedsubjectsirt</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -16,7 +16,7 @@
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
+    <nav class="navbar navbar-expand-lg fixed-top " aria-label="Site navigation"><div class="container">
 
     <a class="navbar-brand me-2" href="../index.html">mixedsubjectsirt</a>
 
@@ -33,12 +33,11 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/lambda-tuning-item.html">Per-Item Lambda (Experimental)</a></li>
+<li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
-    <li><a class="dropdown-item" href="../articles/linking-comparison.html">IRT Linking and Gradient Asymmetry: Diagnostic Guide</a></li>
-    <li><a class="dropdown-item" href="../articles/mixed-subjects-1pl.html">Mixed-Subjects 1PL Calibration</a></li>
-    <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/simulation-validation.html">Simulation Validation of the Mixed-Subjects MML Estimator</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
       </ul>
@@ -46,6 +45,14 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch">
+<li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="dark"><span class="fa fa-moon"></span> Dark</button></li>
+    <li><button class="dropdown-item" data-bs-theme-value="auto"><span class="fa fa-adjust"></span> Auto</button></li>
+  </ul>
+</li>
       </ul>
 </div>
 
@@ -86,7 +93,7 @@ from a single item pool with homogeneous item characteristics. - When
 the 2PL discrimination estimates are very noisy (small
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>).</p>
 <blockquote>
-<p><strong>Note on vcov.</strong> <code>vcov_mixed_subjects_1pl()</code>
+<p><strong>Note on vcov.</strong> <code><a href="../reference/vcov_mixed_subjects_1pl.html">vcov_mixed_subjects_1pl()</a></code>
 currently uses the EM complete-data Hessian (not Louis’
 marginal-information correction). The uncertainty estimates are slightly
 over-precise. A Louis-corrected 1PL bread is planned for a future
@@ -127,14 +134,14 @@ release.</p>
 <div class="section level2">
 <h2 id="step-1-fit-the-1pl-baseline">Step 1: Fit the 1PL baseline<a class="anchor" aria-label="anchor" href="#step-1-fit-the-1pl-baseline"></a>
 </h2>
-<p><code>fit_1pl()</code> estimates
+<p><code><a href="../reference/fit_1pl.html">fit_1pl()</a></code> estimates
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>a</mi><annotation encoding="application/x-tex">a</annotation></semantics></math>
 and
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>d</mi><mn>1</mn></msub><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>d</mi><mi>J</mi></msub></mrow><annotation encoding="application/x-tex">d_1, \ldots, d_J</annotation></semantics></math>
-by maximising the IRT marginal likelihood under a standard-normal
+by maximizing the IRT marginal likelihood under a standard-normal
 ability prior.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu">fit_1pl</span><span class="op">(</span><span class="va">observed</span>, n_quad <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">fit1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_1pl.html">fit_1pl</a></span><span class="op">(</span><span class="va">observed</span>, n_quad <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Shared a:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">$</span><span class="va">pars</span><span class="op">$</span><span class="va">a</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">" (true:"</span>, <span class="va">true_1pl</span><span class="op">$</span><span class="va">a</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>, <span class="st">")\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Shared a: 1.287  (true: 1.2 )</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Convergence:"</span>, <span class="va">fit1</span><span class="op">$</span><span class="va">convergence</span>, <span class="st">"\n\n"</span><span class="op">)</span></span>
@@ -155,13 +162,13 @@ confirming the 1PL constraint.</p>
 <div class="section level2">
 <h2 id="step-2-fit-mixed-subjects-mml-1pl">Step 2: Fit mixed-subjects MML (1PL)<a class="anchor" aria-label="anchor" href="#step-2-fit-mixed-subjects-mml-1pl"></a>
 </h2>
-<p><code>fit_mixed_subjects_mml_1pl()</code> uses the true marginal
+<p><code><a href="../reference/fit_mixed_subjects_mml_1pl.html">fit_mixed_subjects_mml_1pl()</a></code> uses the true marginal
 likelihood with a 1PL-specific gradient: the shared discrimination
 gradient accumulates contributions from all
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>J</mi><annotation encoding="application/x-tex">J</annotation></semantics></math>
 items, while each intercept has its own gradient.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_mml_1pl</span> <span class="op">&lt;-</span> <span class="fu">fit_mixed_subjects_mml_1pl</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">fit_mml_1pl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_mixed_subjects_mml_1pl.html">fit_mixed_subjects_mml_1pl</a></span><span class="op">(</span></span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted    <span class="op">=</span> <span class="va">predicted</span>,</span>
 <span>  generated    <span class="op">=</span> <span class="va">generated</span>,</span>
@@ -196,7 +203,7 @@ items, while each intercept has its own gradient.</p>
 sandwich<a class="anchor" aria-label="anchor" href="#step-3-correct-covariance-j1-times-j1-sandwich"></a>
 </h2>
 <p><code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> dispatches to
-<code>vcov_mixed_subjects_1pl()</code> for 1PL fits, returning a
+<code><a href="../reference/vcov_mixed_subjects_1pl.html">vcov_mixed_subjects_1pl()</a></code> for 1PL fits, returning a
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>J</mi><mo>+</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mo stretchy="false" form="prefix">(</mo><mi>J</mi><mo>+</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(J+1) \times (J+1)</annotation></semantics></math>
 matrix with <code>a_shared</code> and per-item <code>d_j</code> as
 rows/columns.</p>
@@ -211,13 +218,13 @@ rows/columns.</p>
 <div class="section level2">
 <h2 id="step-4-ability-score-risk-and-lambda-tuning">Step 4: Ability-score risk and lambda tuning<a class="anchor" aria-label="anchor" href="#step-4-ability-score-risk-and-lambda-tuning"></a>
 </h2>
-<p><code>tune_lambda_ability_risk_1pl()</code> uses the
-1PL-parameterised gradient
+<p><code><a href="../reference/tune_lambda_ability_risk_1pl.html">tune_lambda_ability_risk_1pl()</a></code> uses the
+1PL-parameterized gradient
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>∂</mi><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>/</mi><mi>∂</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>a</mi><mtext mathvariant="normal">shared</mtext></msub><mo>,</mo><msub><mi>d</mi><mn>1</mn></msub><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>d</mi><mi>J</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\partial\hat\theta / \partial (a_\text{shared}, d_1, \ldots, d_J)</annotation></semantics></math>
 for the ability-score risk. The chain rule gives
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>∂</mi><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>/</mi><mi>∂</mi><msub><mi>a</mi><mtext mathvariant="normal">shared</mtext></msub><mo>=</mo><msub><mo>∑</mo><mi>j</mi></msub><mi>∂</mi><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>/</mi><mi>∂</mi><msub><mi>a</mi><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">\partial\hat\theta / \partial a_\text{shared} = \sum_j \partial\hat\theta / \partial a_j</annotation></semantics></math>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tuned_1pl</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk_1pl</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">tuned_1pl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk_1pl.html">tune_lambda_ability_risk_1pl</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted    <span class="op">=</span> <span class="va">predicted</span>,</span>
@@ -245,7 +252,7 @@ for the ability-score risk. The chain rule gives
 <p>With <code>predicted = observed</code> (perfect paired predictor),
 the ability-risk criterion should select a positive lambda.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tuned_fy</span> <span class="op">&lt;-</span> <span class="fu">tune_lambda_ability_risk_1pl</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">tuned_fy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk_1pl.html">tune_lambda_ability_risk_1pl</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted    <span class="op">=</span> <span class="va">observed</span>,     <span class="co"># F = Y</span></span>
@@ -273,7 +280,7 @@ the ability-risk criterion should select a positive lambda.</p>
 <p>On a well-specified 1PL test, how do the 1PL and 2PL estimators
 compare?</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_2pl_mml</span> <span class="op">&lt;-</span> <span class="fu">fit_mixed_subjects_mml</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">fit_2pl_mml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml</a></span><span class="op">(</span></span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted    <span class="op">=</span> <span class="va">predicted</span>,</span>
 <span>  generated    <span class="op">=</span> <span class="va">generated</span>,</span>
@@ -303,7 +310,7 @@ especially for small
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>.</p>
 </div>
 <div class="section level2">
-<h2 id="ability-score-risk-1pl-vs-2pl-parameterisation">Ability-score risk: 1PL vs 2PL parameterisation<a class="anchor" aria-label="anchor" href="#ability-score-risk-1pl-vs-2pl-parameterisation"></a>
+<h2 id="ability-score-risk-1pl-vs-2pl-parameterization">Ability-score risk: 1PL vs 2PL parameterization<a class="anchor" aria-label="anchor" href="#ability-score-risk-1pl-vs-2pl-parameterization"></a>
 </h2>
 <p>The 1PL ability-score risk is smaller in the
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>J</mi><mo>+</mo><mn>1</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(J+1)</annotation></semantics></math>-parameter
@@ -313,7 +320,7 @@ concentrates all discrimination information in a single parameter.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Sigma_2pl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">fit_2pl_mml</span><span class="op">)</span>  <span class="co"># 2J × 2J Louis-corrected</span></span>
 <span></span>
-<span><span class="va">risk_1pl</span> <span class="op">&lt;-</span> <span class="fu">ability_risk_1pl</span><span class="op">(</span><span class="va">observed</span>, <span class="va">tuned_1pl</span><span class="op">$</span><span class="va">best_fit</span><span class="op">)</span></span>
+<span><span class="va">risk_1pl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ability_risk_1pl.html">ability_risk_1pl</a></span><span class="op">(</span><span class="va">observed</span>, <span class="va">tuned_1pl</span><span class="op">$</span><span class="va">best_fit</span><span class="op">)</span></span>
 <span><span class="va">risk_2pl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ability_risk.html">ability_risk</a></span><span class="op">(</span><span class="va">observed</span>, <span class="va">fit_2pl_mml</span>, vcov <span class="op">=</span> <span class="va">Sigma_2pl</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"1PL mean param_var:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">risk_1pl</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">mean_param_var</span>, <span class="fl">5</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
