@@ -19,18 +19,8 @@ default_true_pars <- function(n_items = 8) {
   pars
 }
 
-# Oracle conditional-mean ("probability") predictions: P(x=1 | theta; pars).
-# Returns a fractional response matrix in [0, 1].
-conditional_mean_pred <- function(theta, pars) {
-  eta <- outer(theta, pars$a, `*`) +
-    matrix(pars$d, nrow = length(theta), ncol = nrow(pars), byrow = TRUE)
-  out <- stats::plogis(eta)
-  colnames(out) <- pars$item
-  out
-}
-
 # "Scrambled" item parameters: near-random discrimination, shuffled difficulty.
-# Used for the independent-noise regime (R4).
+# Used for the independent-noise regime (R3).
 scrambled_pars <- function(true_pars) {
   n_items <- nrow(true_pars)
   sc <- true_pars
@@ -41,7 +31,7 @@ scrambled_pars <- function(true_pars) {
 }
 
 # LLM-shift item parameters: ~10% attenuated discrimination, +0.25 logit shift.
-# Used for the realistic LLM regime (R5).
+# Used for the realistic LLM regime (R4).
 llm_shift_pars <- function(true_pars) {
   n_items <- nrow(true_pars)
   llm <- true_pars
@@ -56,18 +46,22 @@ llm_shift_pars <- function(true_pars) {
 #
 # Returns a list with:
 #   observed   : n_human x n_items binary human responses
-#   predicted   : paired predictions for the same rows (binary or fractional)
-#   generated   : n_generated x n_items LLM responses
+#   predicted   : paired binary predictions for the same rows
+#   generated   : n_generated x n_items binary LLM responses
 #   theta_human : true abilities for the human sample
 #   true_pars   : the true item parameters
 #   regime      : the regime label
 #
+# All predictors are BINARY 0/1 responses. The package disallows probability
+# (fractional) predictions for `predicted`/`generated`, so the former
+# conditional-mean regimes (which fed fractional predictions) have been removed
+# and the four binary regimes are numbered contiguously R1-R4.
+#
 # Regimes:
-#   R1 "perfect"          predicted = observed                       (F = Y)
-#   R2 "conditional_mean" predicted = P(x=1|theta; true)             (oracle prob)
-#   R3 "same_dgp"         predicted = fresh draw from true DGP
-#   R4 "independent"      predicted = draw from scrambled parameters
-#   R5 "llm_shift"        predicted = draw from attenuated/shifted params
+#   R1 "perfect"      predicted = observed                       (F = Y)
+#   R2 "same_dgp"     predicted = fresh binary draw from true DGP
+#   R3 "independent"  predicted = binary draw from scrambled parameters
+#   R4 "llm_shift"    predicted = binary draw from attenuated/shifted params
 # ---------------------------------------------------------------------------- #
 generate_regime <- function(regime,
                             n_human     = 400,
@@ -78,10 +72,6 @@ generate_regime <- function(regime,
 
   if (regime == "perfect") {
     predicted <- observed
-    gen_pars  <- true_pars
-
-  } else if (regime == "conditional_mean") {
-    predicted <- conditional_mean_pred(theta_human, true_pars)
     gen_pars  <- true_pars
 
   } else if (regime == "same_dgp") {
@@ -102,8 +92,8 @@ generate_regime <- function(regime,
     stop("Unknown regime: ", regime, call. = FALSE)
   }
 
-  # Generated LLM sample is drawn from the same parameters that produced the
-  # paired predictions, from an independent ability sample.
+  # Generated LLM sample (binary), from an independent standard-normal ability
+  # sample drawn from the same parameters that produced the paired predictions.
   generated <- simulate_2pl(stats::rnorm(n_generated), gen_pars)
   colnames(generated) <- true_pars$item
 
@@ -118,19 +108,18 @@ generate_regime <- function(regime,
   )
 }
 
-# All regime labels, ordered from best to worst predictor quality.
+# Operational regime labels, ordered from best to worst predictor quality.
 all_regimes <- function() {
-  c("perfect", "conditional_mean", "same_dgp", "independent", "llm_shift")
+  c("perfect", "same_dgp", "independent", "llm_shift")
 }
 
 # Human-readable regime descriptions for tables/figures.
 regime_labels <- function() {
   c(
-    perfect          = "R1 perfect (F=Y)",
-    conditional_mean = "R2 conditional mean",
-    same_dgp         = "R3 same-DGP draw",
-    independent      = "R4 independent noise",
-    llm_shift        = "R5 LLM shift"
+    perfect     = "R1 perfect (F=Y)",
+    same_dgp    = "R2 same-DGP draw",
+    independent = "R3 independent noise",
+    llm_shift   = "R4 LLM shift"
   )
 }
 

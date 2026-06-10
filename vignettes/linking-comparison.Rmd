@@ -52,9 +52,9 @@ for the generated E-step. This document evaluates three classical linking method
 |--------|----------------|
 | **Mean-mean** | Mean discrimination and mean difficulty |
 | **Mean-sigma** | Mean and SD of difficulty |
-| **Stocking-Lord** | Numerically minimised weighted TCC squared deviation |
+| **Stocking-Lord** | Numerically minimized weighted TCC squared deviation |
 
-We characterise both how well each method aligns the LLM parameters to the human
+We characterize both how well each method aligns the LLM parameters to the human
 scale and — crucially — how the residual misalignment interacts with the power-tuning
 parameter $\lambda$.
 
@@ -108,9 +108,9 @@ link_mean_sigma <- function(source, target) {
   apply_link(source, A, B)
 }
 
-# Stocking-Lord with bounded optimisation to prevent item-level overcorrection.
+# Stocking-Lord with bounded optimization to prevent item-level overcorrection.
 # A is constrained to [0.4, 2.5]; large-variance items can otherwise receive
-# inflated linked discriminations that destabilise the downstream M-step.
+# inflated linked discriminations that destabilize the downstream M-step.
 link_stocking_lord <- function(source, target,
                                 theta_grid = seq(-4, 4, by = 0.05),
                                 A_bounds   = c(0.4, 2.5),
@@ -420,7 +420,7 @@ discriminations deviate in opposite directions from the group mean.
 
 Since linking reduces but does not eliminate the gradient asymmetry, the optimal
 $\lambda$ for this scenario is much smaller than 0.5. We sweep $\lambda$ from 0 to 0.5
-to characterise the tradeoff between using LLM data and inflating discrimination estimates.
+to characterize the tradeoff between using LLM data and inflating discrimination estimates.
 
 ```{r lambda-sweep, cache = FALSE}
 lambda_grid <- c(0, 0.02, 0.05, 0.10, 0.15, 0.20, 0.30, 0.50)
@@ -515,7 +515,7 @@ knitr::kable(tab_sub, row.names = FALSE,
 The plot reveals three regimes:
 
 1. **$\lambda \approx 0$ (human-only)**: all linking methods give the same human-only
-   estimate, which is the target behaviour when LLM alignment is uncertain.
+   estimate, which is the target behavior when LLM alignment is uncertain.
 2. **Small $\lambda$ (0.05–0.15)**: all linking methods add modest noise but stay close
    to the human-only estimate. Linked methods begin to diverge from each other.
 3. **Large $\lambda$ ($\geq 0.3$)**: unlinked estimates diverge severely; linked methods
@@ -539,7 +539,7 @@ misaligned, effectively recovering the human-only estimate in the worst case.
 # human parameters for observed and predicted E-steps, then power-tune lambda.
 ms_linked_pars <- all_links$matched$mean_sigma$pars
 
-# Build the three quadrature summaries with the correct parameterisation for each.
+# Build the three quadrature summaries with the correct parameterization for each.
 # q_obs and q_pred use human parameters; q_gen uses the linked LLM parameters.
 q_gen_linked <- mixedsubjectsirt:::build_quadrature_summary(
   generated_matched, ms_linked_pars, quad)
@@ -602,9 +602,9 @@ A common misconception is that $\lambda^*$ should approach 1 when the LLM exactl
 reproduces the human DGP. This conflates two different objectives:
 
 - **`tune_lambda_ppi_score()`** returns the PPI++ Proposition 2 estimate: the $\lambda$
-  that minimises the *trace of the item-parameter covariance matrix* $\text{Tr}(\Sigma_\gamma)$.
+  that minimizes the *trace of the item-parameter covariance matrix* $\text{Tr}(\Sigma_\gamma)$.
   This is a measure of item-parameter estimation efficiency.
-- **`tune_lambda_ability_risk()`** returns the $\lambda$ that minimises the *propagated
+- **`tune_lambda_ability_risk()`** returns the $\lambda$ that minimizes the *propagated
   ability-score risk* $\mathbb{E}[g' \Sigma_\gamma g]$, where $g$ is the gradient of the
   ability estimate with respect to item parameters. This is the quantity that matters
   for test scoring.
@@ -761,8 +761,8 @@ val_tab <- data.frame(
 knitr::kable(val_tab, row.names = FALSE,
   col.names = c("Test", "PPI++ lambda*", "Ability-risk lambda*", "Theory"),
   caption   = paste("PPI++ score lambda vs. ability-risk lambda.",
-                    "PPI++ lambda minimises Tr(Sigma_gamma).",
-                    "Ability-risk lambda minimises E[g' Sigma_gamma g]."))
+                    "PPI++ lambda minimizes Tr(Sigma_gamma).",
+                    "Ability-risk lambda minimizes E[g' Sigma_gamma g]."))
 ```
 
 **Key finding.** `tune_lambda_ppi_score` correctly tracks predictor quality: Test A
@@ -839,8 +839,8 @@ linked methods give estimates close to the human-only baseline.
   and `"none"`; the mean-sigma and Stocking-Lord implementations in this vignette
   use local helper functions defined in the `{r helpers}` chunk.
 
-- *Stocking-Lord* minimises TCC deviation directly, which is conceptually closest to
-  the expected-count criterion. However, it requires bounded numerical optimisation
+- *Stocking-Lord* minimizes TCC deviation directly, which is conceptually closest to
+  the expected-count criterion. However, it requires bounded numerical optimization
   (the A-bounds safeguard in this implementation is essential) and can still overcorrect
   for individual items when one item's LLM discrimination is already close to or
   exceeds the human value. The TCC improvement does not translate to uniformly better
@@ -915,7 +915,7 @@ knitr::kable(mml_sweep, row.names = FALSE,
 
 The MML estimator converges at all $\lambda$ values without a slope cap, and
 the discriminations do not inflate. Ability-risk tuning with MML selects the
-$\lambda$ that minimises scoring uncertainty directly — there is no need for a
+$\lambda$ that minimizes scoring uncertainty directly — there is no need for a
 linking pre-processing step when using the MML estimator.
 
 **When is linking still useful?** When you need to use the frozen expected-count

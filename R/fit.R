@@ -25,8 +25,13 @@
 #' resp <- matrix(c(1, 0, 0, 1), nrow = 2, byrow = TRUE)
 #' q <- mixed_subjects_quadrature(resp, item_pars = pars, N_quad = 5)
 #' mixed_subjects_loss(c(pars$a, pars$d), q, q, q, lambda = 0.5)
-mixed_subjects_loss <- function(pars, q_observed, q_predicted, q_llm,
-                                lambda = 0) {
+mixed_subjects_loss <- function(
+  pars,
+  q_observed,
+  q_predicted,
+  q_llm,
+  lambda = 0
+) {
   lambda <- validate_lambda(lambda)
   counts_observed <- q_to_counts(q_observed, "q_observed")
   counts_predicted <- q_to_counts(q_predicted, "q_predicted")
@@ -36,10 +41,9 @@ mixed_subjects_loss <- function(pars, q_observed, q_predicted, q_llm,
   item_pars <- item_pars_from_vector(pars, counts_observed$item_names)
 
   loss_expected_counts(counts_observed, item_pars) +
-    lambda * (
-      loss_expected_counts(counts_llm, item_pars) -
-        loss_expected_counts(counts_predicted, item_pars)
-    )
+    lambda *
+      (loss_expected_counts(counts_llm, item_pars) -
+        loss_expected_counts(counts_predicted, item_pars))
 }
 
 #' Fit a mixed-subjects 2PL calibration
@@ -57,10 +61,13 @@ mixed_subjects_loss <- function(pars, q_observed, q_predicted, q_llm,
 #'
 #' @param observed Human response matrix, with rows for subjects and columns for
 #'   items. Values must be binary when `initial_pars` is omitted.
-#' @param predicted LLM responses or probabilities for the same rows and items as
-#'   `observed`.
-#' @param generated Generated or unlabeled LLM responses or probabilities for
-#'   the same item columns.
+#' @param predicted Binary LLM responses (0/1) for the same rows and items as
+#'   `observed`. Probabilities are not accepted: fractional values are not a
+#'   valid likelihood input for the marginal IRT objective and break the PPI
+#'   correction, so sample binary responses from any probabilities first (e.g.
+#'   `rbinom`).
+#' @param generated Binary generated or unlabeled LLM responses (0/1) for the
+#'   same item columns. Probabilities are not accepted (see `predicted`).
 #' @param lambda Power-tuning parameter in `[0, 1]`.
 #' @param n_quad Number of standard-normal quadrature nodes.
 #' @param initial_pars Optional starting item parameters. If omitted, a 2PL model
@@ -75,6 +82,10 @@ mixed_subjects_loss <- function(pars, q_observed, q_predicted, q_llm,
 #'   `"allow"` only for explicit sensitivity analyses.
 #' @param slope_lower Lower bound for discrimination parameters during
 #'   optimization. Use `NULL` for no lower bound.
+#' @param slope_upper Upper bound for discrimination parameters during
+#'   optimization. Use `NULL` (the default) for no upper bound. Setting a finite
+#'   bound (e.g. 4) can stabilize the frozen expected-count fit when the LLM
+#'   parameters differ substantially from the human parameters.
 #' @param control Control list passed to [stats::optim()].
 #' @param ... Additional arguments passed to [fit_2pl()] when `initial_pars` is
 #'   omitted.
@@ -95,27 +106,45 @@ mixed_subjects_loss <- function(pars, q_observed, q_predicted, q_llm,
 #'   control = list(maxit = 50)
 #' )
 #' fit$item_pars
-fit_mixed_subjects <- function(observed, predicted, generated, lambda = 1,
-                               n_quad = 31, initial_pars = NULL,
-                               quadrature = NULL,
-                               common_predicted_weights = TRUE,
-                               paired_missing = c("match_observed", "allow"),
-                               slope_lower = 1e-4,
-                               slope_upper = NULL,
-                               control = list(maxit = 500), ...) {
+fit_mixed_subjects <- function(
+  observed,
+  predicted,
+  generated,
+  lambda = 1,
+  n_quad = 31,
+  initial_pars = NULL,
+  quadrature = NULL,
+  common_predicted_weights = TRUE,
+  paired_missing = c("match_observed", "allow"),
+  slope_lower = 1e-4,
+  slope_upper = NULL,
+  control = list(maxit = 500),
+  ...
+) {
   lambda <- validate_lambda(lambda)
-  observed <- validate_response_matrix(observed, "observed",
-                                       allow_fractional = FALSE)
-  predicted <- validate_response_matrix(predicted, "predicted",
-                                        allow_fractional = TRUE)
-  generated <- validate_response_matrix(generated, "generated",
-                                        allow_fractional = TRUE)
+  observed <- validate_response_matrix(
+    observed,
+    "observed",
+    allow_fractional = FALSE
+  )
+  predicted <- validate_response_matrix(
+    predicted,
+    "predicted",
+    allow_fractional = FALSE
+  )
+  generated <- validate_response_matrix(
+    generated,
+    "generated",
+    allow_fractional = FALSE
+  )
   check_same_items(observed, predicted, "observed", "predicted")
   check_same_items(observed, generated, "observed", "generated")
 
   if (nrow(observed) != nrow(predicted)) {
-    stop("observed and predicted must have the same number of rows.",
-         call. = FALSE)
+    stop(
+      "observed and predicted must have the same number of rows.",
+      call. = FALSE
+    )
   }
   paired_missing <- check_paired_missingness(
     observed = observed,
@@ -202,6 +231,8 @@ fit_mixed_subjects <- function(observed, predicted, generated, lambda = 1,
 #'   omitted, `q_observed$irt_pars` is used when available.
 #' @param slope_lower Lower bound for discrimination parameters during
 #'   optimization. Use `NULL` for no lower bound.
+#' @param slope_upper Upper bound for discrimination parameters during
+#'   optimization. Use `NULL` (the default) for no upper bound.
 #' @param control Control list passed to [stats::optim()].
 #'
 #' @return An object of class `"mixedsubjects_fit"`.
@@ -212,23 +243,33 @@ fit_mixed_subjects <- function(observed, predicted, generated, lambda = 1,
 #' resp <- matrix(c(1, 0, 0, 1), nrow = 2, byrow = TRUE)
 #' q <- mixed_subjects_quadrature(resp, item_pars = pars, N_quad = 5)
 #' fit_mixed_subjects_from_quadrature(q, q, q, lambda = 0.5)$item_pars
-fit_mixed_subjects_from_quadrature <- function(q_observed, q_predicted,
-                                               q_generated, lambda = 1,
-                                               initial_pars = NULL,
-                                               slope_lower = 1e-4,
-                                               slope_upper = NULL,
-                                               control = list(maxit = 500)) {
+fit_mixed_subjects_from_quadrature <- function(
+  q_observed,
+  q_predicted,
+  q_generated,
+  lambda = 1,
+  initial_pars = NULL,
+  slope_lower = 1e-4,
+  slope_upper = NULL,
+  control = list(maxit = 500)
+) {
   counts_observed <- q_to_counts(q_observed, "q_observed")
   counts_predicted <- q_to_counts(q_predicted, "q_predicted")
   counts_generated <- q_to_counts(q_generated, "q_generated")
-  check_counts_compatible(list(counts_observed, counts_predicted, counts_generated))
+  check_counts_compatible(list(
+    counts_observed,
+    counts_predicted,
+    counts_generated
+  ))
 
   if (is.null(initial_pars)) {
     if (is.list(q_observed) && !is.null(q_observed$irt_pars)) {
       initial_pars <- q_observed$irt_pars
     } else {
-      stop("initial_pars is required when q_observed does not contain irt_pars.",
-           call. = FALSE)
+      stop(
+        "initial_pars is required when q_observed does not contain irt_pars.",
+        call. = FALSE
+      )
     }
   }
 
@@ -280,10 +321,13 @@ fit_mixed_subjects_from_quadrature <- function(q_observed, q_predicted,
 #'
 #' @param observed Human response matrix, with rows for subjects and columns for
 #'   items. Values must be binary when `initial_pars` is omitted.
-#' @param predicted LLM responses or probabilities for the same rows and items as
-#'   `observed`.
-#' @param generated Generated or unlabeled LLM responses or probabilities for
-#'   the same item columns.
+#' @param predicted Binary LLM responses (0/1) for the same rows and items as
+#'   `observed`. Probabilities are not accepted: fractional values are not a
+#'   valid likelihood input for the marginal IRT objective and break the PPI
+#'   correction, so sample binary responses from any probabilities first (e.g.
+#'   `rbinom`).
+#' @param generated Binary generated or unlabeled LLM responses (0/1) for the
+#'   same item columns. Probabilities are not accepted (see `predicted`).
 #' @param lambda Power-tuning parameter in `[0, 1]`. Supply a scalar for a fixed
 #'   lambda or a vector with one value per split for a precomputed
 #'   cross-fitted-lambda analysis. When a vector is supplied, the generated term
@@ -304,6 +348,8 @@ fit_mixed_subjects_from_quadrature <- function(q_observed, q_predicted,
 #'   `observed` and `predicted` to have the same missingness pattern.
 #' @param slope_lower Lower bound for discrimination parameters during
 #'   optimization. Use `NULL` for no lower bound.
+#' @param slope_upper Upper bound for discrimination parameters during
+#'   optimization. Use `NULL` (the default) for no upper bound.
 #' @param control Control list passed to [stats::optim()].
 #' @param ... Additional arguments passed to [fit_2pl()] when fold-specific
 #'   initial models are fit.
@@ -324,29 +370,48 @@ fit_mixed_subjects_from_quadrature <- function(q_observed, q_predicted,
 #'   n_quad = 7, control = list(maxit = 50)
 #' )
 #' fit$item_pars
-fit_mixed_subjects_split <- function(observed, predicted, generated,
-                                     lambda = 1, n_splits = 2,
-                                     split_id = NULL, seed = NULL,
-                                     n_quad = 31, initial_pars = NULL,
-                                     quadrature = NULL,
-                                     common_predicted_weights = TRUE,
-                                     paired_missing = c("match_observed", "allow"),
-                                     slope_lower = 1e-4,
-                                     slope_upper = NULL,
-                                     control = list(maxit = 500), ...) {
+fit_mixed_subjects_split <- function(
+  observed,
+  predicted,
+  generated,
+  lambda = 1,
+  n_splits = 2,
+  split_id = NULL,
+  seed = NULL,
+  n_quad = 31,
+  initial_pars = NULL,
+  quadrature = NULL,
+  common_predicted_weights = TRUE,
+  paired_missing = c("match_observed", "allow"),
+  slope_lower = 1e-4,
+  slope_upper = NULL,
+  control = list(maxit = 500),
+  ...
+) {
   lambda <- validate_lambda_vector(lambda)
-  observed <- validate_response_matrix(observed, "observed",
-                                       allow_fractional = FALSE)
-  predicted <- validate_response_matrix(predicted, "predicted",
-                                        allow_fractional = TRUE)
-  generated <- validate_response_matrix(generated, "generated",
-                                        allow_fractional = TRUE)
+  observed <- validate_response_matrix(
+    observed,
+    "observed",
+    allow_fractional = FALSE
+  )
+  predicted <- validate_response_matrix(
+    predicted,
+    "predicted",
+    allow_fractional = FALSE
+  )
+  generated <- validate_response_matrix(
+    generated,
+    "generated",
+    allow_fractional = FALSE
+  )
   check_same_items(observed, predicted, "observed", "predicted")
   check_same_items(observed, generated, "observed", "generated")
 
   if (nrow(observed) != nrow(predicted)) {
-    stop("observed and predicted must have the same number of rows.",
-         call. = FALSE)
+    stop(
+      "observed and predicted must have the same number of rows.",
+      call. = FALSE
+    )
   }
   paired_missing <- check_paired_missingness(
     observed = observed,
@@ -505,8 +570,7 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
 #' Fits [fit_mixed_subjects()] or [fit_mixed_subjects_split()] over a set of
 #' candidate lambda values. The returned summary reports the fitted
 #' mixed-subjects objective and the observed human expected-count loss for each
-#' candidate. This is a sensitivity diagnostic, not a statistically valid PPI++
-#' tuning rule.
+#' candidate. This is a sensitivity diagnostic, not a valid tuning rule.
 #'
 #' @param lambda_grid Numeric vector of lambda values in `[0, 1]`.
 #' @param observed,predicted,generated Response matrices passed to
@@ -530,8 +594,14 @@ fit_mixed_subjects_split <- function(observed, predicted, generated,
 #'   initial_pars = pars, n_quad = 5, control = list(maxit = 30)
 #' )
 #' tuned$summary
-diagnose_lambda_grid <- function(lambda_grid, observed, predicted, generated,
-                                 split = FALSE, ...) {
+diagnose_lambda_grid <- function(
+  lambda_grid,
+  observed,
+  predicted,
+  generated,
+  split = FALSE,
+  ...
+) {
   if (!is.numeric(lambda_grid) || length(lambda_grid) == 0) {
     stop("lambda_grid must be a non-empty numeric vector.", call. = FALSE)
   }
@@ -576,42 +646,11 @@ diagnose_lambda_grid <- function(lambda_grid, observed, predicted, generated,
   summary <- do.call(rbind, rows)
   list(
     summary = summary,
-    lowest_observed_loss_lambda = summary$lambda[which.min(summary$observed_loss)],
+    lowest_observed_loss_lambda = summary$lambda[which.min(
+      summary$observed_loss
+    )],
     fits = fits
   )
-}
-
-#' Tune lambda over a grid
-#'
-#' @description
-#' `tune_lambda_grid()` is retained as a backward-compatible wrapper for
-#' [diagnose_lambda_grid()]. It emits a warning because the grid output is a
-#' sensitivity diagnostic, not a statistically valid PPI++ tuning rule.
-#'
-#' @inheritParams diagnose_lambda_grid
-#'
-#' @return A list returned by [diagnose_lambda_grid()]. For backward
-#'   compatibility, the list also contains `best_lambda_by_observed_loss`.
-#' @export
-tune_lambda_grid <- function(lambda_grid, observed, predicted, generated,
-                             split = FALSE, ...) {
-  warning(
-    "tune_lambda_grid() is a diagnostic sensitivity helper, not a valid ",
-    "PPI++ tuning rule. Prefer diagnose_lambda_grid() or a study-specific ",
-    "cross-fitted tuning procedure.",
-    call. = FALSE
-  )
-
-  out <- diagnose_lambda_grid(
-    lambda_grid = lambda_grid,
-    observed = observed,
-    predicted = predicted,
-    generated = generated,
-    split = split,
-    ...
-  )
-  out$best_lambda_by_observed_loss <- out$lowest_observed_loss_lambda
-  out
 }
 
 #' Fit a mixed-subjects 2PL calibration with iterative EM
@@ -626,25 +665,13 @@ tune_lambda_grid <- function(lambda_grid, observed, predicted, generated,
 #'
 #' **Note on lambda selection.** This function accepts a fixed `lambda`. For
 #' psychometric applications where accurate ability scoring is the goal, select
-#' `lambda` with [tune_lambda_ability()] rather than [tune_lambda_ppi_score()].
-#' The PPI++ score objective minimises the trace of the item-parameter
-#' covariance matrix; [tune_lambda_ability()] minimises the propagated
+#' `lambda` with [tune_lambda_ability_risk()] rather than [tune_lambda_ppi_score()].
+#' The PPI++ score objective minimizes the trace of the item-parameter
+#' covariance matrix; [tune_lambda_ability_risk()] minimizes the propagated
 #' ability-score risk `g' Sigma g`, which is the quantity that matters for
 #' downstream test scoring.
 #'
-#' @param observed Human response matrix.
-#' @param predicted LLM responses or probabilities for the same rows as
-#'   `observed`.
-#' @param generated Generated or unlabeled LLM responses.
-#' @param lambda Power-tuning parameter in `[0, 1]`.
-#' @param n_quad Number of standard-normal quadrature nodes.
-#' @param initial_pars Optional starting item parameters. If omitted, a 2PL
-#'   model is fit to `observed`.
-#' @param quadrature Optional quadrature grid.
-#' @param common_predicted_weights Logical; if `TRUE`, reuse observed posterior
-#'   weights for `predicted` at each iteration.
-#' @param paired_missing Missingness check passed to [fit_mixed_subjects()].
-#' @param slope_lower Lower bound on discrimination parameters.
+#' @inheritParams fit_mixed_subjects
 #' @param slope_upper Upper bound on discrimination parameters. **Strongly
 #'   recommended** when `lambda > 0` — the iterative EM updates posteriors at
 #'   each step, and without an upper bound the gradient asymmetry between
@@ -654,9 +681,6 @@ tune_lambda_grid <- function(lambda_grid, observed, predicted, generated,
 #' @param tol Convergence tolerance: maximum absolute change in any parameter
 #'   across an EM iteration.
 #' @param em_maxit Maximum number of EM iterations.
-#' @param control Control list passed to [stats::optim()] for the M-step.
-#' @param ... Additional arguments passed to [fit_2pl()] when `initial_pars`
-#'   is omitted.
 #'
 #' @return An object of class `"mixedsubjects_fit"` with the standard fields
 #'   plus `em_iterations` (number of EM cycles completed) and `em_converged`
@@ -675,32 +699,47 @@ tune_lambda_grid <- function(lambda_grid, observed, predicted, generated,
 #'   control = list(maxit = 50), em_maxit = 5
 #' )
 #' fit$item_pars
-fit_mixed_subjects_iterative <- function(observed, predicted, generated,
-                                          lambda = 1,
-                                          n_quad = 31,
-                                          initial_pars = NULL,
-                                          quadrature = NULL,
-                                          common_predicted_weights = TRUE,
-                                          paired_missing = c("match_observed", "allow"),
-                                          slope_lower = 1e-4,
-                                          slope_upper = NULL,
-                                          tol = 1e-4,
-                                          em_maxit = 30,
-                                          control = list(maxit = 200),
-                                          ...) {
+fit_mixed_subjects_iterative <- function(
+  observed,
+  predicted,
+  generated,
+  lambda = 1,
+  n_quad = 31,
+  initial_pars = NULL,
+  quadrature = NULL,
+  common_predicted_weights = TRUE,
+  paired_missing = c("match_observed", "allow"),
+  slope_lower = 1e-4,
+  slope_upper = NULL,
+  tol = 1e-4,
+  em_maxit = 30,
+  control = list(maxit = 200),
+  ...
+) {
   lambda <- validate_lambda(lambda)
-  observed <- validate_response_matrix(observed, "observed",
-                                       allow_fractional = FALSE)
-  predicted <- validate_response_matrix(predicted, "predicted",
-                                        allow_fractional = TRUE)
-  generated <- validate_response_matrix(generated, "generated",
-                                        allow_fractional = TRUE)
+  observed <- validate_response_matrix(
+    observed,
+    "observed",
+    allow_fractional = FALSE
+  )
+  predicted <- validate_response_matrix(
+    predicted,
+    "predicted",
+    allow_fractional = FALSE
+  )
+  generated <- validate_response_matrix(
+    generated,
+    "generated",
+    allow_fractional = FALSE
+  )
   check_same_items(observed, predicted, "observed", "predicted")
   check_same_items(observed, generated, "observed", "generated")
 
   if (nrow(observed) != nrow(predicted)) {
-    stop("observed and predicted must have the same number of rows.",
-         call. = FALSE)
+    stop(
+      "observed and predicted must have the same number of rows.",
+      call. = FALSE
+    )
   }
   paired_missing <- check_paired_missingness(
     observed = observed,
@@ -747,25 +786,30 @@ fit_mixed_subjects_iterative <- function(observed, predicted, generated,
       NULL
     }
     q_pred <- build_quadrature_summary(
-      predicted, current_pars, quadrature, weights = predicted_weights
+      predicted,
+      current_pars,
+      quadrature,
+      weights = predicted_weights
     )
     q_gen <- build_quadrature_summary(generated, current_pars, quadrature)
 
     # M-step
     fit <- fit_from_counts(
-      counts_observed  = q_obs$counts,
+      counts_observed = q_obs$counts,
       counts_predicted = q_pred$counts,
       counts_generated = q_gen$counts,
-      initial_pars     = current_pars,
-      lambda           = lambda,
-      slope_lower      = slope_lower,
-      slope_upper      = slope_upper,
-      control          = control
+      initial_pars = current_pars,
+      lambda = lambda,
+      slope_lower = slope_lower,
+      slope_upper = slope_upper,
+      control = control
     )
 
     new_pars <- fit$item_pars
-    delta    <- max(abs(new_pars$a - current_pars$a),
-                    abs(new_pars$d - current_pars$d))
+    delta <- max(
+      abs(new_pars$a - current_pars$a),
+      abs(new_pars$d - current_pars$d)
+    )
     current_pars <- new_pars
 
     if (delta < tol) {
@@ -776,28 +820,35 @@ fit_mixed_subjects_iterative <- function(observed, predicted, generated,
 
   # Final E-step with converged parameters (for vcov and ability risk)
   q_obs_final <- build_quadrature_summary(observed, current_pars, quadrature)
-  pred_w_final <- if (isTRUE(common_predicted_weights)) q_obs_final$weights else NULL
+  pred_w_final <- if (isTRUE(common_predicted_weights)) {
+    q_obs_final$weights
+  } else {
+    NULL
+  }
   q_pred_final <- build_quadrature_summary(
-    predicted, current_pars, quadrature, weights = pred_w_final
+    predicted,
+    current_pars,
+    quadrature,
+    weights = pred_w_final
   )
   q_gen_final <- build_quadrature_summary(generated, current_pars, quadrature)
 
   out <- c(
     fit,
     list(
-      lambda                   = lambda,
-      initial_pars             = stored_initial_pars,
-      initial_model            = if (is.null(initial_fit)) NULL else initial_fit$model,
-      quadrature               = quadrature,
-      q_observed               = q_obs_final,
-      q_predicted              = q_pred_final,
-      q_generated              = q_gen_final,
+      lambda = lambda,
+      initial_pars = stored_initial_pars,
+      initial_model = if (is.null(initial_fit)) NULL else initial_fit$model,
+      quadrature = quadrature,
+      q_observed = q_obs_final,
+      q_predicted = q_pred_final,
+      q_generated = q_gen_final,
       common_predicted_weights = common_predicted_weights,
-      paired_missing           = paired_missing,
-      split                    = NULL,
-      em_iterations            = em_iter,
-      em_converged             = converged,
-      call                     = match.call()
+      paired_missing = paired_missing,
+      split = NULL,
+      em_iterations = em_iter,
+      em_converged = converged,
+      call = match.call()
     )
   )
   class(out) <- "mixedsubjects_fit"
@@ -807,8 +858,8 @@ fit_mixed_subjects_iterative <- function(observed, predicted, generated,
 #' Fit a mixed-subjects 2PL calibration via marginal maximum likelihood
 #'
 #' Estimates item parameters using the true IRT marginal likelihood for all
-#' three PPI++ terms.  Unlike [fit_mixed_subjects()], which freezes posterior
-#' quadrature weights at the initial parameter estimates before optimising,
+#' three loss terms.  Unlike [fit_mixed_subjects()], which freezes posterior
+#' quadrature weights at the initial parameter estimates before optimizing,
 #' this function recomputes posterior weights at every gradient evaluation.
 #' This eliminates the gradient asymmetry that causes [fit_mixed_subjects()] to
 #' converge to false minima at inflated discrimination values when LLM item
@@ -854,26 +905,14 @@ fit_mixed_subjects_iterative <- function(observed, predicted, generated,
 #' items where the LLM correction is harmful, containing the frozen-posterior
 #' gradient asymmetry.  Document per-item lambda results as approximate.
 #'
-#' @param observed Human response matrix.
-#' @param predicted LLM responses or probabilities for the same rows as
-#'   `observed`.
-#' @param generated Generated or unlabeled LLM responses.
-#' @param lambda Power-tuning parameter in `[0, 1]`.
-#' @param n_quad Number of standard-normal quadrature nodes.
-#' @param initial_pars Optional starting item parameters. If omitted, a 2PL
-#'   model is fit to `observed`.
-#' @param quadrature Optional quadrature grid.
+#' @inheritParams fit_mixed_subjects
 #' @param mml_pred_weights How to compute posteriors for the paired `predicted`
 #'   term.  `"own"` uses posteriors from the predicted responses; `"human"`
 #'   uses posteriors from the observed human responses.  See Details.
-#' @param slope_lower Lower bound on discrimination parameters.
 #' @param slope_upper Upper bound on discrimination parameters. Unlike
 #'   [fit_mixed_subjects()], this function should not require capping for
 #'   well-posed problems because the true marginal objective has no false
 #'   minimum at large discrimination.
-#' @param control Control list passed to [stats::optim()].
-#' @param ... Additional arguments passed to [fit_2pl()] when `initial_pars`
-#'   is omitted.
 #'
 #' @return An object of class `"mixedsubjects_fit"` with the same structure as
 #'   [fit_mixed_subjects()].  For **scalar** lambda fits, the quadrature
@@ -882,7 +921,7 @@ fit_mixed_subjects_iterative <- function(observed, predicted, generated,
 #'   [vcov_mixed_subjects_mml()] to compute the Louis-corrected marginal
 #'   sandwich covariance.  Calling [vcov_mixed_subjects()] directly bypasses
 #'   the Louis correction.  For **vector** lambda fits, the summaries store
-#'   the frozen posteriors used during optimisation, and `stats::vcov()`
+#'   the frozen posteriors used during optimization, and `stats::vcov()`
 #'   dispatches to [vcov_mixed_subjects()] (EM bread) for consistency with the
 #'   frozen Q-function objective.
 #' @export
@@ -898,46 +937,65 @@ fit_mixed_subjects_iterative <- function(observed, predicted, generated,
 #'   control = list(maxit = 100)
 #' )
 #' fit$item_pars
-fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
-                                    n_quad = 31, initial_pars = NULL,
-                                    quadrature = NULL,
-                                    mml_pred_weights = c("own", "human"),
-                                    slope_lower = 1e-4, slope_upper = NULL,
-                                    control = list(maxit = 500), ...) {
+fit_mixed_subjects_mml <- function(
+  observed,
+  predicted,
+  generated,
+  lambda = 1,
+  n_quad = 31,
+  initial_pars = NULL,
+  quadrature = NULL,
+  mml_pred_weights = c("own", "human"),
+  slope_lower = 1e-4,
+  slope_upper = NULL,
+  control = list(maxit = 500),
+  ...
+) {
   # Defer final lambda validation to after n_items is known (line below)
-  lambda           <- validate_lambda_vector(lambda)  # basic range/type check
+  lambda <- validate_lambda_vector(lambda) # basic range/type check
   mml_pred_weights <- match.arg(mml_pred_weights)
 
-  observed  <- validate_response_matrix(observed,  "observed",
-                                        allow_fractional = FALSE)
-  predicted <- validate_response_matrix(predicted, "predicted",
-                                        allow_fractional = TRUE)
-  generated <- validate_response_matrix(generated, "generated",
-                                        allow_fractional = TRUE)
+  observed <- validate_response_matrix(
+    observed,
+    "observed",
+    allow_fractional = FALSE
+  )
+  predicted <- validate_response_matrix(
+    predicted,
+    "predicted",
+    allow_fractional = FALSE
+  )
+  generated <- validate_response_matrix(
+    generated,
+    "generated",
+    allow_fractional = FALSE
+  )
   check_same_items(observed, predicted, "observed", "predicted")
   check_same_items(observed, generated, "observed", "generated")
 
   if (nrow(observed) != nrow(predicted)) {
-    stop("observed and predicted must have the same number of rows.",
-         call. = FALSE)
+    stop(
+      "observed and predicted must have the same number of rows.",
+      call. = FALSE
+    )
   }
 
   quadrature <- check_quadrature(quadrature, n_quad = n_quad)
 
   if (is.null(initial_pars)) {
     initial_fit <- fit_2pl(observed, ...)
-    init_std    <- initial_fit$pars
+    init_std <- initial_fit$pars
   } else {
     initial_fit <- NULL
-    init_std    <- standardize_item_pars(
+    init_std <- standardize_item_pars(
       initial_pars,
-      n_items     = ncol(observed),
-      item_names  = colnames(observed)
+      n_items = ncol(observed),
+      item_names = colnames(observed)
     )
   }
 
   item_names <- colnames(observed)
-  n_items    <- length(item_names)
+  n_items <- length(item_names)
 
   # Validate and expand lambda: scalar or length-n_items vector.
   # Scalar path (Phase 2): true marginal likelihoods; posteriors recomputed at
@@ -947,39 +1005,41 @@ fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
   #   Q-function and its gradient are fully consistent for L-BFGS-B.
   #   Per-item λ_j from tune_lambda_ability_risk_item assigns λ_j ≈ 0 to items
   #   where the LLM correction is harmful, containing the gradient asymmetry.
-  lambda        <- validate_lambda_vector(lambda, n = n_items)
+  lambda <- validate_lambda_vector(lambda, n = n_items)
   scalar_lambda <- length(lambda) == 1
-  lambda_vec    <- if (scalar_lambda) rep(lambda, n_items) else lambda
+  lambda_vec <- if (scalar_lambda) rep(lambda, n_items) else lambda
 
   # For the vector path, precompute frozen expected counts from initial_pars.
   if (!scalar_lambda) {
-    obs_w_frozen    <- posterior_weights_2pl(observed,  init_std, quadrature)
-    gen_w_frozen    <- posterior_weights_2pl(generated, init_std, quadrature)
-    obs_cts_frozen  <- summarize_expected_counts(observed,  obs_w_frozen)
+    obs_w_frozen <- posterior_weights_2pl(observed, init_std, quadrature)
+    gen_w_frozen <- posterior_weights_2pl(generated, init_std, quadrature)
+    obs_cts_frozen <- summarize_expected_counts(observed, obs_w_frozen)
     pred_cts_frozen <- summarize_expected_counts(predicted, obs_w_frozen)
-    gen_cts_frozen  <- summarize_expected_counts(generated, gen_w_frozen)
+    gen_cts_frozen <- summarize_expected_counts(generated, gen_w_frozen)
   }
 
   # For mml_pred_weights = "human": precompute FIXED-NUISANCE human posteriors
-  # from init_std and freeze them throughout optimisation. This makes the
+  # from init_std and freeze them throughout optimization. This makes the
   # objective and gradient fully consistent (both use the same frozen Q-function
-  # for L_pred). The old behaviour — recomputing human posteriors at every
+  # for L_pred). The old behavior — recomputing human posteriors at every
   # candidate ip — was inconsistent: the objective and gradient differed by the
   # chain-rule term through the posteriors, causing L-BFGS-B line-search issues.
   if (scalar_lambda && mml_pred_weights == "human") {
-    pred_w_fixed   <- posterior_weights_2pl(observed, init_std, quadrature)
+    pred_w_fixed <- posterior_weights_2pl(observed, init_std, quadrature)
     pred_cts_fixed <- summarize_expected_counts(predicted, pred_w_fixed)
   }
 
   # Shared cache: reuse posteriors when fn and gr are called at the same par.
-  .cache     <- new.env(parent = emptyenv())
+  .cache <- new.env(parent = emptyenv())
   .cache$par <- NULL
   .cache$val <- NULL
   .cache$grd <- NULL
 
   recompute <- function(par) {
-    if (!is.null(.cache$par) &&
-        isTRUE(all.equal(par, .cache$par, tolerance = 0))) {
+    if (
+      !is.null(.cache$par) &&
+        isTRUE(all.equal(par, .cache$par, tolerance = 0))
+    ) {
       return(invisible(NULL))
     }
 
@@ -987,15 +1047,15 @@ fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
 
     if (scalar_lambda) {
       # --- Scalar path: true marginal likelihoods (Phase 2) ---
-      obs_r <- posterior_and_log_lik_2pl(observed,  ip, quadrature)
+      obs_r <- posterior_and_log_lik_2pl(observed, ip, quadrature)
       gen_r <- posterior_and_log_lik_2pl(generated, ip, quadrature)
 
-      obs_counts <- summarize_expected_counts(observed,  obs_r$weights)
+      obs_counts <- summarize_expected_counts(observed, obs_r$weights)
       gen_counts <- summarize_expected_counts(generated, gen_r$weights)
 
       if (mml_pred_weights == "own") {
         # Pure MML: L_pred uses its own posteriors (consistent marginal objective)
-        pred_r      <- posterior_and_log_lik_2pl(predicted, ip, quadrature)
+        pred_r <- posterior_and_log_lik_2pl(predicted, ip, quadrature)
         pred_counts <- summarize_expected_counts(predicted, pred_r$weights)
         l_pred <- -mean(pred_r$log_normalizers)
       } else {
@@ -1009,16 +1069,16 @@ fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
       .cache$val <- -mean(obs_r$log_normalizers) +
         lambda * (-mean(gen_r$log_normalizers) - l_pred)
       .cache$grd <- gradient_expected_counts(obs_counts, ip) +
-        lambda * (gradient_expected_counts(gen_counts, ip) -
-                  gradient_expected_counts(pred_counts, ip))
-
+        lambda *
+          (gradient_expected_counts(gen_counts, ip) -
+            gradient_expected_counts(pred_counts, ip))
     } else {
       # --- Vector-lambda path: frozen Q-function with per-item λ_j (Phase 3) ---
       # Objective: Σ_j [ L_obs_j^EC + λ_j*(L_gen_j^EC - L_pred_j^EC) ]
       # Gradient : Σ_j [ ∂L_obs_j/∂(a_j,d_j) + λ_j*(∂L_gen_j - ∂L_pred_j) ]
       # Both use frozen counts — fully consistent pair for L-BFGS-B.
-      obs_ig  <- item_loss_and_grad(obs_cts_frozen, ip)
-      gen_ig  <- item_loss_and_grad(gen_cts_frozen, ip)
+      obs_ig <- item_loss_and_grad(obs_cts_frozen, ip)
+      gen_ig <- item_loss_and_grad(gen_cts_frozen, ip)
       pred_ig <- item_loss_and_grad(pred_cts_frozen, ip)
 
       .cache$val <- sum(obs_ig$loss) +
@@ -1035,7 +1095,9 @@ fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
 
   objective <- function(par) {
     disc <- par[seq_len(n_items)]
-    if (any(!is.finite(disc)) || any(disc <= 0)) return(.Machine$double.xmax)
+    if (any(!is.finite(disc)) || any(disc <= 0)) {
+      return(.Machine$double.xmax)
+    }
     recompute(par)
     val <- .cache$val
     if (!is.finite(val)) .Machine$double.xmax else val
@@ -1043,7 +1105,9 @@ fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
 
   gradient <- function(par) {
     disc <- par[seq_len(n_items)]
-    if (any(!is.finite(disc)) || any(disc <= 0)) return(rep(0, 2L * n_items))
+    if (any(!is.finite(disc)) || any(disc <= 0)) {
+      return(rep(0, 2L * n_items))
+    }
     recompute(par)
     g <- .cache$grd
     ifelse(is.finite(g), g, 0)
@@ -1065,13 +1129,13 @@ fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
   }
 
   ctrl <- utils::modifyList(list(maxit = 500), control)
-  opt  <- stats::optim(
-    par     = start,
-    fn      = objective,
-    gr      = gradient,
-    method  = "L-BFGS-B",
-    lower   = lower,
-    upper   = upper,
+  opt <- stats::optim(
+    par = start,
+    fn = objective,
+    gr = gradient,
+    method = "L-BFGS-B",
+    lower = lower,
+    upper = upper,
     control = ctrl
   )
 
@@ -1081,8 +1145,8 @@ fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
   # - Scalar MML path: posteriors at the CONVERGED parameters so that
   #   vcov_mixed_subjects_mml() applies Louis' formula at the MLE.
   # - Vector-lambda path: posteriors frozen at INIT_STD (same as those used
-  #   during optimisation) so that vcov_mixed_subjects() is consistent with
-  #   the frozen Q-function that was actually optimised.  Storing converged
+  #   during optimization) so that vcov_mixed_subjects() is consistent with
+  #   the frozen Q-function that was actually optimized.  Storing converged
   #   posteriors here would mean vcov uses a different estimating equation
   #   from the one that determined conv_pars, making the sandwich invalid.
   if (scalar_lambda) {
@@ -1092,45 +1156,60 @@ fit_mixed_subjects_mml <- function(observed, predicted, generated, lambda = 1,
       build_quadrature_summary(predicted, conv_pars, quadrature)
     } else {
       # "human": fixed-nuisance posteriors from init_std
-      build_quadrature_summary(predicted, conv_pars, quadrature,
-                               weights = pred_w_fixed)
+      build_quadrature_summary(
+        predicted,
+        conv_pars,
+        quadrature,
+        weights = pred_w_fixed
+      )
     }
 
     q_gen_final <- build_quadrature_summary(generated, conv_pars, quadrature)
-
   } else {
     # Vector-lambda: store the frozen weights/counts that were used in fitting
-    q_obs_final  <- build_quadrature_summary(observed,  init_std, quadrature,
-                                              weights = obs_w_frozen)
-    q_pred_final <- build_quadrature_summary(predicted, init_std, quadrature,
-                                              weights = obs_w_frozen)
-    q_gen_final  <- build_quadrature_summary(generated, init_std, quadrature,
-                                              weights = gen_w_frozen)
+    q_obs_final <- build_quadrature_summary(
+      observed,
+      init_std,
+      quadrature,
+      weights = obs_w_frozen
+    )
+    q_pred_final <- build_quadrature_summary(
+      predicted,
+      init_std,
+      quadrature,
+      weights = obs_w_frozen
+    )
+    q_gen_final <- build_quadrature_summary(
+      generated,
+      init_std,
+      quadrature,
+      weights = gen_w_frozen
+    )
   }
 
   out <- c(
     list(
-      item_pars   = conv_pars,
-      par         = opt$par,
-      value       = opt$value,
+      item_pars = conv_pars,
+      par = opt$par,
+      value = opt$value,
       convergence = opt$convergence,
-      message     = opt$message,
-      optimizer   = opt
+      message = opt$message,
+      optimizer = opt
     ),
     list(
-      lambda                   = if (scalar_lambda) lambda else lambda_vec,
-      initial_pars             = init_std,
-      initial_model            = if (is.null(initial_fit)) NULL else initial_fit$model,
-      quadrature               = quadrature,
-      q_observed               = q_obs_final,
-      q_predicted              = q_pred_final,
-      q_generated              = q_gen_final,
+      lambda = if (scalar_lambda) lambda else lambda_vec,
+      initial_pars = init_std,
+      initial_model = if (is.null(initial_fit)) NULL else initial_fit$model,
+      quadrature = quadrature,
+      q_observed = q_obs_final,
+      q_predicted = q_pred_final,
+      q_generated = q_gen_final,
       common_predicted_weights = (mml_pred_weights == "human"),
-      mml_pred_weights         = mml_pred_weights,
-      mml                      = TRUE,
-      paired_missing           = NA,
-      split                    = NULL,
-      call                     = match.call()
+      mml_pred_weights = mml_pred_weights,
+      mml = TRUE,
+      paired_missing = NA,
+      split = NULL,
+      call = match.call()
     )
   )
   class(out) <- "mixedsubjects_fit"
@@ -1151,9 +1230,13 @@ print.mixedsubjects_fit <- function(x, ...) {
     cat("  splits:     ", x$split$n_splits, "\n", sep = "")
   }
   if (!is.null(x$em_iterations)) {
-    cat("  EM iters:   ", x$em_iterations,
-        if (isTRUE(x$em_converged)) " (converged)" else " (max reached)",
-        "\n", sep = "")
+    cat(
+      "  EM iters:   ",
+      x$em_iterations,
+      if (isTRUE(x$em_converged)) " (converged)" else " (max reached)",
+      "\n",
+      sep = ""
+    )
   }
   if (isTRUE(x$mml)) {
     cat("  estimator:  marginal MML PPI++\n")

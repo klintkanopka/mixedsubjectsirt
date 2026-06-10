@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-The mixed-subjects estimator calibrates a 2PL model by minimising a
+The mixed-subjects estimator calibrates a 2PL model by minimizing a
 PPI++-style combined loss over observed human responses, paired LLM responses,
 and additional generated LLM responses.
 
@@ -35,12 +35,12 @@ short answer:
 
 **Why there are two lambda objectives:**
 
-- `tune_lambda_ppi_score()` minimises $\text{Tr}(\Sigma_\gamma)$ — the trace of
+- `tune_lambda_ppi_score()` minimizes $\text{Tr}(\Sigma_\gamma)$ — the trace of
   the item-parameter covariance matrix (PPI++ Proposition 2). This is a
   *theoretical diagnostic*: it measures whether the LLM prediction reduces
   item-parameter variance. It answers "is the predictor statistically useful?"
 
-- `tune_lambda_ability_risk()` minimises $E[g'\Sigma_\gamma g]$ — the propagated
+- `tune_lambda_ability_risk()` minimizes $E[g'\Sigma_\gamma g]$ — the propagated
   ability-score risk. This is the *practical criterion*: it answers "does using
   the LLM improve downstream test scoring?" Use this for operational calibration.
 
@@ -164,7 +164,7 @@ risk$summary
 
 `mean_squared_error` is `NA` because `theta_true` was not supplied; it is only
 computed in simulation studies. `mean_param_var` is the propagated item-parameter
-uncertainty — the criterion that `tune_lambda_ability_risk` minimises.
+uncertainty — the criterion that `tune_lambda_ability_risk` minimizes.
 
 In simulation studies, pass `theta_true = theta_human` to also include squared
 ability-estimation error:

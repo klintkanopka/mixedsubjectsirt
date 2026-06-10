@@ -3,12 +3,15 @@
 #
 # For each regime, fit with fit_mixed_subjects_mml over a lambda grid, tune by
 # ability-score risk, and record the selected lambda. The validation claim is
-# the qualitative ordering:
+# that lambda tracks the score-level usefulness of the paired pseudo-responses.
 #
-#   lambda(R1) >~ lambda(R2) > lambda(R3) > lambda(R5) ~ lambda(R4) ~ 0
+# Observed ordering (100 reps):
+#   lambda(R1) = 0.75  (= N/(n+N), perfect paired predictor)
+#   lambda(R2) ~ lambda(R4) ~ 0.10  (fresh real responses / shifted LLM)
+#   lambda(R3) ~ 0                   (independent noise)
 #
-# We report the full selected-lambda distribution (not just the mean): the
-# same-DGP regime (R3) is the subtle one and deserves a histogram.
+# We report the full selected-lambda distribution (not just the mean): R2 is the
+# subtle regime (a fresh same-DGP draw) and deserves a histogram.
 #
 # Usage:
 #   Rscript simulations/run_lambda_selection.R [n_reps] [cores]

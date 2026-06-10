@@ -2,16 +2,21 @@
 # Scenario set 3: downstream ability-score payoff and the no-harm property.
 #
 # The method's value proposition: lower ability-score RMSE when the predictor is
-# informative, and NO WORSE than human-only when it is not.  We measure scoring
-# RMSE on a held-out scoring sample with known theta, comparing three item
-# calibrations:
+# informative, and no WORSE than human-only on average when it is not. We measure
+# scoring RMSE on a held-out scoring sample with known theta, comparing three
+# item calibrations:
 #   (a) human-only      : MML at lambda = 0
 #   (b) MML tuned        : MML at the ability-risk-tuned lambda
 #   (c) MML full PPI     : MML at lambda = 1
 #
-# Assertions:
-#   R1 / R2 (good predictor) : tuned RMSE < human-only RMSE
-#   R4 / R5 (poor predictor) : tuned RMSE <= human-only RMSE + tol (no harm)
+# Expected behaviour (100 reps):
+#   R1 (perfect, lambda~0.75)  : tuned RMSE slightly < human-only
+#   R2, R4 (lambda~0.10)       : tuned RMSE marginally < human-only
+#   R3 (lambda~0)              : tuned falls back to human-only (no harm)
+# Effect sizes are small because an 8-item test is measurement-limited; the
+# larger payoff is in item-parameter precision (see run_coverage.R). The summary
+# reports the paired SE / 95% CI of mean_delta and prop_improve so small but
+# stable effects can be told apart from simulation noise.
 #
 # We also record item-parameter bias at the tuned lambda to confirm the MML
 # estimator is (approximately) unbiased at the selected lambda.
@@ -118,11 +123,21 @@ message(sprintf("Scenario 3: downstream payoff, %d reps x %d regimes (%d cores)"
 tasks   <- make_tasks(regimes, n_reps)
 results <- collect_rows(par_map(tasks, run_one, cores = cores))
 
-# Per-regime summary
+# Per-regime summary with Monte Carlo uncertainty on the mean delta. The
+# downstream RMSE gains are small, so we report the paired standard error of the
+# mean delta and a 95% CI (mean_delta is a paired difference across reps), plus
+# prop_improve with a binomial 95% CI. This lets readers separate a stable small
+# effect from simulation noise and prevents reading "no harm" as a per-rep
+# guarantee.
 summ <- do.call(rbind, lapply(regimes, function(rg) {
-  sub <- results[results$regime == rg, ]
-  # paired difference: tuned - human (negative = improvement)
-  delta <- sub$rmse_tuned - sub$rmse_human
+  sub   <- results[results$regime == rg, ]
+  delta <- sub$rmse_tuned - sub$rmse_human   # tuned - human (negative = better)
+  m     <- length(delta)
+  se    <- stats::sd(delta) / sqrt(m)        # paired SE of the mean delta
+  z     <- stats::qnorm(0.975)
+  p_imp <- mean(delta < 0)
+  p_se  <- sqrt(p_imp * (1 - p_imp) / m)     # binomial SE for prop_improve
+
   data.frame(
     regime        = rg,
     label         = regime_labels()[[rg]],
@@ -131,7 +146,11 @@ summ <- do.call(rbind, lapply(regimes, function(rg) {
     rmse_tuned    = round(mean(sub$rmse_tuned), 4),
     rmse_full     = round(mean(sub$rmse_full),  4),
     mean_delta    = round(mean(delta), 4),                 # tuned - human
-    prop_improve  = round(mean(delta < 0), 3),             # fraction where tuned helps
+    delta_se      = round(se, 4),                          # paired SE of mean
+    delta_lo      = round(mean(delta) - z * se, 4),        # 95% CI lower
+    delta_hi      = round(mean(delta) + z * se, 4),        # 95% CI upper
+    prop_improve  = round(p_imp, 3),                       # fraction tuned helps
+    prop_improve_se = round(p_se, 3),
     bias_a        = round(mean(sub$bias_a), 4),
     bias_d        = round(mean(sub$bias_d), 4),
     stringsAsFactors = FALSE

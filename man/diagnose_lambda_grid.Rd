@@ -31,8 +31,7 @@ model objects.
 Fits \code{\link[=fit_mixed_subjects]{fit_mixed_subjects()}} or \code{\link[=fit_mixed_subjects_split]{fit_mixed_subjects_split()}} over a set of
 candidate lambda values. The returned summary reports the fitted
 mixed-subjects objective and the observed human expected-count loss for each
-candidate. This is a sensitivity diagnostic, not a statistically valid PPI++
-tuning rule.
+candidate. This is a sensitivity diagnostic, not a valid tuning rule.
 }
 \examples{
 set.seed(3)

@@ -1,4 +1,79 @@
 url: http://klintkanopka.com/mixedsubjectsirt/
 template:
   bootstrap: 5
+  light-switch: true
 
+articles:
+- title: Workflow
+  desc: Implementing mixed-subjects IRT calibration
+  navbar: ~
+  contents:
+  - mixed-subjects-workflow
+
+- title: Diagnostics and Performance
+  desc: Choosing lambda and the simulation validation study
+  navbar: ~
+  contents:
+  - lambda-tuning
+  - simulation-validation
+
+- title: Extensions
+  desc: The 1PL model, per-item lambda, and scale linking
+  contents:
+  - mixed-subjects-1pl
+  - lambda-tuning-item
+  - linking-comparison
+
+reference:
+- title: Fitting mixed-subjects models
+  desc: >
+    Estimators for mixed-subjects IRT calibration. `fit_mixed_subjects_mml()` is
+    the recommended marginal-likelihood estimator; `fit_2pl()` and `fit_1pl()`
+    fit human-only baselines using a `mirt` backend
+  contents:
+  - starts_with("fit_mixed_subjects")
+  - fit_2pl
+  - fit_1pl
+
+- title: Choosing lambda
+  desc: >
+    Power-tuning the mixed-subjects correction. `tune_lambda_ability_risk()` is
+    the recommended practical criterion (downstream ability-score risk);
+    `tune_lambda_ppi_score()` is a theoretical PPI++ diagnostic;
+    `diagnose_lambda_grid()` is a sensitivity check
+  contents:
+  - starts_with("tune_lambda")
+  - diagnose_lambda_grid
+
+- title: Covariance and uncertainty
+  desc: >
+    Sandwich covariance for fitted models, used through the `vcov()` S3 method
+  contents:
+  - starts_with("vcov_mixed_subjects")
+
+- title: Ability scoring and risk
+  desc: >
+    Estimating abilities and propagating item-parameter uncertainty into scores
+  contents:
+  - score_theta
+  - ability_gradient
+  - ability_gradient_1pl
+  - ability_risk
+  - ability_risk_1pl
+
+- title: Scale linking
+  desc: Using established linking procedures to place LLM item parameters onto the human scale
+  contents:
+  - link_item_parameters
+
+- title: Simulation and low-level building blocks
+  desc: >
+    Data simulation, Gauss-Hermite quadrature, posterior weights, and
+    expected-count summaries
+  contents:
+  - simulate_2pl
+  - make_quadrature
+  - posterior_weights_2pl
+  - summarize_expected_counts
+  - mixed_subjects_quadrature
+  - mixed_subjects_loss

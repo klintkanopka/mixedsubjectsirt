@@ -11,6 +11,7 @@ fit_mixed_subjects_from_quadrature(
   lambda = 1,
   initial_pars = NULL,
   slope_lower = 1e-04,
+  slope_upper = NULL,
   control = list(maxit = 500)
 )
 }
@@ -32,6 +33,9 @@ omitted, \code{q_observed$irt_pars} is used when available.}
 
 \item{slope_lower}{Lower bound for discrimination parameters during
 optimization. Use \code{NULL} for no lower bound.}
+
+\item{slope_upper}{Upper bound for discrimination parameters during
+optimization. Use \code{NULL} (the default) for no upper bound.}
 
 \item{control}{Control list passed to \code{\link[stats:optim]{stats::optim()}}.}
 }

@@ -18,6 +18,7 @@ fit_mixed_subjects_split(
   common_predicted_weights = TRUE,
   paired_missing = c("match_observed", "allow"),
   slope_lower = 1e-04,
+  slope_upper = NULL,
   control = list(maxit = 500),
   ...
 )
@@ -26,11 +27,14 @@ fit_mixed_subjects_split(
 \item{observed}{Human response matrix, with rows for subjects and columns for
 items. Values must be binary when \code{initial_pars} is omitted.}
 
-\item{predicted}{LLM responses or probabilities for the same rows and items as
-\code{observed}.}
+\item{predicted}{Binary LLM responses (0/1) for the same rows and items as
+\code{observed}. Probabilities are not accepted: fractional values are not a
+valid likelihood input for the marginal IRT objective and break the PPI
+correction, so sample binary responses from any probabilities first (e.g.
+\code{rbinom}).}
 
-\item{generated}{Generated or unlabeled LLM responses or probabilities for
-the same item columns.}
+\item{generated}{Binary generated or unlabeled LLM responses (0/1) for the
+same item columns. Probabilities are not accepted (see \code{predicted}).}
 
 \item{lambda}{Power-tuning parameter in \verb{[0, 1]}. Supply a scalar for a fixed
 lambda or a vector with one value per split for a precomputed
@@ -61,6 +65,9 @@ observed posterior weight matrix for its paired LLM responses.}
 
 \item{slope_lower}{Lower bound for discrimination parameters during
 optimization. Use \code{NULL} for no lower bound.}
+
+\item{slope_upper}{Upper bound for discrimination parameters during
+optimization. Use \code{NULL} (the default) for no upper bound.}
 
 \item{control}{Control list passed to \code{\link[stats:optim]{stats::optim()}}.}
 

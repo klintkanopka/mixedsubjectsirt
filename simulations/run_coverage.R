@@ -11,14 +11,32 @@
 # below nominal) because it ignores missing information about theta; the Louis
 # bread restores coverage to roughly nominal.
 #
-# Consistency note. Coverage of the TRUE DGP item parameters is only meaningful
-# when the combined estimator is consistent for `true_pars`.  This holds for:
-#   R1 perfect (F=Y)   : paired and generated terms both derive from true pars
-#   R3 same_dgp        : paired and generated both drawn from true pars
-# It does NOT hold for R5 llm_shift at lambda > 0 (generated comes from shifted
-# parameters, so the combined estimator is biased).  We therefore restrict the
-# coverage study to R1 and R3, at a fixed lambda, where the estimand is the true
-# parameter vector.
+# Consistency note (corrected). Coverage of the TRUE DGP item parameters is
+# meaningful whenever the combined estimator is consistent for `true_pars`.
+# The key fact is that the PPI correction is mean-zero whenever the paired and
+# generated pseudo-responses are drawn from the SAME pseudo-response
+# distribution with the SAME ability distribution:
+#
+#   E[Psi(true)] = E[grad L_obs] + lambda * ( E[grad L_gen] - E[grad L_pred] )
+#                = 0            + lambda * ( g_pseudo      - g_pseudo       )
+#                = 0
+#
+# so the human term anchors the estimand to true_pars and the correction
+# cancels in expectation. This holds for:
+#   R1 perfect (F=Y)      : paired = observed, generated from true pars
+#   R2 same_dgp           : paired & generated both from true pars
+#   R3 independent noise  : paired & generated both from the SAME scrambled pars
+#   R4 LLM shift          : paired & generated both from the SAME shifted pars
+# In R3 and R4 the LLM is useless / biased, yet the estimator stays consistent
+# for the TRUE human parameters and the Louis intervals should still cover.
+# This is the flagship demonstration that PPI corrects biased LLM outputs.
+#
+# All predictors are binary (the package disallows probability inputs), so every
+# regime is consistent for true_pars and well-behaved at lambda = 0.5. (The former
+# fractional-prediction conditional-mean regimes were removed along with
+# probability support; see the package NEWS / change log.)
+#
+# All regimes are run at a fixed lambda (0.5) so the estimand is well defined.
 #
 # Usage:
 #   Rscript simulations/run_coverage.R [n_reps] [cores]
@@ -44,7 +62,7 @@ n_human     <- 400
 n_generated <- 1200
 n_quad      <- 11
 lambda_fix  <- 0.5                  # fixed lambda; estimand = true_pars
-regimes     <- c("perfect", "same_dgp")
+regimes     <- all_regimes()        # R1/R2/R3/R4, all consistent for true_pars
 z90         <- stats::qnorm(0.95)   # two-sided 90%
 z95         <- stats::qnorm(0.975)  # two-sided 95%
 
@@ -117,14 +135,17 @@ for (rg in regimes) {
 # Coverage summary per regime (averaged over reps and parameters)
 summ <- do.call(rbind, lapply(regimes, function(rg) {
   sub <- results[results$regime == rg, ]
+  # na.rm guards against the occasional non-finite SE from a degenerate fit.
+  ratio <- sub$se_louis / sub$se_em
   data.frame(
     regime        = rg,
     label         = regime_labels()[[rg]],
-    louis_cov_90  = round(mean(sub$cov_louis_90), 3),
-    louis_cov_95  = round(mean(sub$cov_louis_95), 3),
-    em_cov_90     = round(mean(sub$cov_em_90),    3),
-    em_cov_95     = round(mean(sub$cov_em_95),    3),
-    mean_se_ratio = round(mean(sub$se_louis / sub$se_em), 3),  # >1 means Louis wider
+    n_usable      = nrow(sub) / max(results$par_idx),
+    louis_cov_90  = round(mean(sub$cov_louis_90, na.rm = TRUE), 3),
+    louis_cov_95  = round(mean(sub$cov_louis_95, na.rm = TRUE), 3),
+    em_cov_90     = round(mean(sub$cov_em_90,    na.rm = TRUE), 3),
+    em_cov_95     = round(mean(sub$cov_em_95,    na.rm = TRUE), 3),
+    mean_se_ratio = round(mean(ratio[is.finite(ratio)]), 3),  # >1 means Louis wider
     stringsAsFactors = FALSE
   )
 }))

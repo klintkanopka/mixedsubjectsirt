@@ -43,8 +43,14 @@ validate_response_matrix <- function(x, name = "resp", allow_fractional = TRUE) 
   if (!allow_fractional && length(values) > 0) {
     is_binary <- abs(values - round(values)) < 1e-12
     if (!all(is_binary)) {
-      stop(name, " must contain binary 0/1 responses when fitting a 2PL model.",
-           call. = FALSE)
+      stop(
+        name, " must contain binary 0/1 responses (or NA), not probabilities. ",
+        "Fractional values are not a valid likelihood input for the marginal ",
+        "IRT objective and break the PPI correction. If you have predicted ",
+        "probabilities p, sample binary responses from them first, e.g. ",
+        "matrix(rbinom(length(p), 1, p), nrow = nrow(p)).",
+        call. = FALSE
+      )
     }
   }
 
@@ -398,7 +404,7 @@ marginal_loss_2pl <- function(resp, item_pars, quadrature) {
   #   L^marg(γ; Y) = -1/n Σ_i log[Σ_k A_k p(Y_i | θ_k; γ)]
   # This differs from the frozen expected-count loss, which approximates the
   # marginal likelihood by fixing posterior weights at a separate parameter
-  # estimate.  Minimising this directly removes the false minima that arise
+  # estimate.  Minimizing this directly removes the false minima that arise
   # from the posterior asymmetry in the frozen approach.
   result <- posterior_and_log_lik_2pl(resp, item_pars, quadrature)
   -mean(result$log_normalizers)
@@ -409,7 +415,7 @@ marginal_gradient_2pl <- function(resp, item_pars, quadrature) {
   # By the Bock-Aitkin EM identity, this equals the expected-count gradient
   # evaluated with posteriors computed from the CURRENT item_pars.  Posteriors
   # are NOT frozen from any earlier set of parameters; they adapt continuously
-  # as item_pars changes during optimisation.
+  # as item_pars changes during optimization.
   weights <- posterior_weights_2pl(resp, item_pars, quadrature = quadrature)
   counts  <- summarize_expected_counts(resp, weights)
   gradient_expected_counts(counts, item_pars)

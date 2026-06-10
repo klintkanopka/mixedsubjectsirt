@@ -68,7 +68,7 @@ generated <- simulate_2pl(rnorm(n_generated), llm_1pl)
 
 ## Step 1: Fit the 1PL baseline
 
-`fit_1pl()` estimates $a$ and $d_1, \ldots, d_J$ by maximising the IRT marginal
+`fit_1pl()` estimates $a$ and $d_1, \ldots, d_J$ by maximizing the IRT marginal
 likelihood under a standard-normal ability prior.
 
 ```{r fit-1pl}
@@ -114,7 +114,7 @@ rownames(Sigma_1pl)
 
 ## Step 4: Ability-score risk and lambda tuning
 
-`tune_lambda_ability_risk_1pl()` uses the 1PL-parameterised gradient
+`tune_lambda_ability_risk_1pl()` uses the 1PL-parameterized gradient
 $\partial\hat\theta / \partial (a_\text{shared}, d_1, \ldots, d_J)$ for the
 ability-score risk. The chain rule gives
 $\partial\hat\theta / \partial a_\text{shared} = \sum_j \partial\hat\theta / \partial a_j$.
@@ -183,7 +183,7 @@ cat("2PL RMSE(d):", round(rmse(fit_2pl_mml$item_pars$d, true_1pl$d), 4), "\n")
 The 1PL uses fewer parameters ($J+1$ vs $2J$), which can give lower RMSE on a
 test generated from a true 1PL DGP — especially for small $n$.
 
-## Ability-score risk: 1PL vs 2PL parameterisation
+## Ability-score risk: 1PL vs 2PL parameterization
 
 The 1PL ability-score risk is smaller in the $(J+1)$-parameter space because the
 shared $a$ concentrates all discrimination information in a single parameter.

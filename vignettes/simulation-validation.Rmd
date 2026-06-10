@@ -13,216 +13,309 @@ vignette: >
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", echo = FALSE)
 library(knitr)
+
+# Load a scenario's $summary from simulations/results/<name>.rds if present
+# (so the tables reflect the most recent run); otherwise fall back to the cached
+# values below. The simulations/ tree is not shipped with the package, so on a
+# clean install the cached values are shown.
+load_summary <- function(name) {
+  candidates <- c(
+    file.path("..", "simulations", "results", paste0(name, ".rds")),
+    file.path("simulations", "results", paste0(name, ".rds"))
+  )
+  for (p in candidates) {
+    if (file.exists(p)) {
+      s <- tryCatch(readRDS(p)$summary, error = function(e) NULL)
+      if (!is.null(s)) return(s)
+    }
+  }
+  NULL
+}
+
+show_cols <- function(df, cols, ...) {
+  cols <- intersect(cols, names(df))
+  kable(df[, cols, drop = FALSE], row.names = FALSE, ...)
+}
 ```
 
 This vignette presents a simulation study validating the scalar 2PL marginal
 maximum-likelihood (MML) PPI++ estimator (`fit_mixed_subjects_mml`) and its
 ability-risk tuning (`tune_lambda_ability_risk`). The full reproducible harness
-lives in the package's `simulations/` directory; the tables below report results
-from runs with the rep counts noted in each section.
+lives in the package's `simulations/` directory; the tables below load the most
+recent run from `simulations/results/` when available and otherwise show cached
+values. Rep counts: λ-selection 100, coverage 200, downstream 100, cross-fit 100.
 
-The study answers three questions:
+The study answers four questions:
 
 1. **Does λ-selection track predictor quality?** (Scenario 1)
-2. **Are the Louis-corrected standard errors honest?** (Scenario 2 — the key check)
-3. **Does the method improve downstream scoring without ever harming it?** (Scenario 3)
+2. **Are the Louis-corrected standard errors honest, including under a biased
+   LLM?** (Scenario 2 — the key check)
+3. **Does the method improve downstream scoring without harming it on average?**
+   (Scenario 3)
+4. **Does cross-fitting change the conclusions?** (Scenario 4)
 
 ## Design
 
 Human responses come from a true 8-item 2PL model
 (`a ∈ [0.8, 1.6]`, `d ∈ [-1.1, 1.1]`) with `n = 400` human subjects and
-`N = 1200` generated subjects, abilities drawn from a standard normal. Five
+`N = 1200` generated subjects, abilities drawn from a standard normal. Four
 predictor regimes vary the quality of the paired LLM predictions `F`:
 
 ```{r design-table}
 design <- data.frame(
-  Regime = c("R1 perfect (F=Y)", "R2 conditional mean", "R3 same-DGP draw",
-             "R4 independent noise", "R5 LLM shift"),
+  Regime = c("R1 perfect (F=Y)", "R2 same-DGP draw",
+             "R3 independent noise", "R4 LLM shift"),
   `Predicted F` = c(
     "predicted = observed (exact)",
-    "true probabilities p(theta) (fractional)",
-    "fresh draw from the true model",
-    "draw from scrambled item parameters",
-    "draw from attenuated/shifted parameters"),
-  `Predictor quality` = c("perfect", "oracle (but see below)", "modest",
-                          "none", "low"),
+    "fresh binary draw from the true model",
+    "binary draw from scrambled item parameters",
+    "binary draw from attenuated/shifted parameters"),
+  `Role` = c("perfect predictor", "modest real signal",
+             "useless LLM", "biased but informative LLM"),
   check.names = FALSE
 )
-kable(design, caption = "Five predictor regimes, ordered best to worst.")
+kable(design, caption = "Four predictor regimes (all binary).")
 ```
 
-The control parameter λ ∈ [0, 1] sets how strongly the generated LLM sample is
-used after subtracting the paired LLM correction;
-λ = 0 is the human-only calibration.
+All predictors are **binary 0/1 responses** — the package does not accept
+probability (fractional) predictions for `predicted`/`generated` (see the note at
+the end of Scenario 1). The control parameter λ ∈ [0, 1] sets how strongly the
+generated LLM sample is used after subtracting the paired LLM correction; λ = 0 is
+the human-only calibration.
 
-## Scenario 1: λ selection (100 reps)
+## Scenario 1: λ selection
 
-For each regime we tune λ by ability-score risk and record the selected value.
-We also report the theoretical PPI++-score λ for reference.
+For each regime we tune λ by ability-score risk and record the selected value;
+we also report the theoretical PPI++-score λ for reference.
 
 ```{r lambda-table}
-lam <- data.frame(
-  Regime      = c("R1 perfect (F=Y)", "R2 conditional mean", "R3 same-DGP draw",
-                  "R4 independent noise", "R5 LLM shift"),
-  `mean lambda` = c(0.750, 0.028, 0.108, 0.032, 0.102),
-  median        = c(0.75, 0.00, 0.10, 0.00, 0.10),
-  `prop lambda=0` = c(0.00, 0.96, 0.26, 0.74, 0.31),
-  `PPI score lambda` = c(0.750, 0.016, 0.004, 0.000, 0.002),
-  check.names = FALSE
-)
-kable(lam, caption = "Selected lambda by regime (ability-risk tuning, 100 reps).")
+lam <- load_summary("lambda_selection")
+if (is.null(lam)) {
+  lam <- data.frame(
+    label       = c("R1 perfect (F=Y)", "R2 same-DGP draw",
+                    "R3 independent noise", "R4 LLM shift"),
+    mean_risk   = c(0.750, 0.118, 0.062, 0.107),
+    median_risk = c(0.75, 0.10, 0.00, 0.10),
+    prop_zero   = c(0.00, 0.22, 0.55, 0.27),
+    mean_ppi    = c(0.750, 0.004, 0.000, 0.002)
+  )
+}
+show_cols(lam, c("label", "mean_risk", "median_risk", "prop_zero", "mean_ppi"),
+          caption = "Selected lambda by regime (ability-risk tuning).")
 ```
 
 **Findings.**
 
 - **R1 perfect → λ = 0.750**, exactly `N / (n + N) = 1200 / 1600`, the theoretical
   maximum for a perfect paired predictor. The PPI++-score λ agrees to the decimal.
-- **R4 independent noise → λ ≈ 0** (74% of reps select 0): a useless predictor is
-  correctly rejected.
-- **R3 same-DGP and R5 LLM shift → λ ≈ 0.10**: fresh real responses (R3) and a
-  correlated-but-biased LLM (R5) each carry a little signal, and the criterion uses
-  a little of it.
-- **R2 conditional mean → λ ≈ 0** (96% of reps select 0). This is the one
-  counterintuitive result and is discussed next.
+- **R3 independent noise → λ ≈ 0.06** (median 0; about half the reps select 0): a
+  useless predictor is correctly down-weighted to near zero.
+- **R2 same-DGP and R4 LLM shift → λ ≈ 0.11**: fresh real responses (R2) and a
+  correlated-but-biased LLM (R4) each carry a little score-level signal, and the
+  criterion uses a little of it.
 
-### Why the "oracle" predictor (R2) is declined
+### Predictions must be sampled responses, not probabilities
 
-R2 feeds the method the exact true probability of a correct response for each
-person — seemingly the best possible predictor. Yet λ is almost always 0. The
-reason: PPI++ extracts information from the **residuals** between actual answers
-and the model's expectation. A real 0/1 response carries a residual; the
-conditional-mean prediction *is* the expectation, so its residual is zero and it
-carries nothing to correct with. A *noisier* predictor that emits actual responses
-(R3) is therefore more useful than a *perfect* one that emits smooth probabilities
-(R2). The practical lesson for applications: to benefit from synthetic/LLM data,
-have it produce sampled responses, not averaged probabilities.
+The package requires **binary** `predicted`/`generated` and rejects probability
+inputs. This is not a convenience restriction — it removes a genuine failure mode.
+A fractional value such as a conditional mean `p(θ)` is not a coherent likelihood
+term for the marginal IRT objective: the response vector enters inside a log-sum
+over quadrature points, so feeding probabilities breaks the identity
+`E[∇L_gen] = E[∇L_pred]` that makes the PPI correction mean-zero. The estimator
+then becomes biased at λ > 0, and at moderate λ the objective is even *unbounded*
+in discrimination (`a → ∞`), so the fit diverges. An earlier version of this study
+included a "conditional-mean" regime that exhibited exactly this pathology; it has
+been removed along with probability support. The practical rule: if you have
+LLM-derived probabilities, **sample** binary responses from them (e.g. `rbinom`)
+before calibrating.
 
-## Scenario 2: Louis-corrected SE coverage (200 reps) — the key check
+## Scenario 2: Louis-corrected SE coverage — the key check
 
-We fix λ = 0.5 in the two regimes where the combined estimator is consistent for
-the true parameters (R1 and R3), and compare empirical coverage of Wald intervals
-built from two covariance estimates of the *same* fit: the Louis-corrected
-marginal sandwich (`vcov()` dispatch) and the EM complete-data Hessian bread
+We fix λ = 0.5 and compare empirical coverage of Wald intervals built from two
+covariance estimates of the *same* fit: the Louis-corrected marginal sandwich
+(`vcov()` dispatch) and the EM complete-data Hessian bread
 (`vcov_mixed_subjects()`, a deliberate bypass).
 
+**Consistency for the true parameters — even under a biased LLM.** The PPI
+correction `λ(L_gen − L_pred)` is *mean-zero* whenever the paired and generated
+pseudo-responses are drawn from the same distribution with the same ability
+spread:
+
+$$E[\Psi(\gamma^\star)] = \underbrace{E[\nabla L_{\text{obs}}]}_{=0}
+ + \lambda\,(\,\underbrace{E[\nabla L_{\text{gen}}] - E[\nabla L_{\text{pred}}]}_{=0}\,) = 0.$$
+
+So the human term anchors the estimand to the **true** parameters. This holds for
+every (binary) regime — R1, R2, R3 (useless LLM) and R4 (biased LLM) — so the
+estimator stays consistent for the truth even when the LLM is wrong. **R3 and R4
+covering nominally is the flagship demonstration that PPI corrects biased LLM
+outputs.**
+
 ```{r coverage-table}
-cov <- data.frame(
-  Regime = c("R1 perfect (F=Y)", "R3 same-DGP draw"),
-  `Louis 90%` = c(0.909, 0.916),
-  `Louis 95%` = c(0.955, 0.957),
-  `EM 90%`    = c(0.713, 0.727),
-  `EM 95%`    = c(0.787, 0.797),
-  `SE ratio (Louis/EM)` = c(1.63, 1.62),
-  check.names = FALSE
-)
-kable(cov, caption = paste("Item-parameter CI coverage (200 reps).",
-  "Nominal targets 0.90 and 0.95."))
+cov <- load_summary("coverage")
+if (is.null(cov)) {
+  cov <- data.frame(
+    label        = c("R1 perfect (F=Y)", "R2 same-DGP draw",
+                     "R3 independent noise", "R4 LLM shift"),
+    louis_cov_90 = c(0.909, 0.916, 0.914, 0.905),
+    louis_cov_95 = c(0.955, 0.957, 0.961, 0.954),
+    em_cov_90    = c(0.713, 0.727, 0.721, 0.726),
+    em_cov_95    = c(0.787, 0.797, 0.795, 0.792),
+    mean_se_ratio = c(1.626, 1.616, 1.651, 1.622)
+  )
+}
+show_cols(cov, c("label", "louis_cov_90", "louis_cov_95",
+                 "em_cov_90", "em_cov_95", "mean_se_ratio"),
+          caption = paste("Item-parameter CI coverage, all four regimes",
+            "(200 reps). Nominal targets 0.90 and 0.95."))
 ```
 
 **The Louis correction restores nominal coverage; the EM bread under-covers.**
-Louis intervals attain 0.909/0.955 and 0.916/0.957 against nominal 0.90/0.95,
-while the EM bread covers only ~0.71/0.79 — it understates uncertainty because it
-ignores the missing information about each subject's latent ability. The Louis
-standard errors are ~1.6× wider, which is the difference between an honest interval
-and an overconfident one.
-
-Coverage broken down by parameter type confirms the correction works uniformly:
-
-```{r coverage-partype}
-cp <- data.frame(
-  `Parameter` = c("discrimination a", "intercept d"),
-  `Louis 90%` = c(0.91, 0.91),
-  `Louis 95%` = c(0.96, 0.95),
-  `EM 90%`    = c(0.60, 0.84),
-  check.names = FALSE
-)
-kable(cp, caption = "Coverage by parameter type (averaged over R1 and R3).")
-```
+Across all four regimes — including the useless LLM (R3) and the biased LLM (R4) —
+Louis intervals attain ~0.91/0.96 against nominal 0.90/0.95, while the EM bread
+covers only ~0.71/0.79; it understates uncertainty because it ignores the missing
+information about each subject's latent ability. The Louis standard errors are
+~1.6× wider, the difference between an honest interval and an overconfident one.
+That R3 and R4 cover nominally — with all 200 reps usable — is the concrete
+demonstration that PPI keeps inference valid even when the LLM is wrong.
 
 ### A bug this scenario caught
 
-An earlier version of this scenario showed near-zero coverage for discrimination
-while intercept coverage was nominal. That pattern — a uniform downward bias in all
-slopes with unbiased intercepts — is the signature of a latent-scale error, and it
-traced to `make_quadrature()` building an N(0, 2) ability grid instead of N(0, 1)
-(a spurious √2 rescaling of standard-normal Gauss–Hermite nodes). Every
-discrimination in the package had been biased downward by ~1/√2 ≈ 0.71. The bug was
-invisible to relative checks (λ-selection), to gradient finite-difference checks
-(loss and gradient were mutually consistent), and to the standard-error calibration
-itself (the SEs correctly described the *biased* estimator). Only coverage against
-ground truth exposed it. After the fix, discrimination coverage rose from 0.04 to
-0.91. This is the strongest argument for ground-truth simulation validation: it
-catches errors that internal consistency checks cannot.
+An earlier version showed near-zero coverage for discrimination while intercept
+coverage was nominal — a uniform downward bias in all slopes with unbiased
+intercepts, the signature of a latent-scale error. It traced to
+`make_quadrature()` building an N(0, 2) ability grid instead of N(0, 1) (a
+spurious √2 rescaling of standard-normal Gauss–Hermite nodes); every
+discrimination had been biased downward by ~1/√2 ≈ 0.71. The bug was invisible to
+relative checks (λ-selection), to gradient finite-difference checks (loss and
+gradient were mutually consistent), and to the SE calibration itself (the SEs
+correctly described the *biased* estimator). Only coverage against ground truth
+exposed it; after the fix, discrimination coverage rose from 0.04 to 0.91. This is
+the strongest argument for ground-truth simulation validation: it catches errors
+that internal-consistency checks cannot.
 
-## Scenario 3: downstream payoff and no-harm (100 reps)
+## Scenario 3: downstream payoff and no-harm
 
 We score a held-out sample of 1000 subjects with known ability and compare
 ability-score RMSE for the human-only calibration (λ = 0) and the tuned MML
-calibration.
+calibration. `mean_delta = RMSE(tuned) − RMSE(human)`; negative is an
+improvement. We report the paired 95% CI of `mean_delta` and `prop_improve` (the
+fraction of replications where tuned beats human-only) so a small stable effect
+can be told apart from noise.
 
 ```{r downstream-table}
-dwn <- data.frame(
-  Regime = c("R1 perfect (F=Y)", "R2 conditional mean", "R3 same-DGP draw",
-             "R4 independent noise", "R5 LLM shift"),
-  `mean lambda` = c(0.750, 0.000, 0.108, 0.032, 0.102),
-  `RMSE human`  = c(1.4961, 1.4958, 1.5020, 1.5064, 1.4994),
-  `RMSE tuned`  = c(1.4921, 1.4958, 1.5010, 1.5060, 1.4981),
-  `delta (tuned-human)` = c(-0.0040, 0.0000, -0.0010, -0.0004, -0.0013),
-  `bias a`      = c(0.011, 0.019, 0.038, 0.005, 0.031),
-  check.names = FALSE
-)
-kable(dwn, caption = "Downstream ability-score RMSE (100 reps).")
+dwn <- load_summary("downstream")
+if (is.null(dwn)) {
+  dwn <- data.frame(
+    label       = c("R1 perfect (F=Y)", "R2 same-DGP draw",
+                    "R3 independent noise", "R4 LLM shift"),
+    mean_lambda = c(0.750, 0.118, 0.062, 0.107),
+    rmse_human  = c(1.4961, 1.5023, 1.5037, 1.5064),
+    rmse_tuned  = c(1.4921, 1.5004, 1.5031, 1.5046),
+    mean_delta  = c(-0.0040, -0.0019, -0.0006, -0.0018),
+    delta_lo    = c(-0.0075, -0.0027, -0.0009, -0.0030),
+    delta_hi    = c(-0.0005, -0.0011, -0.0003, -0.0007),
+    prop_improve = c(0.48, 0.54, 0.35, 0.45),
+    bias_a      = c(0.011, 0.025, 0.035, 0.008)
+  )
+}
+show_cols(dwn, c("label", "mean_lambda", "rmse_human", "rmse_tuned",
+                 "mean_delta", "delta_lo", "delta_hi", "prop_improve", "bias_a"),
+          caption = "Downstream ability-score RMSE.")
 ```
 
 **Findings.**
 
-- **No harm anywhere.** The tuned RMSE is never worse than human-only
-  (delta ≤ 0 in every regime). When the predictor is useless (R2, R4) the method
-  falls back to the human-only estimate; when it helps (R1, R3, R5) it improves,
-  modestly.
+- **No average harm.** In these simulations the tuned RMSE did not increase
+  average held-out RMSE relative to human-only in any regime — every `mean_delta`
+  is negative and its paired 95% CI excludes zero. This is evidence *for these
+  simulated conditions*, not a general guarantee: the non-asymptotic PPI++
+  literature shows that power-tuned estimators can underperform classical
+  estimation when pseudo-label correlation is very weak. The `prop_improve` column
+  keeps the claim honest at the per-replication level — only a third to a half of
+  individual replications improve (0.35–0.54), so "no harm" is an average
+  statement; the gains are consistent in aggregate but small relative to rep-level
+  noise.
 - **Discrimination is unbiased** at the selected λ (|bias_a| ≤ 0.04 everywhere),
-  confirming the quadrature fix and that the tuner is not selecting degenerate fits.
+  confirming the quadrature fix and that the tuner is not selecting degenerate
+  fits.
 - **The RMSE gains are small** because an 8-item test is measurement-limited:
   ability scoring is dominated by the irreducible measurement error of a short
-  test, so even a perfect predictor (R1) moves the scoring RMSE only from 1.4961 to
-  1.4921. The method's larger payoff is in **item-parameter precision** — visible
-  in the Scenario 2 standard errors — which matters most when calibration
-  uncertainty propagates into operational use.
+  test. The method's larger payoff is in **item-parameter precision** — the
+  Scenario 2 standard errors — which matters most when calibration uncertainty
+  propagates into operational use.
 
 ### A robustness guard
 
-Building this scenario surfaced a failure mode: with the fractional R2 predictor at
-large λ, the MML objective has a "converged" minimum at runaway discrimination
-(a ≈ 1000). Such a fit reports huge item information, which collapses its covariance
-and makes the model-based ability risk spuriously small — so the tuner could select
-it even though it scores worse on held-out data. The ability-risk tuners now reject
-any candidate whose maximum discrimination exceeds `max_discrimination` (default
-10); a 2PL discrimination above that is never a real calibration. With the guard,
-all R2 reps correctly select λ = 0.
+The ability-risk tuners carry a defensive guard: any candidate fit whose maximum
+discrimination exceeds `max_discrimination` (default 10) is excluded from
+selection. A runaway-discrimination fit reports huge item information, which
+collapses its covariance and makes the model-based ability risk spuriously small,
+so an unguarded tuner could select it even though it scores worse on held-out
+data. A 2PL discrimination above 10 is never a real calibration. With binary
+inputs the operational regimes never approach this bound, but the guard keeps the
+tuner safe against pathological optimizer behavior.
+
+## Scenario 4: cross-fitted vs non-cross-fitted tuning
+
+Cross-fitting tunes λ on held-out folds so a fold's own labels are not used to
+tune the λ applied to its paired correction. We compare the non-cross-fitted
+tuner against `tune_lambda_ability_risk_crossfit` (MML per-fold tuning,
+scalar-mean MML final fit) on selected λ, item-parameter bias, 95% Wald coverage,
+and held-out RMSE.
+
+```{r crossfit-table}
+cf <- load_summary("crossfit")
+if (is.null(cf)) {
+  cf <- data.frame(
+    label       = c("R1 perfect (F=Y)", "R2 same-DGP draw", "R4 LLM shift"),
+    lambda_nocf = c(0.750, 0.118, 0.095),
+    lambda_cf   = c(0.871, 0.134, 0.113),
+    bias_a_nocf = c(0.011, 0.025, 0.038),
+    bias_a_cf   = c(0.011, 0.026, 0.037),
+    rmse_nocf   = c(1.4921, 1.5004, 1.5027),
+    rmse_cf     = c(1.4925, 1.5004, 1.5028),
+    cover_nocf  = c(0.954, 0.955, 0.954),
+    cover_cf    = c(0.948, 0.956, 0.954)
+  )
+}
+show_cols(cf, c("label", "lambda_nocf", "lambda_cf", "bias_a_nocf", "bias_a_cf",
+                "rmse_nocf", "rmse_cf", "cover_nocf", "cover_cf"),
+          caption = "Cross-fitted vs non-cross-fitted tuning (100 reps, R1/R2/R4).")
+```
+
+**Cross-fitting does not change the conclusions.** Item-parameter bias, held-out
+RMSE, and 95% Wald coverage are essentially identical between the non-cross-fitted
+and cross-fitted tuners (differences in the fourth decimal). The one systematic
+difference is the selected λ: cross-fitting picks a slightly *higher* value (e.g.
+R1 0.75 → 0.87) because it tunes on held-out folds and so avoids the mild downward
+optimism of using a fold's own labels to both tune and fit. Because the downstream
+quantities are unchanged, the cheaper non-cross-fitted tuner is an adequate
+default; cross-fitting is the more principled choice when the selected λ itself is
+reported.
 
 ## Summary
 
 | Question | Result |
 |----------|--------|
 | Does λ track predictor quality? | Yes: perfect → N/(n+N), noise → 0, intermediate → small positive |
-| Are the Louis SEs honest? | Yes: nominal coverage for both `a` and `d`; the EM bread under-covers |
-| Does the method ever harm scoring? | No: tuned RMSE ≤ human-only in every regime |
+| Are the Louis SEs honest? | Yes: nominal coverage, including under a biased LLM (R3/R4); EM bread under-covers |
+| Does the method harm scoring? | No average harm in these simulations; per-rep improvement is a third to a half of reps |
+| Does cross-fitting change conclusions? | No: bias/RMSE/coverage unchanged; cross-fit selects a slightly higher λ |
 
-The headline practical guidance: use `fit_mixed_subjects_mml` with
-`tune_lambda_ability_risk`, rely on `vcov()` (Louis-corrected) for inference, have
-synthetic data emit sampled responses rather than probabilities, and treat the
-conditional-mean and runaway-discrimination behaviours as the two documented edge
-cases.
+Practical guidance: use `fit_mixed_subjects_mml` with `tune_lambda_ability_risk`,
+rely on `vcov()` (Louis-corrected) for inference, and have synthetic/LLM data emit
+**sampled binary responses**, not probabilities — the package enforces this, and
+it is what keeps the PPI correction well-behaved.
 
 ## Reproducing these results
 
-From the package root:
+From the package root (second argument is the number of cores):
 
 ```r
-# rep counts used above; second argument is the number of cores
 # Rscript simulations/run_lambda_selection.R 100 8
 # Rscript simulations/run_coverage.R 200 8
 # Rscript simulations/run_downstream.R 100 8
+# Rscript simulations/run_crossfit.R 50 8
 # Rscript simulations/figures.R
 ```
 

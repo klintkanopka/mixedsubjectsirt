@@ -7,33 +7,48 @@ workflow. They are **not** part of the installed package and are excluded from
 
 ## What is validated
 
-Three scenario sets, each over five predictor regimes:
+Four scenario sets, each over the four predictor regimes:
 
 | Regime | `predicted` construction | Predictor quality |
 |--------|--------------------------|-------------------|
 | R1 perfect (F=Y) | `predicted = observed` | best possible |
-| R2 conditional mean | `plogis(aθ + d)` oracle probabilities | high (in theory) |
-| R3 same-DGP draw | fresh `simulate_2pl(θ, true)` | modest |
-| R4 independent noise | draw from scrambled parameters | none |
-| R5 LLM shift | attenuated `a`, shifted `d` | low |
+| R2 same-DGP draw | fresh `simulate_2pl(θ, true)` | modest |
+| R3 independent noise | binary draw from scrambled parameters | none |
+| R4 LLM shift | binary draw from attenuated/shifted `a`, `d` | biased but informative |
+
+All predictors are **binary 0/1 responses**: the package disallows probability
+(fractional) predictions for `predicted`/`generated`. Earlier rounds also included
+"conditional mean" regimes that fed fractional predictions; those have been
+removed, and the four binary regimes are numbered contiguously R1–R4.
 
 1. **`run_lambda_selection.R` — λ selection.** For each regime, tune λ by
    ability-score risk with `fit_mixed_subjects_mml` and record the selected λ.
-   Validation claim: the selected λ decreases with predictor quality, with R1
-   near `N/(n+N)` and R4/R5 near 0.
+   Validation claim: λ tracks the score-level usefulness of the paired
+   pseudo-responses — R1 near `N/(n+N)`, R3 near 0, R2/R4 small positive.
 
-2. **`run_coverage.R` — Louis SE coverage (the key check).** At a fixed λ where
-   the estimator is consistent for the true parameters (R1 and R3), compute Wald
-   intervals from `stats::vcov(fit)` (Louis-corrected) and from
-   `vcov_mixed_subjects(fit)` (EM bread, bypass). Validation claim: the EM bread
-   under-covers; the Louis correction restores coverage toward nominal. This
-   directly tests the Louis marginal-information bread.
+2. **`run_coverage.R` — Louis SE coverage (the key check).** At a fixed λ = 0.5,
+   compute Wald intervals from `stats::vcov(fit)` (Louis-corrected) and from
+   `vcov_mixed_subjects(fit)` (EM bread, bypass), for all four regimes. The EM
+   bread under-covers; the Louis correction restores coverage toward nominal.
+   Crucially, the estimator is **consistent for the true human parameters in
+   every regime** — even when the LLM is useless (R3) or biased (R4) — because
+   the PPI correction is mean-zero whenever the paired and generated
+   pseudo-responses share the same distribution and ability spread (see the
+   consistency note in the script). R3 and R4 covering nominally is the flagship
+   demonstration that PPI corrects biased LLM outputs.
 
 3. **`run_downstream.R` — downstream payoff + no-harm.** Score a held-out sample
    with known θ. Compare ability-score RMSE for human-only (λ=0), MML at tuned λ,
-   and MML at λ=1. Validation claims: tuned MML beats human-only when the
-   predictor is informative (R1/R2), and does no worse than human-only when it is
-   not (R4/R5).
+   and MML at λ=1. Validation claim: in these simulations tuned MML does not
+   increase average held-out RMSE relative to human-only, and improves it where
+   the predictor is informative. The summary reports `prop_improve` and the
+   paired SE / 95% CI of `mean_delta` so small effects can be distinguished from
+   simulation noise.
+
+4. **`run_crossfit.R` — cross-fit vs non-cross-fit.** Compares
+   `tune_lambda_ability_risk` against `tune_lambda_ability_risk_crossfit` (MML
+   per-fold tuning, scalar-mean MML final fit) on selected λ, item-parameter
+   bias, 95% Wald coverage, and held-out RMSE, for R1/R2/R4.
 
 ## Running
 
@@ -50,6 +65,7 @@ Rscript simulations/run_downstream.R 5
 Rscript simulations/run_lambda_selection.R 100 8
 Rscript simulations/run_coverage.R 200 8
 Rscript simulations/run_downstream.R 100 8
+Rscript simulations/run_crossfit.R 50 8
 
 # Render summary tables + figures from saved results
 Rscript simulations/figures.R
@@ -85,27 +101,37 @@ is a few hours.
 
 | File | Purpose |
 |------|---------|
-| `dgp.R` | True item parameters; the five predictor regimes; `generate_regime()` |
-| `run_lambda_selection.R` | Scenario set 1 |
-| `run_coverage.R` | Scenario set 2 (Louis SE coverage) |
-| `run_downstream.R` | Scenario set 3 (downstream payoff) |
+| `dgp.R` | True item parameters; the four predictor regimes; `generate_regime()` |
+| `run_lambda_selection.R` | Scenario set 1 (λ selection) |
+| `run_coverage.R` | Scenario set 2 (Louis SE coverage, all 4 regimes) |
+| `run_downstream.R` | Scenario set 3 (downstream payoff + MC uncertainty) |
+| `run_crossfit.R` | Scenario set 4 (cross-fit vs non-cross-fit) |
 | `figures.R` | Render tables/figures from saved `.rds` |
 | `results/` | Saved result objects (created on run) |
 | `figures/` | Saved figures (created on run) |
 
 ## Notes and known subtleties
 
-- **R2 (conditional mean) may select λ ≈ 0** despite being an "oracle" predictor.
-  This reproduces the Phase 0 diagnostic finding: at the human-MLE evaluation
-  point the gradient cross-covariance between the human score and a deterministic
-  conditional-mean prediction can be near zero or slightly negative, so the
-  control-variate benefit does not materialise in the person-level score
-  formulation. The full λ-selection run quantifies how often this happens.
+- **Why probability predictions are disallowed.** Earlier rounds included a
+  "conditional mean" regime whose `predicted` was the *fractional* probability
+  `plogis(aθ + d)`. This exposed a genuine flaw, now fixed at the API level: a
+  fractional value is not a coherent likelihood term for the marginal IRT
+  objective (the response enters inside a log-sum over quadrature). Mixing a
+  fractional paired stream with a binary generated stream makes
+  `E[∇L_gen] ≠ E[∇L_pred]`, so the PPI correction no longer cancels and the
+  estimator is biased at λ > 0; worse, at λ = 0.5 the objective is *unbounded* in
+  discrimination (`a → ∞`), so the fit diverges and ~92% of reps were dropped. The
+  package now requires **binary** `predicted`/`generated` (sample from any
+  probabilities first), which makes this failure impossible by construction. Those
+  conditional-mean regimes were removed accordingly.
 
-- **Coverage is restricted to R1 and R3** because only there is the combined
-  estimator consistent for the true parameters at λ > 0. Under R5 the generated
-  sample comes from shifted parameters, so the estimator is biased at λ > 0 and
-  coverage of the true parameters is not the right target.
+- **Coverage consistency.** The PPI correction `λ(L_gen − L_pred)` is mean-zero
+  whenever the paired and generated pseudo-responses are drawn from the **same**
+  distribution with the **same** ability spread, so the human term `L_obs`
+  anchors the estimand to the *true* parameters. This holds for every (binary)
+  regime — R1, R2, R3, R4 — so the estimator is consistent for the truth even
+  when the LLM is useless (R3) or biased (R4). R3 and R4 covering nominally is the
+  flagship demonstration that PPI corrects biased LLM outputs.
 
 - **Reproducibility.** Each (regime, rep) task carries a deterministic seed
   derived from a fixed base seed (`20260605`), the regime index, and the rep

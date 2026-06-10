@@ -29,7 +29,7 @@ make_quadrature <- function(n_quad = 31, iterlim = 1e5) {
   # sqrt(2) and divided the weights by sqrt(pi) (the physicists'-Hermite
   # rescaling), which inflated the latent-trait variance to 2 and biased every
   # discrimination estimate downward by ~1/sqrt(2).  Use the nodes/weights
-  # directly; only normalise the weights to guard against round-off.
+  # directly; only normalize the weights to guard against round-off.
   theta  <- gh$Points
   weight <- gh$Weights / sum(gh$Weights)
   o <- order(theta)
@@ -202,44 +202,12 @@ summarize_expected_counts <- function(resp, weights) {
   out
 }
 
-#' Convert responses to quadrature form
-#'
-#' Fits or accepts a 2PL model, computes posterior quadrature weights for each
-#' subject, and returns expected counts for mixed-subjects calibration. This is a
-#' lower-level helper; most analyses should call [fit_mixed_subjects()] or
-#' [fit_mixed_subjects_split()].
-#'
-#' @param resp A response matrix with rows for subjects and columns for items.
-#' @param N_quad Number of quadrature nodes to compute. Kept for backward
-#'   compatibility; prefer `n_quad` in new code.
-#' @param eps Retained for backward compatibility. Stable log computations are
-#'   used instead of probability clipping.
-#' @param iterlim Maximum number of Newton-Raphson iterations passed to
-#'   [rmutil::gauss.hermite()].
-#' @param irt_pars Optional target item parameters for mean-mean linking. This
-#'   argument is kept for backward compatibility with earlier package versions.
-#' @param item_pars Optional item parameters. If omitted, a 2PL model is fit to
-#'   `resp` using [fit_2pl()].
-#' @param quadrature Optional quadrature grid with `theta` and `weight` columns.
-#' @param link_method Linking method used when `irt_pars` is supplied.
-#' @param ... Additional arguments passed to [fit_2pl()] when `item_pars` is
-#'   omitted.
-#'
-#' @return A list with `quad`, `counts`, `weights`, `irt_pars`, `quadrature`, and
-#'   `theta`.
-#' @export
-#'
-#' @examples
-#' pars <- data.frame(a = c(1, 1.2), d = c(0, -0.5))
-#' resp <- matrix(c(1, 0, 0, 1), nrow = 2, byrow = TRUE)
-#' q <- mixed_subjects_quadrature(resp, item_pars = pars, N_quad = 5)
-#' names(q)
+# Internal: posterior weights AND per-subject marginal log-likelihoods.
+# Identical to posterior_weights_2pl but additionally saves the log-normalizer
+# log Z_i = log[sum_k A_k p(Y_i | theta_k; gamma)] for each subject. These
+# log-normalizers form the true IRT marginal log-likelihood and are needed by
+# fit_mixed_subjects_mml() to evaluate the exact PPI++ objective.
 posterior_and_log_lik_2pl <- function(resp, item_pars, quadrature) {
-  # Computes posterior weights AND per-subject marginal log-likelihoods.
-  # Identical to posterior_weights_2pl but additionally saves the log-normaliser
-  # log Z_i = log[Σ_k A_k p(Y_i | θ_k; γ)] for each subject.  These
-  # log-normalisers form the true IRT marginal log-likelihood and are needed
-  # by fit_mixed_subjects_mml() to evaluate the exact PPI++ objective.
   theta     <- quadrature$theta
   prior     <- quadrature$weight / sum(quadrature$weight)
   n         <- nrow(resp)
@@ -274,6 +242,38 @@ posterior_and_log_lik_2pl <- function(resp, item_pars, quadrature) {
   list(weights = weights, log_normalizers = log_norms)
 }
 
+#' Convert responses to quadrature form
+#'
+#' Fits or accepts a 2PL model, computes posterior quadrature weights for each
+#' subject, and returns expected counts for mixed-subjects calibration. This is a
+#' lower-level helper; most analyses should call [fit_mixed_subjects()] or
+#' [fit_mixed_subjects_split()].
+#'
+#' @param resp A response matrix with rows for subjects and columns for items.
+#' @param N_quad Number of quadrature nodes to compute. Kept for backward
+#'   compatibility; prefer `n_quad` in new code.
+#' @param eps Retained for backward compatibility. Stable log computations are
+#'   used instead of probability clipping.
+#' @param iterlim Maximum number of Newton-Raphson iterations passed to
+#'   [rmutil::gauss.hermite()].
+#' @param irt_pars Optional target item parameters for mean-mean linking. This
+#'   argument is kept for backward compatibility with earlier package versions.
+#' @param item_pars Optional item parameters. If omitted, a 2PL model is fit to
+#'   `resp` using [fit_2pl()].
+#' @param quadrature Optional quadrature grid with `theta` and `weight` columns.
+#' @param link_method Linking method used when `irt_pars` is supplied.
+#' @param ... Additional arguments passed to [fit_2pl()] when `item_pars` is
+#'   omitted.
+#'
+#' @return A list with `quad`, `counts`, `weights`, `irt_pars`, `quadrature`, and
+#'   `theta`.
+#' @export
+#'
+#' @examples
+#' pars <- data.frame(a = c(1, 1.2), d = c(0, -0.5))
+#' resp <- matrix(c(1, 0, 0, 1), nrow = 2, byrow = TRUE)
+#' q <- mixed_subjects_quadrature(resp, item_pars = pars, N_quad = 5)
+#' names(q)
 mixed_subjects_quadrature <- function(resp, N_quad = 31, eps = 1e-15,
                                       iterlim = 1e5, irt_pars = NULL,
                                       item_pars = NULL, quadrature = NULL,

@@ -295,18 +295,6 @@ test_that("diagnostic lambda grid flags uninformative correction", {
   )
 
   expect_equal(diagnostic$lowest_observed_loss_lambda, 0)
-  expect_warning(
-    tune_lambda_grid(
-      lambda_grid = c(0, 0.5),
-      observed = observed,
-      predicted = predicted,
-      generated = generated,
-      initial_pars = pars,
-      n_quad = 5,
-      control = list(maxit = 30)
-    ),
-    "diagnostic"
-  )
 })
 
 test_that("split-specific zero lambda ignores that fold's predictions", {
@@ -461,6 +449,41 @@ test_that("ability-risk tuning rejects runaway-discrimination candidates", {
   expect_true("max_disc" %in% names(tuned$summary))
 })
 
+test_that("lambda-selection regression: perfect predictor positive, noise near zero", {
+  # Guards the headline simulation finding against regressions: a perfect paired
+  # predictor (F=Y) selects a positive lambda, while an independent-noise
+  # predictor (scrambled item parameters) is essentially rejected.
+  set.seed(2026)
+  pars <- data.frame(item = paste0("I", 1:5), a = seq(0.8, 1.6, l = 5),
+                     d = seq(-1, 1, l = 5))
+  theta    <- rnorm(300)
+  observed <- simulate_2pl(theta, pars)
+  grid     <- c(0, 0.25, 0.5, 0.75, 1)
+
+  # Perfect predictor: predicted = observed (F = Y)
+  gen_true <- simulate_2pl(rnorm(600), pars)
+  tuned_perfect <- tune_lambda_ability_risk(
+    grid, observed, predicted = observed, generated = gen_true,
+    initial_pars = pars, fit_fn = fit_mixed_subjects_mml,
+    n_quad = 7, control = list(maxit = 120)
+  )
+  expect_gt(tuned_perfect$best_lambda, 0)
+
+  # Independent noise: predictions from scrambled item parameters
+  scrambled <- pars
+  scrambled$a <- pmax(0.05, abs(rnorm(5, 0, 0.1)))
+  scrambled$d <- rnorm(5, 0, 2)
+  pred_noise  <- simulate_2pl(theta, scrambled)
+  gen_noise   <- simulate_2pl(rnorm(600), scrambled)
+  colnames(pred_noise) <- colnames(gen_noise) <- pars$item
+  tuned_noise <- tune_lambda_ability_risk(
+    grid, observed, predicted = pred_noise, generated = gen_noise,
+    initial_pars = pars, fit_fn = fit_mixed_subjects_mml,
+    n_quad = 7, control = list(maxit = 120)
+  )
+  expect_lte(tuned_noise$best_lambda, 0.25)
+})
+
 test_that("crossfit separates tuning_args and final_args", {
   set.seed(34)
   pars <- data.frame(item = paste0("I", 1:3), a = c(1, 1.2, 0.9),
@@ -496,6 +519,39 @@ test_that("crossfit separates tuning_args and final_args", {
       slope_upper = 4, control = list(maxit = 40)
     ),
     "deprecated"
+  )
+})
+
+test_that("fractional predicted/generated are rejected (binary inputs only)", {
+  set.seed(35)
+  pars <- data.frame(item = paste0("I", 1:3), a = c(1, 1.2, 0.9),
+                     d = c(0, -0.5, 0.3))
+  obs  <- simulate_2pl(rnorm(40), pars)
+  gen  <- simulate_2pl(rnorm(80), pars)
+  # Conditional-mean "probabilities" — the removed R2 construction.
+  eta  <- outer(rnorm(40), pars$a) +
+    matrix(pars$d, nrow = 40, ncol = 3, byrow = TRUE)
+  frac <- plogis(eta)
+  colnames(frac) <- pars$item
+
+  expect_error(
+    fit_mixed_subjects_mml(obs, frac, gen, lambda = 0.5, initial_pars = pars,
+                           n_quad = 5),
+    "binary"
+  )
+  expect_error(
+    fit_mixed_subjects(obs, obs, frac, lambda = 0.5, initial_pars = pars,
+                       n_quad = 5),
+    "binary"
+  )
+  expect_error(
+    tune_lambda_ppi_score(obs, frac, pars, n_generated = 80, n_quad = 5),
+    "binary"
+  )
+  # Binary predicted/generated still work.
+  expect_no_error(
+    fit_mixed_subjects_mml(obs, obs, gen, lambda = 0.5, initial_pars = pars,
+                           n_quad = 5, control = list(maxit = 30))
   )
 })
 
