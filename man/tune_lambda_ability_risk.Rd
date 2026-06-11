@@ -13,7 +13,7 @@ tune_lambda_ability_risk(
   theta_true = NULL,
   n_quad = 31,
   initial_pars = NULL,
-  fit_fn = fit_mixed_subjects,
+  fit_fn = fit_mixed_subjects_mml,
   method = c("optimize", "grid"),
   bounds = c(-6, 6),
   max_discrimination = 10,
@@ -43,10 +43,12 @@ computed.}
 
 \item{initial_pars}{Optional starting item parameters.}
 
-\item{fit_fn}{Fitting function to use. Defaults to \code{\link[=fit_mixed_subjects]{fit_mixed_subjects()}}
-(frozen expected-count). Pass \code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}} to use the
-marginal-likelihood PPI++ estimator, which eliminates gradient asymmetry
-and should select \code{lambda > 0} for genuinely informative predictors.}
+\item{fit_fn}{Fitting function to use. Defaults to \code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}},
+the marginal-likelihood PPI++ estimator (recommended). The frozen
+expected-count estimator \code{\link[=fit_mixed_subjects]{fit_mixed_subjects()}} is still available by passing
+it here, but is \strong{discouraged}: it has a gradient asymmetry that inflates
+discriminations and can drive \code{lambda} to 0 even for an informative
+predictor, and it requires a \code{slope_upper} cap for stability.}
 
 \item{method}{How lambda is chosen: \code{"optimize"} (default, direct 1-D
 optimization over \code{range(lambda_grid)}, continuous lambda) or \code{"grid"}

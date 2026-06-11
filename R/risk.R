@@ -755,10 +755,12 @@ tune_lambda_ppi_score <- function(observed, predicted, item_pars, n_generated,
 #'   computed.
 #' @param n_quad Number of quadrature nodes.
 #' @param initial_pars Optional starting item parameters.
-#' @param fit_fn Fitting function to use. Defaults to [fit_mixed_subjects()]
-#'   (frozen expected-count). Pass [fit_mixed_subjects_mml()] to use the
-#'   marginal-likelihood PPI++ estimator, which eliminates gradient asymmetry
-#'   and should select `lambda > 0` for genuinely informative predictors.
+#' @param fit_fn Fitting function to use. Defaults to [fit_mixed_subjects_mml()],
+#'   the marginal-likelihood PPI++ estimator (recommended). The frozen
+#'   expected-count estimator [fit_mixed_subjects()] is still available by passing
+#'   it here, but is **discouraged**: it has a gradient asymmetry that inflates
+#'   discriminations and can drive `lambda` to 0 even for an informative
+#'   predictor, and it requires a `slope_upper` cap for stability.
 #' @param method How lambda is chosen: `"optimize"` (default, direct 1-D
 #'   optimization over `range(lambda_grid)`, continuous lambda) or `"grid"`
 #'   (evaluate every value in `lambda_grid` and take the argmin).
@@ -794,7 +796,7 @@ tune_lambda_ability_risk <- function(lambda_grid = seq(0, 1, by = 0.1),
                                      observed, predicted, generated,
                                      target_resp = NULL, theta_true = NULL,
                                      n_quad = 31, initial_pars = NULL,
-                                     fit_fn = fit_mixed_subjects,
+                                     fit_fn = fit_mixed_subjects_mml,
                                      method = c("optimize", "grid"),
                                      bounds = c(-6, 6),
                                      max_discrimination = 10,
@@ -926,7 +928,11 @@ tune_lambda_ability_risk <- function(lambda_grid = seq(0, 1, by = 0.1),
 #' Cross-fit ability-score-risk lambda tuning
 #'
 #' Estimates lambda separately for each held-out split using only the remaining
-#' labeled rows, then fits a final model with those fold-specific lambda values.
+#' labeled rows, then fits a final model. By default (`final_fit_fn =
+#' fit_mixed_subjects_mml`) the fold lambdas are averaged (weighted by fold size)
+#' into a single scalar and the full sample is refit; pass `final_fit_fn =
+#' fit_mixed_subjects_split` to instead fit each fold's rows with its own
+#' out-of-fold lambda.
 #'
 #' @inheritParams tune_lambda_ability_risk
 #' @param n_splits Number of sample splits.
@@ -940,19 +946,18 @@ tune_lambda_ability_risk <- function(lambda_grid = seq(0, 1, by = 0.1),
 #'   is valid when `target_resp = observed` and fold-matched evaluation is
 #'   desired.
 #' @param final_fit_fn Function used to produce the final combined-data fit.
-#'   Defaults to [fit_mixed_subjects_split()], which accepts a per-fold
-#'   `lambda` vector natively.
-#'   Pass [fit_mixed_subjects_mml()] to get a scalar marginal-MML final fit: the
-#'   fold-specific lambdas are averaged (weighted by fold size) into a single
-#'   scalar, avoiding the accidental per-item lambda problem that occurs when a
-#'   length-`n_splits` vector is passed directly to `fit_mixed_subjects_mml()`.
-#'   Note that mixing MML fold-tuning with a frozen final fit is an
-#'   approximation; document this when reporting results.
+#'   Defaults to [fit_mixed_subjects_mml()], giving a scalar marginal-MML final
+#'   fit: the fold-specific lambdas are averaged (weighted by fold size) into a
+#'   single scalar and the full sample is refit. Pass [fit_mixed_subjects_split()]
+#'   to instead keep the per-fold `lambda` vector and fit each fold's rows with
+#'   its own out-of-fold lambda — the textbook cross-fit decoupling, but it uses
+#'   the discouraged frozen expected-count split estimator.
 #'
 #' @param fit_fn Fitting function used for each fold's ability-risk tuning
 #'   (passed to [tune_lambda_ability_risk()]). Defaults to
-#'   [fit_mixed_subjects()] (frozen expected-count). Pass
-#'   [fit_mixed_subjects_mml()] for marginal-MML fold tuning.
+#'   [fit_mixed_subjects_mml()] (marginal MML, recommended). The frozen
+#'   expected-count estimator [fit_mixed_subjects()] is still available but
+#'   discouraged.
 #' @param tuning_args Named list of extra arguments forwarded only to the
 #'   fold-level [tune_lambda_ability_risk()] calls (and through them to
 #'   `fit_fn`). For example, `tuning_args = list(slope_upper = 4)`.
@@ -973,8 +978,8 @@ tune_lambda_ability_risk_crossfit <- function(lambda_grid = seq(0, 1, by = 0.1),
                                               split_id = NULL, seed = NULL,
                                               n_quad = 31, initial_pars = NULL,
                                               target_mode = c("fixed", "row_aligned"),
-                                              fit_fn = fit_mixed_subjects,
-                                              final_fit_fn = fit_mixed_subjects_split,
+                                              fit_fn = fit_mixed_subjects_mml,
+                                              final_fit_fn = fit_mixed_subjects_mml,
                                               tuning_args = list(),
                                               final_args = list(),
                                               bounds = c(-6, 6),

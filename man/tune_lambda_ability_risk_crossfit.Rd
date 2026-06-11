@@ -17,8 +17,8 @@ tune_lambda_ability_risk_crossfit(
   n_quad = 31,
   initial_pars = NULL,
   target_mode = c("fixed", "row_aligned"),
-  fit_fn = fit_mixed_subjects,
-  final_fit_fn = fit_mixed_subjects_split,
+  fit_fn = fit_mixed_subjects_mml,
+  final_fit_fn = fit_mixed_subjects_mml,
   tuning_args = list(),
   final_args = list(),
   bounds = c(-6, 6),
@@ -64,18 +64,17 @@ desired.}
 
 \item{fit_fn}{Fitting function used for each fold's ability-risk tuning
 (passed to \code{\link[=tune_lambda_ability_risk]{tune_lambda_ability_risk()}}). Defaults to
-\code{\link[=fit_mixed_subjects]{fit_mixed_subjects()}} (frozen expected-count). Pass
-\code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}} for marginal-MML fold tuning.}
+\code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}} (marginal MML, recommended). The frozen
+expected-count estimator \code{\link[=fit_mixed_subjects]{fit_mixed_subjects()}} is still available but
+discouraged.}
 
 \item{final_fit_fn}{Function used to produce the final combined-data fit.
-Defaults to \code{\link[=fit_mixed_subjects_split]{fit_mixed_subjects_split()}}, which accepts a per-fold
-\code{lambda} vector natively.
-Pass \code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}} to get a scalar marginal-MML final fit: the
-fold-specific lambdas are averaged (weighted by fold size) into a single
-scalar, avoiding the accidental per-item lambda problem that occurs when a
-length-\code{n_splits} vector is passed directly to \code{fit_mixed_subjects_mml()}.
-Note that mixing MML fold-tuning with a frozen final fit is an
-approximation; document this when reporting results.}
+Defaults to \code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}}, giving a scalar marginal-MML final
+fit: the fold-specific lambdas are averaged (weighted by fold size) into a
+single scalar and the full sample is refit. Pass \code{\link[=fit_mixed_subjects_split]{fit_mixed_subjects_split()}}
+to instead keep the per-fold \code{lambda} vector and fit each fold's rows with
+its own out-of-fold lambda — the textbook cross-fit decoupling, but it uses
+the discouraged frozen expected-count split estimator.}
 
 \item{tuning_args}{Named list of extra arguments forwarded only to the
 fold-level \code{\link[=tune_lambda_ability_risk]{tune_lambda_ability_risk()}} calls (and through them to
@@ -99,5 +98,7 @@ final fit.
 }
 \description{
 Estimates lambda separately for each held-out split using only the remaining
-labeled rows, then fits a final model with those fold-specific lambda values.
+labeled rows, then fits a final model. By default (\code{final_fit_fn = fit_mixed_subjects_mml}) the fold lambdas are averaged (weighted by fold size)
+into a single scalar and the full sample is refit; pass \code{final_fit_fn = fit_mixed_subjects_split} to instead fit each fold's rows with its own
+out-of-fold lambda.
 }

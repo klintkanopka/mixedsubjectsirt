@@ -6,9 +6,9 @@
 [![R-CMD-check](https://github.com/klintkanopka/mixedsubjectsirt/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/klintkanopka/mixedsubjectsirt/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-`mixedsubjectsirt` is a package that facilitates augmenting human pilot data with LLM-generated item responses in psychometric calibration studies. We do this by implementing the Mixed-Subject Design[^1][^2] for latent variable measurement models. This package ports the Prediction Powered Inference (PPI)[^3] and PPI++[^4] paradigms to EM-based estimation procedures that don't have the clear independent and dependent variables usually thought of in these PPI-based workflows. **The goal is item-parameter estimates that retain the human-data target while using synthetic responses only when they appear informative** — the estimator is anchored to the human responses, and the LLM contribution is down-weighted when it does not help.
+`mixedsubjectsirt` is a package that facilitates augmenting human pilot data with LLM-generated item responses in psychometric calibration studies. We do this by implementing the Mixed-Subject Design[^1][^2] for latent variable measurement models. This package ports the Prediction Powered Inference (PPI)[^3] and PPI++[^4] paradigms to EM-based estimation procedures that don't have the clear independent and dependent variables usually thought of in these PPI-based workflows. The goal is item-parameter estimates that retain the human-data target while using synthetic responses only when they appear informative. This works because the estimator is anchored to the human responses and the LLM contribution is down-weighted when it does not help.
 
-The strength of this method is that it tunes the contribution of the LLM-generated responses based on how informative they are. This is done through a procedure called _power tuning_ (derived from PPI++) with one key deviation: Instead of selecting a tuning parameter to minimize the standard errors of the estimated model parameters, we minimize _ability risk_, a quantification of the expected measurement error in downstream ability estimation, integrated over the assumed ability distribution. This allows our method to target parts of the scale where reductions in item parameter uncertainty are the most valuable, increasing operational measurement precision. Additionally, this approach guards against poor-quality synthetic data: **ability-risk tuning can shrink the tuning parameter λ toward zero when synthetic responses do not improve downstream scoring precision**, so estimation leans on the human responses where the LLM is uninformative. This means that whenever users are able to produce better quality predictions (through the use of using auxiliary data, better prompting, stronger models, or other new and unforeseen advances in LLMs or response prediction), the utility of this method increases in kind.
+The strength of this method is that it tunes the contribution of the LLM-generated responses based on how informative they are. This is done through a procedure called _power tuning_ (derived from PPI++) with one key deviation: Instead of selecting a tuning parameter to minimize the standard errors of the estimated model parameters, we minimize _ability risk_, a quantification of the expected measurement error in downstream ability estimation, integrated over the assumed ability distribution. This allows our method to target parts of the scale where reductions in item parameter uncertainty are the most valuable, increasing operational measurement precision. Additionally, this approach guards against poor-quality synthetic data: ability-risk tuning can shrink the tuning parameter λ toward zero when synthetic responses do not improve downstream scoring precision, so estimation leans on the human responses where the LLM is uninformative. This means that whenever users are able to produce better quality predictions (through the use of using auxiliary data, better prompting, stronger models, or other new and unforeseen advances in LLMs or response prediction), the utility of this method increases in kind.
 
 Implemented here are methods for standard dichotomous 2PL and 1PL IRT models. There are multiple options for estimation, with the recommended approach being Marginal Maximum Likelihood-based EM cross-fit to split samples.[^5] Other options include approximations based upon quadrature-based expected count regressions and iterated expected counts. This package is under active development, with experimental features such as per-item power tuning available for users to try.
 
@@ -16,12 +16,11 @@ Implemented here are methods for standard dichotomous 2PL and 1PL IRT models. Th
 
 | Goal | Recommended function |
 | --- | --- |
-| Primary 2PL mixed-subjects fit | `fit_mixed_subjects_mml()` |
-| Choose scalar lambda for scoring | `tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects_mml)` |
-| Theoretical score-covariance diagnostic | `tune_lambda_ppi_score()` |
-| Conservative cross-fitted workflow | `tune_lambda_ability_risk_crossfit()` |
-| Experimental item-specific tuning | `tune_lambda_ability_risk_item()` |
-| Legacy expected-count fit | `fit_mixed_subjects()` |
+| Complete calibration workflow, including cross-fit λ tuning | `tune_lambda_ability_risk_crossfit()` |
+| Complete workflow without cross-fit λ tuning | `tune_lambda_ability_risk()` |
+| Fitting models with user-specified λ value | `fit_mixed_subjects_mml()` |
+| Experimental item-specific λ tuning | `tune_lambda_ability_risk_item()` |
+
 
 See the [Mixed-Subjects Workflow](https://klintkanopka.com/mixedsubjectsirt/articles/mixed-subjects-workflow.html) vignette for the recommended end-to-end pipeline.
 

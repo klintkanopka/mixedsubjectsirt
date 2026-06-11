@@ -1,6 +1,6 @@
 Package: mixedsubjectsirt
 Title: Item Response Theory Calibration with a Mixed Subjects Design
-Version: 0.0.1
+Version: 0.1.0
 Authors@R:
     person("Klint", "Kanopka", , "klint.kanopka@nyu.edu", role = c("aut", "cre"))
 Description: Allows the integration of LLM-generated item responses into psychometric calibration studies.

@@ -1,35 +1,27 @@
-# mixedsubjectsirt 0.0.1 (development version)
+# mixedsubjectsirt 0.1.0 (development version)
 
-## Lambda tuning
+Initial development release.
 
-* `tune_lambda_ability_risk()` and `tune_lambda_ability_risk_1pl()` now select
-  lambda by **direct 1-D optimization** (`stats::optimize()`) by default, returning
-  a continuous lambda with no grid rounding. Pass `method = "grid"` to recover the
-  previous behaviour (evaluate every value of `lambda_grid` and take the argmin),
-  which is still useful for inspecting the risk surface. For `method = "optimize"`,
-  `lambda_grid` only sets the search range via `range(lambda_grid)`. The
-  cross-fitted tuner (`tune_lambda_ability_risk_crossfit()`) inherits the new
-  default through its per-fold calls. The runaway-discrimination guard and the
-  `lambda = 0` (human-only) fallback are unchanged.
-
-## Inputs
-
-* `predicted` and `generated` must now be **binary 0/1 responses** in all fitting
-  and PPI-score functions; probability (fractional) inputs are rejected with a
-  message to sample from them first. Fractional values are not a valid likelihood
-  input for the marginal IRT objective and break the PPI correction. The low-level
-  quadrature utilities still accept fractional input, and now document that the
-  high-level fitters do not.
-
-## Robustness
-
-* `tune_lambda_ability_risk()` now wraps each candidate fit in `tryCatch()`, so a
-  single failed fit (from bad starting values, aggressive bounds, or unusual
-  response patterns) is treated as an ineligible (infinite-risk) candidate instead
-  of aborting the whole tuning run — matching the 1PL tuner.
-
-## Documentation
-
-* Softened the README's headline claims to match the finite-sample validation
-  results, and added a "What should I use?" function-selection table.
-* Added a `R-CMD-check` GitHub Actions workflow.
+* Mixed-subjects 2PL/1PL IRT calibration that augments human responses with
+  LLM-generated responses through a PPI++ marginal-MML estimator
+  (`fit_mixed_subjects_mml()` and relatives). The estimator is anchored to the
+  human data and is asymptotically unbiased for the human item parameters at any
+  tuning weight.
+* Power tuning by **ability-score risk** (`tune_lambda_ability_risk()`), which
+  selects the tuning weight by direct 1-D optimization of propagated
+  ability-recovery risk (pass `method = "grid"` to scan a grid instead). Also
+  included: a theoretical PPI++ score diagnostic (`tune_lambda_ppi_score()`),
+  cross-fitted tuning (`tune_lambda_ability_risk_crossfit()`, the recommended
+  workflow for reported analyses), and experimental per-item tuning
+  (`tune_lambda_ability_risk_item()`). All non-experimental tuners use the
+  marginal-MML estimator by default; the frozen expected-count estimator remains
+  available via `fit_fn` but is discouraged.
+* Louis-corrected marginal sandwich covariance through the `vcov()` S3 method
+  (`vcov_mixed_subjects_mml()`), with ability scoring and item-parameter
+  uncertainty propagation (`score_theta()`, `ability_risk()`).
+* Vignettes covering the recommended workflow, lambda tuning, the 1PL model,
+  per-item tuning, scale linking, and a simulation-validation study; an
+  `R-CMD-check` GitHub Actions workflow.
+* Currently `predicted` and `generated` data must be **binary 0/1 responses** in
+  the high-level fitting and PPI-score functions; the low-level quadrature
+  utilities accept fractional input.
