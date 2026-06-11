@@ -118,10 +118,11 @@ rownames(Sigma_1pl)
 $\partial\hat\theta / \partial (a_\text{shared}, d_1, \ldots, d_J)$ for the
 ability-score risk. The chain rule gives
 $\partial\hat\theta / \partial a_\text{shared} = \sum_j \partial\hat\theta / \partial a_j$.
+As in the 2PL version, $\lambda$ is chosen by direct 1-D optimization by default
+(pass `method = "grid"` to scan a grid instead).
 
 ```{r tune-1pl}
 tuned_1pl <- tune_lambda_ability_risk_1pl(
-  lambda_grid  = seq(0, 1, by = 0.2),
   observed     = observed,
   predicted    = predicted,
   generated    = generated,
@@ -130,8 +131,6 @@ tuned_1pl <- tune_lambda_ability_risk_1pl(
   control      = list(maxit = 300)
 )
 
-tuned_1pl$summary[, c("lambda", "mean_param_var", "mean_total_risk",
-                       "convergence")]
 tuned_1pl$best_lambda
 ```
 
@@ -142,7 +141,6 @@ should select a positive lambda.
 
 ```{r perfect-pred-1pl}
 tuned_fy <- tune_lambda_ability_risk_1pl(
-  lambda_grid  = seq(0, 1, by = 0.2),
   observed     = observed,
   predicted    = observed,     # F = Y
   generated    = simulate_2pl(rnorm(n_generated), true_1pl),
@@ -153,7 +151,6 @@ tuned_fy <- tune_lambda_ability_risk_1pl(
 
 cat("F=Y best lambda:", tuned_fy$best_lambda,
     " (theory: N/(n+N) =", round(n_generated / (n_human + n_generated), 3), ")\n")
-tuned_fy$summary[, c("lambda", "mean_param_var")]
 ```
 
 ## Compare 1PL and 2PL

@@ -16,6 +16,7 @@ articles:
   contents:
   - lambda-tuning
   - simulation-validation
+  - weakly-informative-llm
 
 - title: Extensions
   desc: The 1PL model, per-item lambda, and scale linking

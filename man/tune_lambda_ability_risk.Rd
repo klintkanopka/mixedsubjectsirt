@@ -5,7 +5,7 @@
 \title{Tune lambda by downstream ability-score risk}
 \usage{
 tune_lambda_ability_risk(
-  lambda_grid,
+  lambda_grid = seq(0, 1, by = 0.1),
   observed,
   predicted,
   generated,
@@ -14,6 +14,7 @@ tune_lambda_ability_risk(
   n_quad = 31,
   initial_pars = NULL,
   fit_fn = fit_mixed_subjects,
+  method = c("optimize", "grid"),
   bounds = c(-6, 6),
   max_discrimination = 10,
   control = list(maxit = 500),
@@ -21,7 +22,11 @@ tune_lambda_ability_risk(
 )
 }
 \arguments{
-\item{lambda_grid}{Numeric vector of candidate lambda values in \verb{[0, 1]}.}
+\item{lambda_grid}{Numeric vector of candidate lambda values in \verb{[0, 1]}. For
+\code{method = "grid"} these are the evaluated candidates; for
+\code{method = "optimize"} only \code{range(lambda_grid)} matters and bounds the search
+(e.g. \code{lambda_grid = c(0, 0.8)} caps lambda at 0.8). Defaults to
+\code{seq(0, 1, by = 0.1)}.}
 
 \item{observed, predicted, generated}{Response matrices passed to
 \code{\link[=fit_mixed_subjects]{fit_mixed_subjects()}}.}
@@ -43,6 +48,10 @@ computed.}
 marginal-likelihood PPI++ estimator, which eliminates gradient asymmetry
 and should select \code{lambda > 0} for genuinely informative predictors.}
 
+\item{method}{How lambda is chosen: \code{"optimize"} (default, direct 1-D
+optimization over \code{range(lambda_grid)}, continuous lambda) or \code{"grid"}
+(evaluate every value in \code{lambda_grid} and take the argmin).}
+
 \item{bounds}{Bounds passed to \code{\link[=score_theta]{score_theta()}}.}
 
 \item{max_discrimination}{Upper bound on plausible item discrimination. Any
@@ -57,8 +66,9 @@ default of 10 is far above any realistic 2PL discrimination.}
 \item{...}{Additional arguments passed to \code{fit_fn}.}
 }
 \value{
-A list with \code{summary}, \code{best_lambda}, \code{best_fit}, and all fitted
-candidate objects.
+A list with \code{summary} (every evaluated lambda with its risk and
+diagnostics), \code{best_lambda} (continuous under \code{method = "optimize"}),
+\code{best_fit}, the evaluated \code{fits} and \code{risks}, and \code{method}.
 }
 \description{
 Fits candidate mixed-subjects calibrations, estimates the item-parameter
@@ -87,6 +97,15 @@ asymmetry that inflates item parameters at any \code{lambda > 0}, increasing
 ability risk. This is not a bug in the risk function; it is a property of the
 estimating equations. See \code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}} for a marginal-likelihood
 implementation that removes this asymmetry.
+
+\strong{Tuning method.} By default (\code{method = "optimize"}) lambda is selected by
+direct 1-D optimization (\code{\link[stats:optimize]{stats::optimize()}}) of the ability-score risk over the
+interval \code{range(lambda_grid)} (default \verb{[0, 1]}), returning a \emph{continuous}
+lambda with no grid rounding. With \code{method = "grid"} the risk is evaluated at
+each value of \code{lambda_grid} and the argmin returned (the previous behaviour;
+useful for inspecting the whole risk surface). Both share the same
+runaway-discrimination guard and the same lambda = 0 (human-only) fallback when
+no candidate is eligible.
 }
 \examples{
 set.seed(1)

@@ -731,7 +731,20 @@ tune_lambda_ppi_score <- function(observed, predicted, item_pars, n_generated,
 #' estimating equations. See [fit_mixed_subjects_mml()] for a marginal-likelihood
 #' implementation that removes this asymmetry.
 #'
-#' @param lambda_grid Numeric vector of candidate lambda values in `[0, 1]`.
+#' **Tuning method.** By default (`method = "optimize"`) lambda is selected by
+#' direct 1-D optimization ([stats::optimize()]) of the ability-score risk over the
+#' interval `range(lambda_grid)` (default `[0, 1]`), returning a *continuous*
+#' lambda with no grid rounding. With `method = "grid"` the risk is evaluated at
+#' each value of `lambda_grid` and the argmin returned (the previous behaviour;
+#' useful for inspecting the whole risk surface). Both share the same
+#' runaway-discrimination guard and the same lambda = 0 (human-only) fallback when
+#' no candidate is eligible.
+#'
+#' @param lambda_grid Numeric vector of candidate lambda values in `[0, 1]`. For
+#'   `method = "grid"` these are the evaluated candidates; for
+#'   `method = "optimize"` only `range(lambda_grid)` matters and bounds the search
+#'   (e.g. `lambda_grid = c(0, 0.8)` caps lambda at 0.8). Defaults to
+#'   `seq(0, 1, by = 0.1)`.
 #' @param observed,predicted,generated Response matrices passed to
 #'   [fit_mixed_subjects()].
 #' @param target_resp Response matrix defining the target scoring population. If
@@ -746,6 +759,9 @@ tune_lambda_ppi_score <- function(observed, predicted, item_pars, n_generated,
 #'   (frozen expected-count). Pass [fit_mixed_subjects_mml()] to use the
 #'   marginal-likelihood PPI++ estimator, which eliminates gradient asymmetry
 #'   and should select `lambda > 0` for genuinely informative predictors.
+#' @param method How lambda is chosen: `"optimize"` (default, direct 1-D
+#'   optimization over `range(lambda_grid)`, continuous lambda) or `"grid"`
+#'   (evaluate every value in `lambda_grid` and take the argmin).
 #' @param bounds Bounds passed to [score_theta()].
 #' @param max_discrimination Upper bound on plausible item discrimination. Any
 #'   candidate fit whose maximum `|a|` exceeds this value is treated as
@@ -756,8 +772,9 @@ tune_lambda_ppi_score <- function(observed, predicted, item_pars, n_generated,
 #' @param control Control list passed to [stats::optim()].
 #' @param ... Additional arguments passed to `fit_fn`.
 #'
-#' @return A list with `summary`, `best_lambda`, `best_fit`, and all fitted
-#'   candidate objects.
+#' @return A list with `summary` (every evaluated lambda with its risk and
+#'   diagnostics), `best_lambda` (continuous under `method = "optimize"`),
+#'   `best_fit`, the evaluated `fits` and `risks`, and `method`.
 #' @export
 #'
 #' @examples
@@ -773,13 +790,16 @@ tune_lambda_ppi_score <- function(observed, predicted, item_pars, n_generated,
 #' @seealso [tune_lambda_ppi_score()] for the PPI++ theoretical lambda that
 #'   minimizes the trace of the item-parameter covariance matrix;
 #'   [fit_mixed_subjects_mml()] for the marginal-likelihood estimator.
-tune_lambda_ability_risk <- function(lambda_grid, observed, predicted, generated,
+tune_lambda_ability_risk <- function(lambda_grid = seq(0, 1, by = 0.1),
+                                     observed, predicted, generated,
                                      target_resp = NULL, theta_true = NULL,
                                      n_quad = 31, initial_pars = NULL,
                                      fit_fn = fit_mixed_subjects,
+                                     method = c("optimize", "grid"),
                                      bounds = c(-6, 6),
                                      max_discrimination = 10,
                                      control = list(maxit = 500), ...) {
+  method <- match.arg(method)
   if (!is.numeric(lambda_grid) || length(lambda_grid) == 0) {
     stop("lambda_grid must be a non-empty numeric vector.", call. = FALSE)
   }
@@ -796,85 +816,95 @@ tune_lambda_ability_risk <- function(lambda_grid, observed, predicted, generated
     check_same_items(observed, target_resp, "observed", "target_resp")
   }
 
-  rows <- vector("list", length(lambda_grid))
-  fits <- vector("list", length(lambda_grid))
-  risks <- vector("list", length(lambda_grid))
-
-  for (i in seq_along(lambda_grid)) {
-    lambda <- lambda_grid[i]
-    fits[[i]] <- fit_fn(
-      observed = observed,
-      predicted = predicted,
-      generated = generated,
-      lambda = lambda,
-      n_quad = n_quad,
-      initial_pars = initial_pars,
-      control = control,
-      ...
-    )
-
-    # Use the S3 generic so MML fits get vcov_mixed_subjects_mml (Louis bread).
-    Sigma <- tryCatch(stats::vcov(fits[[i]]),
-                      error = function(e) NULL)
-
+  # Memoized evaluation of one lambda: fit -> vcov -> ability-score risk. The
+  # runaway-discrimination guard is applied here (a fit whose discrimination blows
+  # up reports huge item information, collapsing Sigma and making g'Sigma g
+  # spuriously small), as is the convergence / non-finite check; an ineligible
+  # candidate gets selection_risk = Inf so it is never chosen.
+  cache <- new.env(parent = emptyenv())
+  evaluate <- function(lambda) {
+    lambda <- validate_lambda(lambda)
+    key <- sprintf("%.12f", lambda)
+    hit <- get0(key, envir = cache, inherits = FALSE, ifnotfound = NULL)
+    if (!is.null(hit)) return(hit)
+    fit <- fit_fn(observed = observed, predicted = predicted, generated = generated,
+                  lambda = lambda, n_quad = n_quad, initial_pars = initial_pars,
+                  control = control, ...)
+    Sigma <- tryCatch(stats::vcov(fit), error = function(e) NULL)  # S3: MML -> Louis
     if (is.null(Sigma)) {
-      risks[[i]] <- list(summary = data.frame(
-        mean_param_var     = Inf,
-        mean_squared_error = Inf,
-        mean_total_risk    = Inf
-      ))
+      risk <- list(summary = data.frame(mean_param_var = Inf,
+                                        mean_squared_error = Inf,
+                                        mean_total_risk = Inf))
     } else {
-      risks[[i]] <- ability_risk(
-        target_resp, fits[[i]], vcov = Sigma,
-        theta_true = theta_true, bounds = bounds
-      )
+      risk <- ability_risk(target_resp, fit, vcov = Sigma,
+                           theta_true = theta_true, bounds = bounds)
     }
-
-    rows[[i]] <- data.frame(
-      lambda             = lambda,
-      mean_param_var     = risks[[i]]$summary$mean_param_var,
-      mean_squared_error = risks[[i]]$summary$mean_squared_error,
-      mean_total_risk    = risks[[i]]$summary$mean_total_risk,
-      convergence        = fits[[i]]$convergence,
-      max_disc           = max(abs(fits[[i]]$item_pars$a))
-    )
+    max_disc <- max(abs(fit$item_pars$a))
+    sel <- risk$summary$mean_total_risk
+    if (!is.finite(sel) || fit$convergence != 0 || max_disc > max_discrimination) {
+      sel <- Inf
+    }
+    out <- list(lambda = lambda, fit = fit, risk = risk, max_disc = max_disc,
+                convergence = fit$convergence, selection_risk = sel)
+    assign(key, out, envir = cache)
+    out
   }
 
-  summary <- do.call(rbind, rows)
+  lo <- min(lambda_grid)
+  hi <- max(lambda_grid)
 
-  # Filter ineligible candidates. A candidate is excluded if it failed to
-  # converge, produced non-finite risk, OR has a degenerate (runaway)
-  # discrimination estimate. The last guard is essential: a fit whose
-  # discrimination blows up reports huge item information, which collapses the
-  # model-based covariance and makes the ability risk g'Sigma g spuriously
-  # small. Such a fit can "converge" with the lowest apparent risk while being
-  # numerically garbage (e.g. a = 1000), so it must be rejected explicitly.
-  # Keep the full summary for diagnostics; use selection_risk for argmin.
-  summary$selection_risk <- summary$mean_total_risk
-  summary$selection_risk[
-    !is.finite(summary$selection_risk) |
-      summary$convergence != 0 |
-      summary$max_disc > max_discrimination
-  ] <- Inf
+  if (method == "grid") {
+    invisible(lapply(lambda_grid, evaluate))
+  } else {
+    # Direct 1-D optimization. Degenerate lambdas get a large *finite* penalty so
+    # optimize() stays well-defined; the endpoints are evaluated explicitly so the
+    # boundary lambda = lo (human-only when lo = 0) is never missed.
+    penalty <- 1e12
+    obj <- function(lambda) {
+      s <- evaluate(lambda)$selection_risk
+      if (is.finite(s)) s else penalty
+    }
+    evaluate(lo)
+    evaluate(hi)
+    if (hi > lo) stats::optimize(obj, interval = c(lo, hi), tol = 1e-3)
+  }
+
+  # Assemble the summary across every evaluated lambda and pick the argmin.
+  evals <- mget(ls(cache), envir = cache)
+  rows <- lapply(evals, function(e) data.frame(
+    lambda             = e$lambda,
+    mean_param_var     = e$risk$summary$mean_param_var,
+    mean_squared_error = e$risk$summary$mean_squared_error,
+    mean_total_risk    = e$risk$summary$mean_total_risk,
+    convergence        = e$convergence,
+    max_disc           = e$max_disc,
+    selection_risk     = e$selection_risk
+  ))
+  summary <- do.call(rbind, rows)
+  summary <- summary[order(summary$lambda), , drop = FALSE]
+  rownames(summary) <- NULL
 
   if (all(is.infinite(summary$selection_risk))) {
     warning(
       "No lambda candidate converged with finite ability-score risk. ",
-      "Returning lambda = 0 (human-only estimate).",
+      "Returning lambda = ", lo, " (human-only when lower bound is 0).",
       call. = FALSE
     )
-    best_idx <- which(summary$lambda == 0)
-    best_idx <- if (length(best_idx) > 0L) best_idx[1L] else 1L
+    best <- evaluate(lo)
   } else {
-    best_idx <- which.min(summary$selection_risk)
+    best <- evaluate(summary$lambda[which.min(summary$selection_risk)])
   }
+
+  fits  <- lapply(summary$lambda, function(l) evaluate(l)$fit)
+  risks <- lapply(summary$lambda, function(l) evaluate(l)$risk)
 
   list(
     summary = summary,
-    best_lambda = summary$lambda[best_idx],
-    best_fit = fits[[best_idx]],
+    best_lambda = best$lambda,
+    best_fit = best$fit,
     fits = fits,
-    risks = risks
+    risks = risks,
+    method = method
   )
 }
 
@@ -921,7 +951,8 @@ tune_lambda_ability_risk <- function(lambda_grid, observed, predicted, generated
 #' @return A list with fold-specific lambda values, fold tuning objects, and the
 #'   final fit.
 #' @export
-tune_lambda_ability_risk_crossfit <- function(lambda_grid, observed, predicted,
+tune_lambda_ability_risk_crossfit <- function(lambda_grid = seq(0, 1, by = 0.1),
+                                              observed, predicted,
                                               generated, target_resp = NULL,
                                               theta_true = NULL, n_splits = 2,
                                               split_id = NULL, seed = NULL,
@@ -1177,8 +1208,9 @@ tune_lambda_ppi_score_item <- function(observed, predicted, item_pars, n_generat
 #'
 #' Finds a per-item vector of lambda values `λ_j ∈ [0, 1]` that minimizes
 #' propagated ability-score risk `E[g' Σ_γ g]` using coordinate descent on the
-#' items. Each coordinate step selects the `λ_j` in `lambda_grid` that gives
-#' the smallest mean ability risk while holding all other `λ_{j'}` fixed.
+#' items. Each coordinate step holds the other `λ_{j'}` fixed and selects `λ_j`
+#' by direct 1-D optimization (`method = "optimize"`, the default, continuous) or
+#' over `lambda_grid` (`method = "grid"`).
 #'
 #' Calls [fit_mixed_subjects_mml()] with a per-item lambda vector at each
 #' candidate evaluation. Because the lambda is a vector, that function
@@ -1187,10 +1219,11 @@ tune_lambda_ppi_score_item <- function(observed, predicted, item_pars, n_generat
 #' approximation; see the `@note` below. The resulting lambda vector can be
 #' used directly with [fit_mixed_subjects_mml()].
 #'
-#' **Computational cost.** Each pass evaluates `n_items × length(lambda_grid)`
-#' fits. For `n_items = 8` and a 5-point grid this is 40 fits per pass. Use
-#' `n_pass = 1` (the default) for a single greedy sweep, which is usually
-#' sufficient.
+#' **Computational cost.** Each pass refits per item per candidate lambda:
+#' `method = "grid"` does `n_items × length(lambda_grid)` fits; `method =
+#' "optimize"` does roughly `n_items × 12` (the optimizer's evaluations plus the
+#' endpoints). Use `n_pass = 1` (the default) for a single greedy sweep, which is
+#' usually sufficient.
 #'
 #' @param lambda_grid Numeric vector of candidate λ values in `[0, 1]` to try
 #'   for each item independently.
@@ -1208,6 +1241,9 @@ tune_lambda_ppi_score_item <- function(observed, predicted, item_pars, n_generat
 #'   Starting from all-zeros is not recommended: each single-item improvement is
 #'   too small to detect when other items are at zero. A scalar is broadcast to
 #'   all items; a vector of length `n_items` sets per-item starting values.
+#' @param method How each item's lambda is chosen at a coordinate step:
+#'   `"optimize"` (default, direct 1-D optimization over `range(lambda_grid)`,
+#'   continuous) or `"grid"` (evaluate every value in `lambda_grid`).
 #' @param bounds Bounds passed to [score_theta()].
 #' @param max_discrimination Upper bound on plausible item discrimination; any
 #'   candidate fit whose maximum `|a|` exceeds it is treated as degenerate and
@@ -1223,8 +1259,8 @@ tune_lambda_ppi_score_item <- function(observed, predicted, item_pars, n_generat
 #'   results as experimental / approximate.
 #'
 #' @return A list with `lambda` (per-item vector), `item` (item names),
-#'   `n_pass`, and `final_fit` (the [fit_mixed_subjects_mml()] fit at the
-#'   selected lambda).
+#'   `n_pass`, `method`, and `final_fit` (the [fit_mixed_subjects_mml()] fit at
+#'   the selected lambda).
 #' @export
 #'
 #' @seealso [tune_lambda_ppi_score_item()] for the faster PPI++-score version;
@@ -1240,19 +1276,23 @@ tune_lambda_ppi_score_item <- function(observed, predicted, item_pars, n_generat
 #'   initial_pars = pars, n_quad = 5, control = list(maxit = 30)
 #' )
 #' tuned$lambda
-tune_lambda_ability_risk_item <- function(lambda_grid, observed, predicted, generated,
+tune_lambda_ability_risk_item <- function(lambda_grid = seq(0, 1, by = 0.1),
+                                          observed, predicted, generated,
                                           target_resp = NULL, theta_true = NULL,
                                           n_quad = 31, initial_pars = NULL,
                                           n_pass = 1,
                                           init_lambda = 0,
+                                          method = c("optimize", "grid"),
                                           bounds = c(-6, 6),
                                           max_discrimination = 10,
                                           control = list(maxit = 300), ...) {
+  method <- match.arg(method)
   if (!is.numeric(lambda_grid) || length(lambda_grid) == 0) {
     stop("lambda_grid must be a non-empty numeric vector.", call. = FALSE)
   }
   lambda_grid <- sort(unique(lambda_grid))
   vapply(lambda_grid, validate_lambda, numeric(1))
+  lo <- min(lambda_grid); hi <- max(lambda_grid)
 
   observed <- validate_response_matrix(observed, "observed", allow_fractional = FALSE)
   n_items  <- ncol(observed)
@@ -1265,48 +1305,59 @@ tune_lambda_ability_risk_item <- function(lambda_grid, observed, predicted, gene
   init_lambda <- validate_lambda_vector(init_lambda, n = n_items)
   lambda_vec  <- if (length(init_lambda) == 1) rep(init_lambda, n_items) else init_lambda
 
+  # Ability-score risk with item j's lambda set to `lam`, holding the others fixed
+  # at lambda_vec. Inf for a failed or runaway-discrimination fit (see
+  # tune_lambda_ability_risk() for the runaway-guard rationale).
+  coord_risk <- function(j, lam, lambda_vec) {
+    lambda_try <- lambda_vec
+    lambda_try[j] <- validate_lambda(lam)
+    fit <- tryCatch(
+      fit_mixed_subjects_mml(observed = observed, predicted = predicted,
+        generated = generated, lambda = lambda_try, n_quad = n_quad,
+        initial_pars = initial_pars, control = control, ...),
+      error = function(e) NULL)
+    if (is.null(fit) || max(abs(fit$item_pars$a)) > max_discrimination) return(Inf)
+    tryCatch({
+      Sigma <- stats::vcov(fit)
+      ability_risk(target_resp, fit, vcov = Sigma, theta_true = theta_true,
+                   bounds = bounds)$summary$mean_total_risk
+    }, error = function(e) Inf)
+  }
+
   for (pass in seq_len(n_pass)) {
     lambda_prev <- lambda_vec
 
     for (j in seq_len(n_items)) {
-      best_risk_j <- Inf
-      best_lam_j  <- lambda_vec[j]
-
-      for (lam in lambda_grid) {
-        lambda_try    <- lambda_vec
-        lambda_try[j] <- lam
-
-        fit_j <- tryCatch(
-          fit_mixed_subjects_mml(
-            observed     = observed,
-            predicted    = predicted,
-            generated    = generated,
-            lambda       = lambda_try,
-            n_quad       = n_quad,
-            initial_pars = initial_pars,
-            control      = control,
-            ...
-          ),
-          error = function(e) NULL
-        )
-        if (is.null(fit_j)) next
-
-        # Reject degenerate (runaway discrimination) fits before trusting their
-        # model-based risk; see tune_lambda_ability_risk() for rationale.
-        if (max(abs(fit_j$item_pars$a)) > max_discrimination) next
-
-        risk_j <- tryCatch({
-          Sigma_j <- stats::vcov(fit_j)
-          ability_risk(target_resp, fit_j, vcov = Sigma_j,
-                       theta_true = theta_true, bounds = bounds)$summary$mean_total_risk
-        }, error = function(e) Inf)
-
-        if (is.finite(risk_j) && risk_j < best_risk_j) {
-          best_risk_j <- risk_j
-          best_lam_j  <- lam
+      if (method == "grid") {
+        risks <- vapply(lambda_grid,
+                        function(lam) coord_risk(j, lam, lambda_vec), numeric(1))
+        if (any(is.finite(risks))) {
+          risks[!is.finite(risks)] <- Inf
+          lambda_vec[j] <- lambda_grid[which.min(risks)]
+        }
+      } else {
+        # Direct optimization of this coordinate over [lo, hi], with a finite
+        # penalty for degenerate lambdas and explicit endpoint / current-value
+        # evaluation; keep the current lambda_j if nothing eligible is found.
+        penalty <- 1e12
+        cache <- new.env(parent = emptyenv())
+        obj <- function(lam) {
+          key <- sprintf("%.10f", lam)
+          hit <- get0(key, envir = cache, inherits = FALSE, ifnotfound = NULL)
+          if (!is.null(hit)) return(hit)
+          r <- coord_risk(j, lam, lambda_vec)
+          v <- if (is.finite(r)) r else penalty
+          assign(key, v, envir = cache)
+          v
+        }
+        for (cl in unique(c(lo, hi, lambda_vec[j]))) obj(cl)
+        if (hi > lo) stats::optimize(obj, interval = c(lo, hi), tol = 1e-3)
+        keys <- ls(cache)
+        vals <- vapply(keys, function(k) get(k, envir = cache), numeric(1))
+        if (any(vals < penalty)) {
+          lambda_vec[j] <- as.numeric(keys)[which.min(vals)]
         }
       }
-      lambda_vec[j] <- best_lam_j
     }
 
     if (max(abs(lambda_vec - lambda_prev)) < 1e-4) break
@@ -1330,6 +1381,7 @@ tune_lambda_ability_risk_item <- function(lambda_grid, observed, predicted, gene
     lambda    = lambda_vec,
     item      = colnames(observed),
     n_pass    = n_pass,
+    method    = method,
     final_fit = final_fit
   )
 }

@@ -392,6 +392,7 @@ test_that("ability-risk tuning chooses a candidate lambda and crossfits", {
   observed <- simulate_2pl(rnorm(80), pars)
   generated <- simulate_2pl(rnorm(240), pars)
 
+  # Default method = "optimize": continuous lambda within range(lambda_grid).
   tuned <- tune_lambda_ability_risk(
     lambda_grid = c(0, 0.5),
     observed = observed,
@@ -402,9 +403,21 @@ test_that("ability-risk tuning chooses a candidate lambda and crossfits", {
     control = list(maxit = 80)
   )
 
-  expect_true(tuned$best_lambda %in% c(0, 0.5))
-  expect_equal(nrow(tuned$summary), 2)
-  expect_true(all(is.finite(tuned$summary$mean_total_risk)))
+  expect_equal(tuned$method, "optimize")
+  expect_gte(tuned$best_lambda, 0)
+  expect_lte(tuned$best_lambda, 0.5)
+  expect_gte(nrow(tuned$summary), 2)            # endpoints + optimize evaluations
+  expect_s3_class(tuned$best_fit, "mixedsubjects_fit")
+
+  # method = "grid" evaluates exactly the supplied candidates.
+  tuned_grid <- tune_lambda_ability_risk(
+    lambda_grid = c(0, 0.5),
+    observed = observed, predicted = observed, generated = generated,
+    initial_pars = pars, method = "grid", n_quad = 7, control = list(maxit = 80)
+  )
+  expect_true(tuned_grid$best_lambda %in% c(0, 0.5))
+  expect_equal(nrow(tuned_grid$summary), 2)
+  expect_true(all(is.finite(tuned_grid$summary$mean_total_risk)))
 
   split_tuned <- tune_lambda_ability_risk_crossfit(
     lambda_grid = c(0, 0.5),
@@ -447,6 +460,44 @@ test_that("ability-risk tuning rejects runaway-discrimination candidates", {
   )
   expect_equal(tuned$best_lambda, 0)
   expect_true("max_disc" %in% names(tuned$summary))
+})
+
+test_that("optimize and grid tuning agree to within grid resolution", {
+  set.seed(31)
+  pars <- data.frame(item = paste0("I", 1:5), a = seq(0.8, 1.6, l = 5),
+                     d = seq(-1, 1, l = 5))
+  obs <- simulate_2pl(rnorm(250), pars)
+  gen <- simulate_2pl(rnorm(500), pars)
+  grid <- seq(0, 1, by = 0.1)
+
+  opt <- tune_lambda_ability_risk(grid, obs, obs, gen, initial_pars = pars,
+           fit_fn = fit_mixed_subjects_mml, n_quad = 7, control = list(maxit = 120))
+  grd <- tune_lambda_ability_risk(grid, obs, obs, gen, initial_pars = pars,
+           fit_fn = fit_mixed_subjects_mml, method = "grid", n_quad = 7,
+           control = list(maxit = 120))
+
+  # The continuous optimum should fall within one grid step of the grid argmin.
+  expect_lt(abs(opt$best_lambda - grd$best_lambda), 0.1 + 1e-6)
+})
+
+test_that("per-item ability-risk tuning: optimize (continuous) and grid modes", {
+  set.seed(33)
+  pars <- data.frame(item = paste0("I", 1:4), a = c(1, 1.2, 0.9, 1.1),
+                     d = c(0, -0.5, 0.3, 0.2))
+  obs <- simulate_2pl(rnorm(150), pars)
+  gen <- simulate_2pl(rnorm(300), pars)
+
+  to <- tune_lambda_ability_risk_item(observed = obs, predicted = obs, generated = gen,
+          initial_pars = pars, init_lambda = 0.3, n_quad = 5, control = list(maxit = 40))
+  expect_equal(to$method, "optimize")
+  expect_length(to$lambda, 4)
+  expect_true(all(to$lambda >= 0 & to$lambda <= 1))
+
+  tg <- tune_lambda_ability_risk_item(lambda_grid = c(0, 0.25, 0.5),
+          observed = obs, predicted = obs, generated = gen, initial_pars = pars,
+          init_lambda = 0.25, method = "grid", n_quad = 5, control = list(maxit = 40))
+  expect_equal(tg$method, "grid")
+  expect_true(all(tg$lambda %in% c(0, 0.25, 0.5)))
 })
 
 test_that("lambda-selection regression: perfect predictor positive, noise near zero", {

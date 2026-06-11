@@ -58,14 +58,14 @@ true_pars$b <- -true_pars$d / true_pars$a
 theta_human <- rnorm(n_human)
 observed    <- simulate_2pl(theta_human, true_pars)
 
-# LLM with ~10% attenuated discrimination and a small intercept shift
-llm_pars <- true_pars
-llm_pars$a <- pmax(0.4, 0.9 * true_pars$a + rnorm(n_items, 0, 0.05))
-llm_pars$d <- true_pars$d + 0.25 + rnorm(n_items, 0, 0.15)
-llm_pars$b <- -llm_pars$d / llm_pars$a
-
-predicted <- simulate_2pl(theta_human, llm_pars)
-generated <- simulate_2pl(rnorm(n_generated), llm_pars)
+# A strongly informative LLM. On the n labeled subjects the LLM's predictions
+# match the human responses (the F = Y benchmark from the simulation study), and
+# it supplies N additional unlabeled responses drawn from the same 2PL. This is
+# the "good predictor" regime, where the method should lean on the LLM data.
+# (Further down we show the complementary case of an uninformative LLM, where the
+# criterion instead drives lambda to 0.)
+predicted <- observed
+generated <- simulate_2pl(rnorm(n_generated), true_pars)
 ```
 
 ## Step 1: Fit the human baseline
@@ -100,14 +100,14 @@ mixed_mml$item_pars
 
 ## Step 3: Select lambda by ability-score risk
 
-`tune_lambda_ability_risk()` with `fit_fn = fit_mixed_subjects_mml` evaluates
-candidates on the MML objective and selects the $\lambda$ that minimizes
-propagated ability-score risk $E[g'\Sigma_\gamma g]$, where $\Sigma_\gamma$ is
-the **Louis-corrected** marginal sandwich covariance.
+`tune_lambda_ability_risk()` with `fit_fn = fit_mixed_subjects_mml` selects the
+$\lambda$ that minimizes propagated ability-score risk $E[g'\Sigma_\gamma g]$
+(where $\Sigma_\gamma$ is the **Louis-corrected** marginal sandwich covariance).
+By default it does this by **direct 1-D optimization** over `[0, 1]`, returning a
+continuous $\lambda$ — no grid needed.
 
 ```{r tune-lambda}
 ability_tuned <- tune_lambda_ability_risk(
-  lambda_grid  = seq(0, 1, by = 0.2),
   observed     = observed,
   predicted    = predicted,
   generated    = generated,
@@ -118,14 +118,16 @@ ability_tuned <- tune_lambda_ability_risk(
   control      = list(maxit = 200)
 )
 
-ability_tuned$summary
 ability_tuned$best_lambda
 ```
 
-When the LLM parameters differ substantially from the human calibration the
-ability-risk criterion correctly selects $\lambda \approx 0$, recovering the
-human-only estimate.  The `selection_risk` column shows `Inf` for any candidate
-that failed to converge, so the selection is protected against numerical failures.
+Because the predictor is highly informative, the criterion selects a substantial
+$\lambda$ — near the theoretical maximum $N/(n+N) = 1200/1600 = 0.75$ — so the
+method leans heavily on the generated LLM data. (The returned `summary` records
+each $\lambda$ the optimizer evaluated, with `selection_risk = Inf` for any that
+failed to converge, so selection is protected against numerical failures. When the
+predictor is *un*informative the same criterion drives $\lambda$ to 0 instead; see
+"When the LLM is uninformative" below.)
 
 ## Step 3b (recommended): cross-fitted $\lambda$ tuning
 
@@ -146,14 +148,13 @@ weighted by fold size) that `vcov()` handles exactly as in Step 4.
 
 ```{r crossfit-tune}
 cf_tuned <- tune_lambda_ability_risk_crossfit(
-  lambda_grid  = seq(0, 1, by = 0.2),
   observed     = observed,
   predicted    = predicted,
   generated    = generated,
   initial_pars = human_start$pars,
   fit_fn       = fit_mixed_subjects_mml,
   final_fit_fn = fit_mixed_subjects_mml,
-  n_splits     = 5,
+  n_splits     = 2,          # the standard PPI sample split (also the default)
   n_quad       = 11,
   control      = list(maxit = 200)
 )
@@ -165,10 +166,24 @@ cf_tuned$lambda_final      # fold-size-weighted scalar used for the final fit
 `cf_tuned$final_fit` is the calibration to report, and `vcov(cf_tuned$final_fit)`
 gives its Louis-corrected covariance. In the package's simulation study,
 cross-fitting leaves item-parameter bias, held-out scoring RMSE, and 95% interval
-coverage essentially unchanged relative to the same-data tuner, while selecting a
-slightly higher — and more honest — $\lambda$. The cheaper same-data tuner in
-Step 3 is fine for exploration; prefer the cross-fitted estimate whenever the
-selected $\lambda$ or its uncertainty is part of what you report.
+coverage essentially unchanged relative to the same-data tuner.
+
+We use `n_splits = 2`, the standard PPI sample split (one half tunes, the other
+estimates, then swap) and the function's default. You may notice the cross-fitted
+$\lambda$ (here $\approx 0.85$) sits *above* the same-data value ($\approx 0.7$)
+and above the perfect-predictor ceiling $N/(n+N) = 0.75$. That is expected and is
+**not** evidence of a better $\lambda$: with two folds each $\lambda$ is tuned on
+only half the labeled subjects ($n_\text{train} = n/2 = 200$), and the PPI-optimal
+$\lambda$ grows as labeled data shrinks — it tracks $N/(N + n_\text{train})$,
+here $1200/1400 \approx 0.86$. The fold $\lambda$'s are tuned for $n_\text{train}$
+but the final fit applies their average to the full sample, so they run a little
+high; more folds would push $n_\text{train}$ toward $n$ and pull $\lambda$ back
+toward the full-sample optimum, but two folds is the convention. The reason to
+cross-fit is not the $\lambda$ value but that $\lambda$ is chosen without each
+fold's own labels, so the reported uncertainty is not optimistic about a $\lambda$
+tuned on the same data. The cheaper same-data tuner in Step 3 is fine for
+exploration; prefer the cross-fitted estimate when the selected $\lambda$ or its
+uncertainty is part of what you report.
 
 ## Step 4: Inspect the covariance
 
@@ -210,17 +225,25 @@ ggplot(estimates, aes(true_b, b, colour = estimator)) +
   theme_minimal()
 ```
 
-## When the LLM is a good predictor
+## When the LLM is uninformative
 
-To verify that the method selects $\lambda > 0$ when the LLM genuinely helps,
-simulate with `predicted = observed` (F = Y, the perfect paired predictor):
+The flip side of exploiting a good predictor is doing no harm with a bad one. Here
+the LLM answers are essentially unrelated to ability (drawn from scrambled item
+parameters), so the paired correction carries no usable signal:
 
-```{r perfect-predictor}
-tuned_fy <- tune_lambda_ability_risk(
-  lambda_grid  = seq(0, 1, by = 0.2),
+```{r uninformative-predictor}
+set.seed(7)
+bad_pars    <- true_pars
+bad_pars$a  <- pmax(0.05, abs(rnorm(n_items, 0, 0.1)))   # near-zero slopes
+bad_pars$d  <- rnorm(n_items, 0, 2)                       # difficulties unrelated to truth
+
+predicted_bad <- simulate_2pl(theta_human, bad_pars)
+generated_bad <- simulate_2pl(rnorm(n_generated), bad_pars)
+
+tuned_bad <- tune_lambda_ability_risk(
   observed     = observed,
-  predicted    = observed,          # F = Y: perfect paired predictor
-  generated    = simulate_2pl(rnorm(n_generated), true_pars),
+  predicted    = predicted_bad,
+  generated    = generated_bad,
   target_resp  = observed,
   initial_pars = human_start$pars,
   fit_fn       = fit_mixed_subjects_mml,
@@ -228,13 +251,14 @@ tuned_fy <- tune_lambda_ability_risk(
   control      = list(maxit = 200)
 )
 
-tuned_fy$best_lambda   # expect > 0, near N/(n+N) = 0.75
-tuned_fy$summary[, c("lambda", "mean_param_var", "convergence")]
+tuned_bad$best_lambda   # expect ~0: the useless LLM is correctly ignored
 ```
 
-The ability risk decreases from $\lambda = 0$ to a minimum near the theoretical
-upper bound $N/(n+N) = 1200/1600 = 0.75$, confirming the estimator correctly
-identifies and exploits a highly informative predictor.
+The criterion drives $\lambda \to 0$, recovering the human-only calibration. So
+the same selection rule both **exploits** an informative LLM (the main example,
+$\lambda$ near $N/(n+N)$) and **protects against** an uninformative one
+($\lambda \approx 0$) — the "no average harm" property quantified in the
+simulation study.
 
 ## Validation
 

@@ -50,6 +50,17 @@ removed, and the four binary regimes are numbered contiguously R1–R4.
    per-fold tuning, scalar-mean MML final fit) on selected λ, item-parameter
    bias, 95% Wald coverage, and held-out RMSE, for R1/R2/R4.
 
+5. **`run_coverage_tuned.R` — operational coverage.** Scenario 2 validates the
+   covariance *formula* at a fixed λ. This validates the *workflow*: per rep it
+   compares Wald coverage of the true item parameters at three operating points —
+   fixed λ = 0.5, the **same-data tuned** λ̂ with `vcov(best_fit)`, and the
+   **cross-fit tuned** λ̂ with `vcov(final_fit)`. The same-data point is a
+   post-selection inference problem (`vcov()` treats λ as known, so it ignores the
+   uncertainty in λ̂) and may under-cover; cross-fitting tunes λ on held-out folds
+   and should restore nominal coverage. Reuses the Scenario 2 seeds, so the fixed-λ
+   arm reproduces Scenario 2 exactly. Heavier than the others (each rep tunes once
+   and cross-fits once); ~200 reps recommended.
+
 ## Running
 
 From the package root. Each `run_*.R` script accepts two positional command-line
@@ -66,6 +77,7 @@ Rscript simulations/run_lambda_selection.R 100 8
 Rscript simulations/run_coverage.R 200 8
 Rscript simulations/run_downstream.R 100 8
 Rscript simulations/run_crossfit.R 50 8
+Rscript simulations/run_coverage_tuned.R 200 8
 
 # Render summary tables + figures from saved results
 Rscript simulations/figures.R
@@ -106,6 +118,7 @@ is a few hours.
 | `run_coverage.R` | Scenario set 2 (Louis SE coverage, all 4 regimes) |
 | `run_downstream.R` | Scenario set 3 (downstream payoff + MC uncertainty) |
 | `run_crossfit.R` | Scenario set 4 (cross-fit vs non-cross-fit) |
+| `run_coverage_tuned.R` | Scenario set 5 (operational coverage: fixed / same-data / cross-fit) |
 | `figures.R` | Render tables/figures from saved `.rds` |
 | `results/` | Saved result objects (created on run) |
 | `figures/` | Saved figures (created on run) |

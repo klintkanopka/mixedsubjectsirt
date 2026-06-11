@@ -5,7 +5,7 @@
 \title{Cross-fit ability-score-risk lambda tuning}
 \usage{
 tune_lambda_ability_risk_crossfit(
-  lambda_grid,
+  lambda_grid = seq(0, 1, by = 0.1),
   observed,
   predicted,
   generated,
@@ -27,7 +27,11 @@ tune_lambda_ability_risk_crossfit(
 )
 }
 \arguments{
-\item{lambda_grid}{Numeric vector of candidate lambda values in \verb{[0, 1]}.}
+\item{lambda_grid}{Numeric vector of candidate lambda values in \verb{[0, 1]}. For
+\code{method = "grid"} these are the evaluated candidates; for
+\code{method = "optimize"} only \code{range(lambda_grid)} matters and bounds the search
+(e.g. \code{lambda_grid = c(0, 0.8)} caps lambda at 0.8). Defaults to
+\code{seq(0, 1, by = 0.1)}.}
 
 \item{observed, predicted, generated}{Response matrices passed to
 \code{\link[=fit_mixed_subjects]{fit_mixed_subjects()}}.}

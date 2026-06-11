@@ -5,7 +5,7 @@
 \title{Per-item ability-risk lambda tuning via coordinate descent}
 \usage{
 tune_lambda_ability_risk_item(
-  lambda_grid,
+  lambda_grid = seq(0, 1, by = 0.1),
   observed,
   predicted,
   generated,
@@ -15,6 +15,7 @@ tune_lambda_ability_risk_item(
   initial_pars = NULL,
   n_pass = 1,
   init_lambda = 0,
+  method = c("optimize", "grid"),
   bounds = c(-6, 6),
   max_discrimination = 10,
   control = list(maxit = 300),
@@ -46,6 +47,10 @@ Starting from all-zeros is not recommended: each single-item improvement is
 too small to detect when other items are at zero. A scalar is broadcast to
 all items; a vector of length \code{n_items} sets per-item starting values.}
 
+\item{method}{How each item's lambda is chosen at a coordinate step:
+\code{"optimize"} (default, direct 1-D optimization over \code{range(lambda_grid)},
+continuous) or \code{"grid"} (evaluate every value in \code{lambda_grid}).}
+
 \item{bounds}{Bounds passed to \code{\link[=score_theta]{score_theta()}}.}
 
 \item{max_discrimination}{Upper bound on plausible item discrimination; any
@@ -58,14 +63,15 @@ skipped. See \code{\link[=tune_lambda_ability_risk]{tune_lambda_ability_risk()}}
 }
 \value{
 A list with \code{lambda} (per-item vector), \code{item} (item names),
-\code{n_pass}, and \code{final_fit} (the \code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}} fit at the
-selected lambda).
+\code{n_pass}, \code{method}, and \code{final_fit} (the \code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}} fit at
+the selected lambda).
 }
 \description{
 Finds a per-item vector of lambda values \verb{λ_j ∈ [0, 1]} that minimizes
 propagated ability-score risk \verb{E[g' Σ_γ g]} using coordinate descent on the
-items. Each coordinate step selects the \code{λ_j} in \code{lambda_grid} that gives
-the smallest mean ability risk while holding all other \verb{λ_\{j'\}} fixed.
+items. Each coordinate step holds the other \verb{λ_\{j'\}} fixed and selects \code{λ_j}
+by direct 1-D optimization (\code{method = "optimize"}, the default, continuous) or
+over \code{lambda_grid} (\code{method = "grid"}).
 }
 \details{
 Calls \code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}} with a per-item lambda vector at each
@@ -75,10 +81,10 @@ frozen at \code{initial_pars}, not recomputed continuously. This is an
 approximation; see the \verb{@note} below. The resulting lambda vector can be
 used directly with \code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}}.
 
-\strong{Computational cost.} Each pass evaluates \verb{n_items × length(lambda_grid)}
-fits. For \code{n_items = 8} and a 5-point grid this is 40 fits per pass. Use
-\code{n_pass = 1} (the default) for a single greedy sweep, which is usually
-sufficient.
+\strong{Computational cost.} Each pass refits per item per candidate lambda:
+\code{method = "grid"} does \verb{n_items × length(lambda_grid)} fits; \code{method = "optimize"} does roughly \verb{n_items × 12} (the optimizer's evaluations plus the
+endpoints). Use \code{n_pass = 1} (the default) for a single greedy sweep, which is
+usually sufficient.
 }
 \note{
 \strong{Approximation status.} The coordinate descent fits use the frozen

@@ -5,7 +5,7 @@
 \title{Tune lambda by downstream ability-score risk for a 1PL model}
 \usage{
 tune_lambda_ability_risk_1pl(
-  lambda_grid,
+  lambda_grid = seq(0, 1, by = 0.1),
   observed,
   predicted,
   generated,
@@ -14,6 +14,7 @@ tune_lambda_ability_risk_1pl(
   n_quad = 31,
   initial_pars = NULL,
   fit_fn = fit_mixed_subjects_mml_1pl,
+  method = c("optimize", "grid"),
   bounds = c(-6, 6),
   max_discrimination = 10,
   control = list(maxit = 500),
@@ -21,7 +22,11 @@ tune_lambda_ability_risk_1pl(
 )
 }
 \arguments{
-\item{lambda_grid}{Numeric vector of candidate lambda values in \verb{[0, 1]}.}
+\item{lambda_grid}{Numeric vector of candidate lambda values in \verb{[0, 1]}. For
+\code{method = "grid"} these are the evaluated candidates; for
+\code{method = "optimize"} only \code{range(lambda_grid)} matters and bounds the search
+(e.g. \code{lambda_grid = c(0, 0.8)} caps lambda at 0.8). Defaults to
+\code{seq(0, 1, by = 0.1)}.}
 
 \item{observed, predicted, generated}{Response matrices passed to
 \code{\link[=fit_mixed_subjects]{fit_mixed_subjects()}}.}
@@ -40,6 +45,10 @@ computed.}
 
 \item{fit_fn}{Fitting function. Defaults to \code{\link[=fit_mixed_subjects_mml_1pl]{fit_mixed_subjects_mml_1pl()}}.}
 
+\item{method}{How lambda is chosen: \code{"optimize"} (default, direct 1-D
+optimization over \code{range(lambda_grid)}, continuous lambda) or \code{"grid"}
+(evaluate every value in \code{lambda_grid} and take the argmin).}
+
 \item{bounds}{Bounds passed to \code{\link[=score_theta]{score_theta()}}.}
 
 \item{max_discrimination}{Upper bound on plausible item discrimination. Any
@@ -57,9 +66,12 @@ default of 10 is far above any realistic 2PL discrimination.}
 A list with \code{summary}, \code{best_lambda}, \code{best_fit}, \code{fits}, \code{risks}.
 }
 \description{
-Grid-searches lambda values using \code{\link[=fit_mixed_subjects_mml_1pl]{fit_mixed_subjects_mml_1pl()}} (by
-default) and selects the value minimizing \verb{E[g' Sigma_1pl g]} — the
-propagated ability-score risk in the 1PL parameterization.
+Selects the lambda minimizing \verb{E[g' Sigma_1pl g]} — the propagated
+ability-score risk in the 1PL parameterization — using
+\code{\link[=fit_mixed_subjects_mml_1pl]{fit_mixed_subjects_mml_1pl()}} by default. As in the 2PL
+\code{\link[=tune_lambda_ability_risk]{tune_lambda_ability_risk()}}, lambda is chosen by direct 1-D optimization
+(\code{method = "optimize"}, the default) or over \code{lambda_grid}
+(\code{method = "grid"}).
 }
 \details{
 Passes \code{fit_fn} to allow switching between the frozen expected-count

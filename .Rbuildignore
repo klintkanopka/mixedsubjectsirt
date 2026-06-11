@@ -7,3 +7,5 @@
 ^\.github$
 ^\.claude$
 ^simulations$
+^data-raw$
+^vignettes/largeN_.*\.rds$

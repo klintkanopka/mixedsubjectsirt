@@ -372,9 +372,12 @@ tune_lambda_ppi_score_1pl <- function(
 
 #' Tune lambda by downstream ability-score risk for a 1PL model
 #'
-#' Grid-searches lambda values using [fit_mixed_subjects_mml_1pl()] (by
-#' default) and selects the value minimizing `E[g' Sigma_1pl g]` — the
-#' propagated ability-score risk in the 1PL parameterization.
+#' Selects the lambda minimizing `E[g' Sigma_1pl g]` — the propagated
+#' ability-score risk in the 1PL parameterization — using
+#' [fit_mixed_subjects_mml_1pl()] by default. As in the 2PL
+#' [tune_lambda_ability_risk()], lambda is chosen by direct 1-D optimization
+#' (`method = "optimize"`, the default) or over `lambda_grid`
+#' (`method = "grid"`).
 #'
 #' Passes `fit_fn` to allow switching between the frozen expected-count
 #' estimator ([fit_mixed_subjects_1pl()]) and the marginal-MML estimator
@@ -400,7 +403,7 @@ tune_lambda_ppi_score_1pl <- function(
 #' )
 #' tuned$best_lambda
 tune_lambda_ability_risk_1pl <- function(
-  lambda_grid,
+  lambda_grid = seq(0, 1, by = 0.1),
   observed,
   predicted,
   generated,
@@ -409,11 +412,13 @@ tune_lambda_ability_risk_1pl <- function(
   n_quad = 31,
   initial_pars = NULL,
   fit_fn = fit_mixed_subjects_mml_1pl,
+  method = c("optimize", "grid"),
   bounds = c(-6, 6),
   max_discrimination = 10,
   control = list(maxit = 500),
   ...
 ) {
+  method <- match.arg(method)
   if (!is.numeric(lambda_grid) || length(lambda_grid) == 0) {
     stop("lambda_grid must be a non-empty numeric vector.", call. = FALSE)
   }
@@ -436,115 +441,93 @@ tune_lambda_ability_risk_1pl <- function(
     check_same_items(observed, target_resp, "observed", "target_resp")
   }
 
-  rows <- vector("list", length(lambda_grid))
-  fits <- vector("list", length(lambda_grid))
-  risks <- vector("list", length(lambda_grid))
+  inf_risk <- list(summary = data.frame(mean_param_var = Inf,
+                                        mean_squared_error = Inf,
+                                        mean_total_risk = Inf))
 
-  for (i in seq_along(lambda_grid)) {
-    lam <- lambda_grid[i]
+  # Memoized per-lambda evaluation, robust to failed 1PL fits (tryCatch).
+  cache <- new.env(parent = emptyenv())
+  evaluate <- function(lambda) {
+    lambda <- validate_lambda(lambda)
+    key <- sprintf("%.12f", lambda)
+    hit <- get0(key, envir = cache, inherits = FALSE, ifnotfound = NULL)
+    if (!is.null(hit)) return(hit)
 
-    # Wrap the fit in tryCatch so a failed candidate does not abort the loop.
-    fits[[i]] <- tryCatch(
-      fit_fn(
-        observed = observed,
-        predicted = predicted,
-        generated = generated,
-        lambda = lam,
-        n_quad = n_quad,
-        initial_pars = initial_pars,
-        control = control,
-        ...
-      ),
+    fit <- tryCatch(
+      fit_fn(observed = observed, predicted = predicted, generated = generated,
+             lambda = lambda, n_quad = n_quad, initial_pars = initial_pars,
+             control = control, ...),
       error = function(e) NULL
     )
-
-    # Wrap vcov and risk: a singular bread or degenerate item parameters
-    # returns Inf risk, which the selection_risk filter below will exclude.
-    if (is.null(fits[[i]])) {
-      risks[[i]] <- list(
-        summary = data.frame(
-          mean_param_var = Inf,
-          mean_squared_error = Inf,
-          mean_total_risk = Inf
-        )
-      )
+    if (is.null(fit)) {
+      risk <- inf_risk; conv <- 99L; max_disc <- Inf
     } else {
-      Sigma <- tryCatch(
-        vcov_mixed_subjects_1pl(fits[[i]]),
-        error = function(e) NULL
-      )
-
-      if (is.null(Sigma)) {
-        risks[[i]] <- list(
-          summary = data.frame(
-            mean_param_var = Inf,
-            mean_squared_error = Inf,
-            mean_total_risk = Inf
-          )
-        )
-      } else {
-        risks[[i]] <- tryCatch(
-          ability_risk_1pl(
-            target_resp,
-            fits[[i]],
-            vcov = Sigma,
-            theta_true = theta_true,
-            bounds = bounds
-          ),
-          error = function(e) {
-            list(
-              summary = data.frame(
-                mean_param_var = Inf,
-                mean_squared_error = Inf,
-                mean_total_risk = Inf
-              )
-            )
-          }
-        )
-      }
+      Sigma <- tryCatch(vcov_mixed_subjects_1pl(fit), error = function(e) NULL)
+      risk <- if (is.null(Sigma)) inf_risk else tryCatch(
+        ability_risk_1pl(target_resp, fit, vcov = Sigma,
+                         theta_true = theta_true, bounds = bounds),
+        error = function(e) inf_risk)
+      conv <- fit$convergence
+      max_disc <- max(abs(fit$item_pars$a))
     }
-
-    rows[[i]] <- data.frame(
-      lambda = lam,
-      mean_param_var = risks[[i]]$summary$mean_param_var,
-      mean_squared_error = risks[[i]]$summary$mean_squared_error,
-      mean_total_risk = risks[[i]]$summary$mean_total_risk,
-      convergence = if (is.null(fits[[i]])) 99L else fits[[i]]$convergence,
-      max_disc = if (is.null(fits[[i]])) {
-        Inf
-      } else {
-        max(abs(fits[[i]]$item_pars$a))
-      }
-    )
+    sel <- risk$summary$mean_total_risk
+    if (!is.finite(sel) || conv != 0 || max_disc > max_discrimination) sel <- Inf
+    out <- list(lambda = lambda, fit = fit, risk = risk, max_disc = max_disc,
+                convergence = conv, selection_risk = sel)
+    assign(key, out, envir = cache)
+    out
   }
 
-  summary <- do.call(rbind, rows)
+  lo <- min(lambda_grid)
+  hi <- max(lambda_grid)
 
-  # Exclude non-converged, non-finite-risk, and degenerate (runaway
-  # discrimination) candidates; see tune_lambda_ability_risk() for rationale.
-  summary$selection_risk <- summary$mean_total_risk
-  summary$selection_risk[summary$max_disc > max_discrimination] <- Inf
-  summary$selection_risk[
-    !is.finite(summary$selection_risk) | summary$convergence != 0
-  ] <- Inf
+  if (method == "grid") {
+    invisible(lapply(lambda_grid, evaluate))
+  } else {
+    penalty <- 1e12
+    obj <- function(lambda) {
+      s <- evaluate(lambda)$selection_risk
+      if (is.finite(s)) s else penalty
+    }
+    evaluate(lo)
+    evaluate(hi)
+    if (hi > lo) stats::optimize(obj, interval = c(lo, hi), tol = 1e-3)
+  }
+
+  evals <- mget(ls(cache), envir = cache)
+  rows <- lapply(evals, function(e) data.frame(
+    lambda = e$lambda,
+    mean_param_var = e$risk$summary$mean_param_var,
+    mean_squared_error = e$risk$summary$mean_squared_error,
+    mean_total_risk = e$risk$summary$mean_total_risk,
+    convergence = e$convergence,
+    max_disc = e$max_disc,
+    selection_risk = e$selection_risk
+  ))
+  summary <- do.call(rbind, rows)
+  summary <- summary[order(summary$lambda), , drop = FALSE]
+  rownames(summary) <- NULL
 
   if (all(is.infinite(summary$selection_risk))) {
     warning(
       "No lambda candidate converged with finite ability-score risk. ",
-      "Returning lambda = 0 (human-only estimate).",
+      "Returning lambda = ", lo, " (human-only when lower bound is 0).",
       call. = FALSE
     )
-    best_idx <- which(summary$lambda == 0)
-    best_idx <- if (length(best_idx) > 0L) best_idx[1L] else 1L
+    best <- evaluate(lo)
   } else {
-    best_idx <- which.min(summary$selection_risk)
+    best <- evaluate(summary$lambda[which.min(summary$selection_risk)])
   }
+
+  fits  <- lapply(summary$lambda, function(l) evaluate(l)$fit)
+  risks <- lapply(summary$lambda, function(l) evaluate(l)$risk)
 
   list(
     summary = summary,
-    best_lambda = summary$lambda[best_idx],
-    best_fit = fits[[best_idx]],
+    best_lambda = best$lambda,
+    best_fit = best$fit,
     fits = fits,
-    risks = risks
+    risks = risks,
+    method = method
   )
 }
