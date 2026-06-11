@@ -17,9 +17,8 @@ Four scenario sets, each over the four predictor regimes:
 | R4 LLM shift | binary draw from attenuated/shifted `a`, `d` | biased but informative |
 
 All predictors are **binary 0/1 responses**: the package disallows probability
-(fractional) predictions for `predicted`/`generated`. Earlier rounds also included
-"conditional mean" regimes that fed fractional predictions; those have been
-removed, and the four binary regimes are numbered contiguously R1–R4.
+(fractional) predictions for `predicted`/`generated`. The four binary regimes are
+numbered contiguously R1–R4.
 
 1. **`run_lambda_selection.R` — λ selection.** For each regime, tune λ by
    ability-score risk with `fit_mixed_subjects_mml` and record the selected λ.
@@ -125,18 +124,15 @@ is a few hours.
 
 ## Notes and known subtleties
 
-- **Why probability predictions are disallowed.** Earlier rounds included a
-  "conditional mean" regime whose `predicted` was the *fractional* probability
-  `plogis(aθ + d)`. This exposed a genuine flaw, now fixed at the API level: a
-  fractional value is not a coherent likelihood term for the marginal IRT
-  objective (the response enters inside a log-sum over quadrature). Mixing a
+- **Why probability predictions are disallowed.** A *fractional* prediction (e.g.
+  a probability `plogis(aθ + d)`) is not a coherent likelihood term for the marginal
+  IRT objective — the response enters inside a log-sum over quadrature. Mixing a
   fractional paired stream with a binary generated stream makes
   `E[∇L_gen] ≠ E[∇L_pred]`, so the PPI correction no longer cancels and the
   estimator is biased at λ > 0; worse, at λ = 0.5 the objective is *unbounded* in
-  discrimination (`a → ∞`), so the fit diverges and ~92% of reps were dropped. The
-  package now requires **binary** `predicted`/`generated` (sample from any
-  probabilities first), which makes this failure impossible by construction. Those
-  conditional-mean regimes were removed accordingly.
+  discrimination (`a → ∞`), so the fit diverges. The package now requires **binary**
+  `predicted`/`generated` (sample from any probabilities first), which makes this
+  failure impossible by construction.
 
 - **Coverage consistency.** The PPI correction `λ(L_gen − L_pred)` is mean-zero
   whenever the paired and generated pseudo-responses are drawn from the **same**
