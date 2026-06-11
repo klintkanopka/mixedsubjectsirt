@@ -2,8 +2,9 @@
 
 Computes each subject's posterior distribution over a fixed quadrature
 grid under a 2PL model, using stable log-likelihood calculations.
-Fractional responses in `[0, 1]` are allowed, which is useful when LLM
-output is stored as probabilities rather than sampled binary responses.
+Fractional responses in `[0, 1]` are allowed at this low level, which is
+useful when LLM output is stored as probabilities rather than sampled
+binary responses.
 
 ## Usage
 
@@ -48,6 +49,17 @@ posterior_weights_2pl(
 
 A matrix with one row per subject and one column per quadrature node.
 Rows sum to one. Attributes `theta` and `weight` contain the grid.
+
+## Details
+
+Note: the high-level mixed-subjects fitting functions
+([`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+and relatives) require **binary** `predicted` and `generated`;
+fractional input is supported only in these low-level quadrature
+utilities. If you have LLM-derived probabilities, sample binary
+responses from them (e.g. with
+[`stats::rbinom()`](https://rdrr.io/r/stats/Binomial.html)) before
+calibrating.
 
 ## Examples
 

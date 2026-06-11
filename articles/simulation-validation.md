@@ -83,17 +83,15 @@ Selected lambda by regime (ability-risk tuning). {.table}
 
 The package requires **binary** `predicted`/`generated` and rejects
 probability inputs. This is not a convenience restriction — it removes a
-genuine failure mode. A fractional value such as a conditional mean
-`p(θ)` is not a coherent likelihood term for the marginal IRT objective:
-the response vector enters inside a log-sum over quadrature points, so
+genuine failure mode. A fractional value such as a probability `p(θ)` is
+not a coherent likelihood term for the marginal IRT objective: the
+response vector enters inside a log-sum over quadrature points, so
 feeding probabilities breaks the identity `E[∇L_gen] = E[∇L_pred]` that
 makes the PPI correction mean-zero. The estimator then becomes biased at
 λ \> 0, and at moderate λ the objective is even *unbounded* in
-discrimination (`a → ∞`), so the fit diverges. An earlier version of
-this study included a “conditional-mean” regime that exhibited exactly
-this pathology; it has been removed along with probability support. The
-practical rule: if you have LLM-derived probabilities, **sample** binary
-responses from them (e.g. `rbinom`) before calibrating.
+discrimination (`a → ∞`), so the fit diverges. The practical rule: if
+you have LLM-derived probabilities, **sample** binary responses from
+them (e.g. `rbinom`) before calibrating.
 
 ## Scenario 2: Louis-corrected SE coverage — the key check
 

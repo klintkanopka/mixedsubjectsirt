@@ -26,4 +26,23 @@
   all fitting and PPI-score functions; probability (fractional) inputs
   are rejected with a message to sample from them first. Fractional
   values are not a valid likelihood input for the marginal IRT objective
-  and break the PPI correction.
+  and break the PPI correction. The low-level quadrature utilities still
+  accept fractional input, and now document that the high-level fitters
+  do not.
+
+### Robustness
+
+- [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+  now wraps each candidate fit in
+  [`tryCatch()`](https://rdrr.io/r/base/conditions.html), so a single
+  failed fit (from bad starting values, aggressive bounds, or unusual
+  response patterns) is treated as an ineligible (infinite-risk)
+  candidate instead of aborting the whole tuning run — matching the 1PL
+  tuner.
+
+### Documentation
+
+- Softened the README’s headline claims to match the finite-sample
+  validation results, and added a “What should I use?”
+  function-selection table.
+- Added a `R-CMD-check` GitHub Actions workflow.

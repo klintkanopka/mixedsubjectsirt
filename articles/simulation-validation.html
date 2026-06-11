@@ -229,19 +229,16 @@ score-level signal, and the criterion uses a little of it.</li>
 <p>The package requires <strong>binary</strong>
 <code>predicted</code>/<code>generated</code> and rejects probability
 inputs. This is not a convenience restriction — it removes a genuine
-failure mode. A fractional value such as a conditional mean
-<code>p(θ)</code> is not a coherent likelihood term for the marginal IRT
-objective: the response vector enters inside a log-sum over quadrature
-points, so feeding probabilities breaks the identity
+failure mode. A fractional value such as a probability <code>p(θ)</code>
+is not a coherent likelihood term for the marginal IRT objective: the
+response vector enters inside a log-sum over quadrature points, so
+feeding probabilities breaks the identity
 <code>E[∇L_gen] = E[∇L_pred]</code> that makes the PPI correction
 mean-zero. The estimator then becomes biased at λ &gt; 0, and at
 moderate λ the objective is even <em>unbounded</em> in discrimination
-(<code>a → ∞</code>), so the fit diverges. An earlier version of this
-study included a “conditional-mean” regime that exhibited exactly this
-pathology; it has been removed along with probability support. The
-practical rule: if you have LLM-derived probabilities,
-<strong>sample</strong> binary responses from them
-(e.g. <code>rbinom</code>) before calibrating.</p>
+(<code>a → ∞</code>), so the fit diverges. The practical rule: if you
+have LLM-derived probabilities, <strong>sample</strong> binary responses
+from them (e.g. <code>rbinom</code>) before calibrating.</p>
 </div>
 </div>
 <div class="section level2">
