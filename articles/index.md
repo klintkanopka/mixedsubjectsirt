@@ -15,6 +15,8 @@ Choosing lambda and the simulation validation study
   IRT](http://klintkanopka.com/mixedsubjectsirt/articles/lambda-tuning.md):
 - [Simulation Validation of the Mixed-Subjects MML
   Estimator](http://klintkanopka.com/mixedsubjectsirt/articles/simulation-validation.md):
+- [Calibrating with a Weakly-Informative, Biased
+  LLM](http://klintkanopka.com/mixedsubjectsirt/articles/weakly-informative-llm.md):
 
 ### Extensions
 

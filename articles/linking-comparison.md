@@ -687,7 +687,7 @@ risk_A <- tune_lambda_ability_risk(
   n_quad      = n_quad,
   control     = list(maxit = 200))
 cat("  Ability-risk lambda* =", risk_A$best_lambda, "\n")
-#>   Ability-risk lambda* = 0.8
+#>   Ability-risk lambda* = 0.7693389
 ```
 
 ### Test B — Partially overlapping predictions
@@ -730,7 +730,7 @@ risk_B <- tune_lambda_ability_risk(
   n_quad      = n_quad,
   control     = list(maxit = 200))
 cat("  Ability-risk lambda* =", risk_B$best_lambda, "\n")
-#>   Ability-risk lambda* = 0.2
+#>   Ability-risk lambda* = 0.2448014
 ```
 
 ### Test C — Stochastic LLM predictions (practical baseline)
@@ -782,9 +782,9 @@ cat("  Ability-risk lambda* =", risk_C$best_lambda, "\n")
 
 | Test | PPI++ lambda\* | Ability-risk lambda\* | Theory |
 |:---|---:|---:|:---|
-| A: F=Y (upper bound) | 0.750 | 0.8 | N/(n+N) = 0.75 |
-| B: 50% overlap | 0.258 | 0.2 | 0 \< lambda \< N/(n+N) |
-| C: independent LLM draws | 0.000 | 0.0 | ~0 (no gradient covariance) |
+| A: F=Y (upper bound) | 0.750 | 0.7693389 | N/(n+N) = 0.75 |
+| B: 50% overlap | 0.258 | 0.2448014 | 0 \< lambda \< N/(n+N) |
+| C: independent LLM draws | 0.000 | 0.0000000 | ~0 (no gradient covariance) |
 
 PPI++ score lambda vs. ability-risk lambda. PPI++ lambda minimizes
 Tr(Sigma_gamma). Ability-risk lambda minimizes E\[g’ Sigma_gamma g\].

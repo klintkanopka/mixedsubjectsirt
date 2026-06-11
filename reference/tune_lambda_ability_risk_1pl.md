@@ -1,15 +1,18 @@
 # Tune lambda by downstream ability-score risk for a 1PL model
 
-Grid-searches lambda values using
+Selects the lambda minimizing `E[g' Sigma_1pl g]` — the propagated
+ability-score risk in the 1PL parameterization — using
 [`fit_mixed_subjects_mml_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml_1pl.md)
-(by default) and selects the value minimizing `E[g' Sigma_1pl g]` — the
-propagated ability-score risk in the 1PL parameterization.
+by default. As in the 2PL
+[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md),
+lambda is chosen by direct 1-D optimization (`method = "optimize"`, the
+default) or over `lambda_grid` (`method = "grid"`).
 
 ## Usage
 
 ``` r
 tune_lambda_ability_risk_1pl(
-  lambda_grid,
+  lambda_grid = seq(0, 1, by = 0.1),
   observed,
   predicted,
   generated,
@@ -18,6 +21,7 @@ tune_lambda_ability_risk_1pl(
   n_quad = 31,
   initial_pars = NULL,
   fit_fn = fit_mixed_subjects_mml_1pl,
+  method = c("optimize", "grid"),
   bounds = c(-6, 6),
   max_discrimination = 10,
   control = list(maxit = 500),
@@ -29,7 +33,11 @@ tune_lambda_ability_risk_1pl(
 
 - lambda_grid:
 
-  Numeric vector of candidate lambda values in `[0, 1]`.
+  Numeric vector of candidate lambda values in `[0, 1]`. For
+  `method = "grid"` these are the evaluated candidates; for
+  `method = "optimize"` only `range(lambda_grid)` matters and bounds the
+  search (e.g. `lambda_grid = c(0, 0.8)` caps lambda at 0.8). Defaults
+  to `seq(0, 1, by = 0.1)`.
 
 - observed, predicted, generated:
 
@@ -60,6 +68,12 @@ tune_lambda_ability_risk_1pl(
 
   Fitting function. Defaults to
   [`fit_mixed_subjects_mml_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml_1pl.md).
+
+- method:
+
+  How lambda is chosen: `"optimize"` (default, direct 1-D optimization
+  over `range(lambda_grid)`, continuous lambda) or `"grid"` (evaluate
+  every value in `lambda_grid` and take the argmin).
 
 - bounds:
 

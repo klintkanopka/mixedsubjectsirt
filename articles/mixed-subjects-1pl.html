@@ -36,10 +36,12 @@
 <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
     <li><a class="dropdown-item" href="../articles/simulation-validation.html">Simulation Validation of the Mixed-Subjects MML Estimator</a></li>
+    <li><a class="dropdown-item" href="../articles/weakly-informative-llm.html">Calibrating with a Weakly-Informative, Biased LLM</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -222,10 +224,13 @@ rows/columns.</p>
 1PL-parameterized gradient
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>∂</mi><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>/</mi><mi>∂</mi><mo stretchy="false" form="prefix">(</mo><msub><mi>a</mi><mtext mathvariant="normal">shared</mtext></msub><mo>,</mo><msub><mi>d</mi><mn>1</mn></msub><mo>,</mo><mi>…</mi><mo>,</mo><msub><mi>d</mi><mi>J</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\partial\hat\theta / \partial (a_\text{shared}, d_1, \ldots, d_J)</annotation></semantics></math>
 for the ability-score risk. The chain rule gives
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>∂</mi><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>/</mi><mi>∂</mi><msub><mi>a</mi><mtext mathvariant="normal">shared</mtext></msub><mo>=</mo><msub><mo>∑</mo><mi>j</mi></msub><mi>∂</mi><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>/</mi><mi>∂</mi><msub><mi>a</mi><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">\partial\hat\theta / \partial a_\text{shared} = \sum_j \partial\hat\theta / \partial a_j</annotation></semantics></math>.</p>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>∂</mi><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>/</mi><mi>∂</mi><msub><mi>a</mi><mtext mathvariant="normal">shared</mtext></msub><mo>=</mo><msub><mo>∑</mo><mi>j</mi></msub><mi>∂</mi><mover><mi>θ</mi><mo accent="true">̂</mo></mover><mi>/</mi><mi>∂</mi><msub><mi>a</mi><mi>j</mi></msub></mrow><annotation encoding="application/x-tex">\partial\hat\theta / \partial a_\text{shared} = \sum_j \partial\hat\theta / \partial a_j</annotation></semantics></math>.
+As in the 2PL version,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+is chosen by direct 1-D optimization by default (pass
+<code>method = "grid"</code> to scan a grid instead).</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tuned_1pl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk_1pl.html">tune_lambda_ability_risk_1pl</a></span><span class="op">(</span></span>
-<span>  lambda_grid  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted    <span class="op">=</span> <span class="va">predicted</span>,</span>
 <span>  generated    <span class="op">=</span> <span class="va">generated</span>,</span>
@@ -234,17 +239,8 @@ for the ability-score risk. The chain rule gives
 <span>  control      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">tuned_1pl</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lambda"</span>, <span class="st">"mean_param_var"</span>, <span class="st">"mean_total_risk"</span>,</span>
-<span>                       <span class="st">"convergence"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;   lambda mean_param_var mean_total_risk convergence</span></span>
-<span><span class="co">#&gt; 1    0.0    0.003293615     0.003293615           0</span></span>
-<span><span class="co">#&gt; 2    0.2    0.002997535     0.002997535           0</span></span>
-<span><span class="co">#&gt; 3    0.4    0.003032710     0.003032710           0</span></span>
-<span><span class="co">#&gt; 4    0.6    0.003395853     0.003395853           0</span></span>
-<span><span class="co">#&gt; 5    0.8    0.004086590     0.004086590           0</span></span>
-<span><span class="co">#&gt; 6    1.0    0.005108417     0.005108417           0</span></span>
 <span><span class="va">tuned_1pl</span><span class="op">$</span><span class="va">best_lambda</span></span>
-<span><span class="co">#&gt; [1] 0.2</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.2784741</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-5-verify-f-y-gives-lambda-0">Step 5: Verify — F = Y gives lambda &gt; 0<a class="anchor" aria-label="anchor" href="#step-5-verify-f-y-gives-lambda-0"></a>
@@ -253,7 +249,6 @@ for the ability-score risk. The chain rule gives
 the ability-risk criterion should select a positive lambda.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tuned_fy</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk_1pl.html">tune_lambda_ability_risk_1pl</a></span><span class="op">(</span></span>
-<span>  lambda_grid  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted    <span class="op">=</span> <span class="va">observed</span>,     <span class="co"># F = Y</span></span>
 <span>  generated    <span class="op">=</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_generated</span><span class="op">)</span>, <span class="va">true_1pl</span><span class="op">)</span>,</span>
@@ -264,15 +259,7 @@ the ability-risk criterion should select a positive lambda.</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"F=Y best lambda:"</span>, <span class="va">tuned_fy</span><span class="op">$</span><span class="va">best_lambda</span>,</span>
 <span>    <span class="st">" (theory: N/(n+N) ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">n_generated</span> <span class="op">/</span> <span class="op">(</span><span class="va">n_human</span> <span class="op">+</span> <span class="va">n_generated</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">")\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; F=Y best lambda: 0.8  (theory: N/(n+N) = 0.75 )</span></span>
-<span><span class="va">tuned_fy</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lambda"</span>, <span class="st">"mean_param_var"</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co">#&gt;   lambda mean_param_var</span></span>
-<span><span class="co">#&gt; 1    0.0   0.0032936154</span></span>
-<span><span class="co">#&gt; 2    0.2   0.0022043602</span></span>
-<span><span class="co">#&gt; 3    0.4   0.0014197985</span></span>
-<span><span class="co">#&gt; 4    0.6   0.0009634564</span></span>
-<span><span class="co">#&gt; 5    0.8   0.0008625318</span></span>
-<span><span class="co">#&gt; 6    1.0   0.0011476931</span></span></code></pre></div>
+<span><span class="co">#&gt; F=Y best lambda: 0.7544813  (theory: N/(n+N) = 0.75 )</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="compare-1pl-and-2pl">Compare 1PL and 2PL<a class="anchor" aria-label="anchor" href="#compare-1pl-and-2pl"></a>
@@ -292,15 +279,15 @@ compare?</p>
 <span></span>
 <span><span class="va">rmse</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">x</span> <span class="op">-</span> <span class="va">y</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"1PL RMSE(a):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">tuned_1pl</span><span class="op">$</span><span class="va">best_fit</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">a</span>, <span class="va">true_1pl</span><span class="op">$</span><span class="va">a</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 1PL RMSE(a): 0.1021</span></span>
+<span><span class="co">#&gt; 1PL RMSE(a): 0.1085</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"2PL RMSE(a):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">fit_2pl_mml</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">a</span>, <span class="va">true_1pl</span><span class="op">$</span><span class="va">a</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2PL RMSE(a): 0.292</span></span>
+<span><span class="co">#&gt; 2PL RMSE(a): 0.3108</span></span>
 <span></span>
 <span><span class="co"># Difficulty recovery</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"1PL RMSE(d):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">tuned_1pl</span><span class="op">$</span><span class="va">best_fit</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">d</span>, <span class="va">true_1pl</span><span class="op">$</span><span class="va">d</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 1PL RMSE(d): 0.1901</span></span>
+<span><span class="co">#&gt; 1PL RMSE(d): 0.1989</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"2PL RMSE(d):"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">fit_2pl_mml</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">d</span>, <span class="va">true_1pl</span><span class="op">$</span><span class="va">d</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2PL RMSE(d): 0.196</span></span></code></pre></div>
+<span><span class="co">#&gt; 2PL RMSE(d): 0.2077</span></span></code></pre></div>
 <p>The 1PL uses fewer parameters
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>J</mi><mo>+</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">J+1</annotation></semantics></math>
 vs
@@ -324,9 +311,9 @@ concentrates all discrimination information in a single parameter.</p>
 <span><span class="va">risk_2pl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ability_risk.html">ability_risk</a></span><span class="op">(</span><span class="va">observed</span>, <span class="va">fit_2pl_mml</span>, vcov <span class="op">=</span> <span class="va">Sigma_2pl</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"1PL mean param_var:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">risk_1pl</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">mean_param_var</span>, <span class="fl">5</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 1PL mean param_var: 0.003</span></span>
+<span><span class="co">#&gt; 1PL mean param_var: 0.00297</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"2PL mean param_var:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">risk_2pl</span><span class="op">$</span><span class="va">summary</span><span class="op">$</span><span class="va">mean_param_var</span>, <span class="fl">5</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2PL mean param_var: 0.04243</span></span></code></pre></div>
+<span><span class="co">#&gt; 2PL mean param_var: 0.04299</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

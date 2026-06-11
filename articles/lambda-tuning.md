@@ -122,6 +122,14 @@ artificial gradient asymmetry. The MML estimator removes this asymmetry.
 With a good predictor (F = Y), `tune_lambda_ability_risk` with MML
 correctly selects $`\lambda > 0`$.
 
+By default
+[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+chooses $`\lambda`$ by **direct 1-D optimization** of the risk over
+`[0, 1]` (continuous, no grid). Here we pass `method = "grid"` with
+`lambda_grid` so the `summary` shows the risk at each candidate — handy
+for *seeing* the surface. In practice you can omit both and let it
+optimize.
+
 ``` r
 
 ability_tuned_mml <- tune_lambda_ability_risk(
@@ -132,6 +140,7 @@ ability_tuned_mml <- tune_lambda_ability_risk(
   target_resp  = observed,
   initial_pars = human_pars,
   fit_fn       = fit_mixed_subjects_mml,     # marginal MML estimator
+  method       = "grid",                     # show the risk at each candidate
   n_quad       = 7,
   control      = list(maxit = 100)
 )
@@ -146,6 +155,14 @@ ability_tuned_mml$summary[, c("lambda", "mean_param_var", "mean_total_risk",
 #> 5   1.00      1.3329374       1.3329374           0            Inf
 ability_tuned_mml$best_lambda
 #> [1] 0
+
+# The default (method = "optimize") returns a continuous lambda directly:
+tune_lambda_ability_risk(
+  observed = observed, predicted = predicted, generated = generated,
+  target_resp = observed, initial_pars = human_pars,
+  fit_fn = fit_mixed_subjects_mml, n_quad = 7, control = list(maxit = 100)
+)$best_lambda
+#> [1] 0.07626505
 ```
 
 `selection_risk` is `Inf` for any candidate with non-zero convergence
@@ -194,6 +211,7 @@ ability_tuned_truth <- tune_lambda_ability_risk(
   theta_true   = theta_human,
   initial_pars = human_pars,
   fit_fn       = fit_mixed_subjects_mml,
+  method       = "grid",
   n_quad       = 7,
   control      = list(maxit = 100)
 )
@@ -236,7 +254,7 @@ crossfit_tuned <- tune_lambda_ability_risk_crossfit(
 )
 
 crossfit_tuned$lambda_by_split
-#> [1] 0 0
+#> [1] 0.07109222 0.00000000
 ```
 
 ## Step 5: Frozen expected-count estimator (fast approximation)

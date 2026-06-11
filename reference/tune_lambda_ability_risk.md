@@ -8,7 +8,7 @@ average propagated ability-score risk on a target response matrix.
 
 ``` r
 tune_lambda_ability_risk(
-  lambda_grid,
+  lambda_grid = seq(0, 1, by = 0.1),
   observed,
   predicted,
   generated,
@@ -17,6 +17,7 @@ tune_lambda_ability_risk(
   n_quad = 31,
   initial_pars = NULL,
   fit_fn = fit_mixed_subjects,
+  method = c("optimize", "grid"),
   bounds = c(-6, 6),
   max_discrimination = 10,
   control = list(maxit = 500),
@@ -28,7 +29,11 @@ tune_lambda_ability_risk(
 
 - lambda_grid:
 
-  Numeric vector of candidate lambda values in `[0, 1]`.
+  Numeric vector of candidate lambda values in `[0, 1]`. For
+  `method = "grid"` these are the evaluated candidates; for
+  `method = "optimize"` only `range(lambda_grid)` matters and bounds the
+  search (e.g. `lambda_grid = c(0, 0.8)` caps lambda at 0.8). Defaults
+  to `seq(0, 1, by = 0.1)`.
 
 - observed, predicted, generated:
 
@@ -65,6 +70,12 @@ tune_lambda_ability_risk(
   gradient asymmetry and should select `lambda > 0` for genuinely
   informative predictors.
 
+- method:
+
+  How lambda is chosen: `"optimize"` (default, direct 1-D optimization
+  over `range(lambda_grid)`, continuous lambda) or `"grid"` (evaluate
+  every value in `lambda_grid` and take the argmin).
+
 - bounds:
 
   Bounds passed to
@@ -90,8 +101,9 @@ tune_lambda_ability_risk(
 
 ## Value
 
-A list with `summary`, `best_lambda`, `best_fit`, and all fitted
-candidate objects.
+A list with `summary` (every evaluated lambda with its risk and
+diagnostics), `best_lambda` (continuous under `method = "optimize"`),
+`best_fit`, the evaluated `fits` and `risks`, and `method`.
 
 ## Details
 
@@ -121,6 +133,17 @@ create a gradient asymmetry that inflates item parameters at any
 function; it is a property of the estimating equations. See
 [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 for a marginal-likelihood implementation that removes this asymmetry.
+
+**Tuning method.** By default (`method = "optimize"`) lambda is selected
+by direct 1-D optimization
+([`stats::optimize()`](https://rdrr.io/r/stats/optimize.html)) of the
+ability-score risk over the interval `range(lambda_grid)` (default
+`[0, 1]`), returning a *continuous* lambda with no grid rounding. With
+`method = "grid"` the risk is evaluated at each value of `lambda_grid`
+and the argmin returned (the previous behaviour; useful for inspecting
+the whole risk surface). Both share the same runaway-discrimination
+guard and the same lambda = 0 (human-only) fallback when no candidate is
+eligible.
 
 ## See also
 

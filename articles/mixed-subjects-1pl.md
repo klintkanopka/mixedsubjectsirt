@@ -148,11 +148,12 @@ uses the 1PL-parameterized gradient
 $`\partial\hat\theta / \partial (a_\text{shared}, d_1, \ldots, d_J)`$
 for the ability-score risk. The chain rule gives
 $`\partial\hat\theta / \partial a_\text{shared} = \sum_j \partial\hat\theta / \partial a_j`$.
+As in the 2PL version, $`\lambda`$ is chosen by direct 1-D optimization
+by default (pass `method = "grid"` to scan a grid instead).
 
 ``` r
 
 tuned_1pl <- tune_lambda_ability_risk_1pl(
-  lambda_grid  = seq(0, 1, by = 0.2),
   observed     = observed,
   predicted    = predicted,
   generated    = generated,
@@ -161,17 +162,8 @@ tuned_1pl <- tune_lambda_ability_risk_1pl(
   control      = list(maxit = 300)
 )
 
-tuned_1pl$summary[, c("lambda", "mean_param_var", "mean_total_risk",
-                       "convergence")]
-#>   lambda mean_param_var mean_total_risk convergence
-#> 1    0.0    0.003293615     0.003293615           0
-#> 2    0.2    0.002997535     0.002997535           0
-#> 3    0.4    0.003032710     0.003032710           0
-#> 4    0.6    0.003395853     0.003395853           0
-#> 5    0.8    0.004086590     0.004086590           0
-#> 6    1.0    0.005108417     0.005108417           0
 tuned_1pl$best_lambda
-#> [1] 0.2
+#> [1] 0.2784741
 ```
 
 ## Step 5: Verify — F = Y gives lambda \> 0
@@ -182,7 +174,6 @@ criterion should select a positive lambda.
 ``` r
 
 tuned_fy <- tune_lambda_ability_risk_1pl(
-  lambda_grid  = seq(0, 1, by = 0.2),
   observed     = observed,
   predicted    = observed,     # F = Y
   generated    = simulate_2pl(rnorm(n_generated), true_1pl),
@@ -193,15 +184,7 @@ tuned_fy <- tune_lambda_ability_risk_1pl(
 
 cat("F=Y best lambda:", tuned_fy$best_lambda,
     " (theory: N/(n+N) =", round(n_generated / (n_human + n_generated), 3), ")\n")
-#> F=Y best lambda: 0.8  (theory: N/(n+N) = 0.75 )
-tuned_fy$summary[, c("lambda", "mean_param_var")]
-#>   lambda mean_param_var
-#> 1    0.0   0.0032936154
-#> 2    0.2   0.0022043602
-#> 3    0.4   0.0014197985
-#> 4    0.6   0.0009634564
-#> 5    0.8   0.0008625318
-#> 6    1.0   0.0011476931
+#> F=Y best lambda: 0.7544813  (theory: N/(n+N) = 0.75 )
 ```
 
 ## Compare 1PL and 2PL
@@ -222,15 +205,15 @@ fit_2pl_mml <- fit_mixed_subjects_mml(
 
 rmse <- function(x, y) sqrt(mean((x - y)^2))
 cat("1PL RMSE(a):", round(rmse(tuned_1pl$best_fit$item_pars$a, true_1pl$a), 4), "\n")
-#> 1PL RMSE(a): 0.1021
+#> 1PL RMSE(a): 0.1085
 cat("2PL RMSE(a):", round(rmse(fit_2pl_mml$item_pars$a, true_1pl$a), 4), "\n")
-#> 2PL RMSE(a): 0.292
+#> 2PL RMSE(a): 0.3108
 
 # Difficulty recovery
 cat("1PL RMSE(d):", round(rmse(tuned_1pl$best_fit$item_pars$d, true_1pl$d), 4), "\n")
-#> 1PL RMSE(d): 0.1901
+#> 1PL RMSE(d): 0.1989
 cat("2PL RMSE(d):", round(rmse(fit_2pl_mml$item_pars$d, true_1pl$d), 4), "\n")
-#> 2PL RMSE(d): 0.196
+#> 2PL RMSE(d): 0.2077
 ```
 
 The 1PL uses fewer parameters ($`J+1`$ vs $`2J`$), which can give lower
@@ -251,7 +234,7 @@ risk_1pl <- ability_risk_1pl(observed, tuned_1pl$best_fit)
 risk_2pl <- ability_risk(observed, fit_2pl_mml, vcov = Sigma_2pl)
 
 cat("1PL mean param_var:", round(risk_1pl$summary$mean_param_var, 5), "\n")
-#> 1PL mean param_var: 0.003
+#> 1PL mean param_var: 0.00297
 cat("2PL mean param_var:", round(risk_2pl$summary$mean_param_var, 5), "\n")
-#> 2PL mean param_var: 0.04243
+#> 2PL mean param_var: 0.04299
 ```

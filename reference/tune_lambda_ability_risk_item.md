@@ -2,15 +2,15 @@
 
 Finds a per-item vector of lambda values `λ_j ∈ [0, 1]` that minimizes
 propagated ability-score risk `E[g' Σ_γ g]` using coordinate descent on
-the items. Each coordinate step selects the `λ_j` in `lambda_grid` that
-gives the smallest mean ability risk while holding all other `λ_{j'}`
-fixed.
+the items. Each coordinate step holds the other `λ_{j'}` fixed and
+selects `λ_j` by direct 1-D optimization (`method = "optimize"`, the
+default, continuous) or over `lambda_grid` (`method = "grid"`).
 
 ## Usage
 
 ``` r
 tune_lambda_ability_risk_item(
-  lambda_grid,
+  lambda_grid = seq(0, 1, by = 0.1),
   observed,
   predicted,
   generated,
@@ -20,6 +20,7 @@ tune_lambda_ability_risk_item(
   initial_pars = NULL,
   n_pass = 1,
   init_lambda = 0,
+  method = c("optimize", "grid"),
   bounds = c(-6, 6),
   max_discrimination = 10,
   control = list(maxit = 300),
@@ -71,6 +72,12 @@ tune_lambda_ability_risk_item(
   zero. A scalar is broadcast to all items; a vector of length `n_items`
   sets per-item starting values.
 
+- method:
+
+  How each item's lambda is chosen at a coordinate step: `"optimize"`
+  (default, direct 1-D optimization over `range(lambda_grid)`,
+  continuous) or `"grid"` (evaluate every value in `lambda_grid`).
+
 - bounds:
 
   Bounds passed to
@@ -96,7 +103,7 @@ tune_lambda_ability_risk_item(
 ## Value
 
 A list with `lambda` (per-item vector), `item` (item names), `n_pass`,
-and `final_fit` (the
+`method`, and `final_fit` (the
 [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 fit at the selected lambda).
 
@@ -112,9 +119,10 @@ see the `@note` below. The resulting lambda vector can be used directly
 with
 [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md).
 
-**Computational cost.** Each pass evaluates
-`n_items × length(lambda_grid)` fits. For `n_items = 8` and a 5-point
-grid this is 40 fits per pass. Use `n_pass = 1` (the default) for a
+**Computational cost.** Each pass refits per item per candidate lambda:
+`method = "grid"` does `n_items × length(lambda_grid)` fits;
+`method = "optimize"` does roughly `n_items × 12` (the optimizer's
+evaluations plus the endpoints). Use `n_pass = 1` (the default) for a
 single greedy sweep, which is usually sufficient.
 
 ## Note

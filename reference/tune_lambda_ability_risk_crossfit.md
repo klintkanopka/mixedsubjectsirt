@@ -8,7 +8,7 @@ lambda values.
 
 ``` r
 tune_lambda_ability_risk_crossfit(
-  lambda_grid,
+  lambda_grid = seq(0, 1, by = 0.1),
   observed,
   predicted,
   generated,
@@ -34,7 +34,11 @@ tune_lambda_ability_risk_crossfit(
 
 - lambda_grid:
 
-  Numeric vector of candidate lambda values in `[0, 1]`.
+  Numeric vector of candidate lambda values in `[0, 1]`. For
+  `method = "grid"` these are the evaluated candidates; for
+  `method = "optimize"` only `range(lambda_grid)` matters and bounds the
+  search (e.g. `lambda_grid = c(0, 0.8)` caps lambda at 0.8). Defaults
+  to `seq(0, 1, by = 0.1)`.
 
 - observed, predicted, generated:
 

@@ -36,10 +36,12 @@
 <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
     <li><a class="dropdown-item" href="../articles/simulation-validation.html">Simulation Validation of the Mixed-Subjects MML Estimator</a></li>
+    <li><a class="dropdown-item" href="../articles/weakly-informative-llm.html">Calibrating with a Weakly-Informative, Biased LLM</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -217,6 +219,14 @@ due to an artificial gradient asymmetry. The MML estimator removes this
 asymmetry. With a good predictor (F = Y),
 <code>tune_lambda_ability_risk</code> with MML correctly selects
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda &gt; 0</annotation></semantics></math>.</p>
+<p>By default <code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> chooses
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+by <strong>direct 1-D optimization</strong> of the risk over
+<code>[0, 1]</code> (continuous, no grid). Here we pass
+<code>method = "grid"</code> with <code>lambda_grid</code> so the
+<code>summary</code> shows the risk at each candidate — handy for
+<em>seeing</em> the surface. In practice you can omit both and let it
+optimize.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ability_tuned_mml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="va">lambda_grid</span>,</span>
@@ -226,6 +236,7 @@ asymmetry. With a good predictor (F = Y),
 <span>  target_resp  <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_pars</span>,</span>
 <span>  fit_fn       <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>,     <span class="co"># marginal MML estimator</span></span>
+<span>  method       <span class="op">=</span> <span class="st">"grid"</span>,                     <span class="co"># show the risk at each candidate</span></span>
 <span>  n_quad       <span class="op">=</span> <span class="fl">7</span>,</span>
 <span>  control      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -239,7 +250,15 @@ asymmetry. With a good predictor (F = Y),
 <span><span class="co">#&gt; 4   0.75      0.6339994       0.6339994           0            Inf</span></span>
 <span><span class="co">#&gt; 5   1.00      1.3329374       1.3329374           0            Inf</span></span>
 <span><span class="va">ability_tuned_mml</span><span class="op">$</span><span class="va">best_lambda</span></span>
-<span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0</span></span>
+<span></span>
+<span><span class="co"># The default (method = "optimize") returns a continuous lambda directly:</span></span>
+<span><span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
+<span>  observed <span class="op">=</span> <span class="va">observed</span>, predicted <span class="op">=</span> <span class="va">predicted</span>, generated <span class="op">=</span> <span class="va">generated</span>,</span>
+<span>  target_resp <span class="op">=</span> <span class="va">observed</span>, initial_pars <span class="op">=</span> <span class="va">human_pars</span>,</span>
+<span>  fit_fn <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>, n_quad <span class="op">=</span> <span class="fl">7</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">$</span><span class="va">best_lambda</span></span>
+<span><span class="co">#&gt; [1] 0.07626505</span></span></code></pre></div>
 <p><code>selection_risk</code> is <code>Inf</code> for any candidate
 with non-zero convergence code or non-finite risk, protecting selection
 from numerical failures.</p>
@@ -279,6 +298,7 @@ also include squared ability-estimation error:</p>
 <span>  theta_true   <span class="op">=</span> <span class="va">theta_human</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_pars</span>,</span>
 <span>  fit_fn       <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>,</span>
+<span>  method       <span class="op">=</span> <span class="st">"grid"</span>,</span>
 <span>  n_quad       <span class="op">=</span> <span class="fl">7</span>,</span>
 <span>  control      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
@@ -325,7 +345,7 @@ independent of the calibration sample.</li>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">crossfit_tuned</span><span class="op">$</span><span class="va">lambda_by_split</span></span>
-<span><span class="co">#&gt; [1] 0 0</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.07109222 0.00000000</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-5-frozen-expected-count-estimator-fast-approximation">Step 5: Frozen expected-count estimator (fast approximation)<a class="anchor" aria-label="anchor" href="#step-5-frozen-expected-count-estimator-fast-approximation"></a>

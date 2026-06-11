@@ -36,10 +36,12 @@
 <li><a class="dropdown-item" href="../articles/mixed-subjects-workflow.html">Mixed-Subjects IRT Calibration</a></li>
     <li><a class="dropdown-item" href="../articles/lambda-tuning.html">Choosing Lambda in Mixed-Subjects IRT</a></li>
     <li><a class="dropdown-item" href="../articles/simulation-validation.html">Simulation Validation of the Mixed-Subjects MML Estimator</a></li>
+    <li><a class="dropdown-item" href="../articles/weakly-informative-llm.html">Calibrating with a Weakly-Informative, Biased LLM</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -83,7 +85,7 @@ lives in the package’s <code>simulations/</code> directory; the tables
 below load the most recent run from <code>simulations/results/</code>
 when available and otherwise show cached values. Rep counts: λ-selection
 100, coverage 200, downstream 100, cross-fit 100.</p>
-<p>The study answers four questions:</p>
+<p>The study answers five questions:</p>
 <ol style="list-style-type: decimal">
 <li>
 <strong>Does λ-selection track predictor quality?</strong> (Scenario
@@ -97,6 +99,9 @@ it on average?</strong> (Scenario 3)</li>
 <li>
 <strong>Does cross-fitting change the conclusions?</strong>
 (Scenario 4)</li>
+<li>
+<strong>Is coverage still valid at the <em>tuned</em> λ — the
+no-free-lunch question?</strong> (Scenario 5)</li>
 </ol>
 <div class="section level2">
 <h2 id="design">Design<a class="anchor" aria-label="anchor" href="#design"></a>
@@ -154,6 +159,13 @@ correction; λ = 0 is the human-only calibration.</p>
 <p>For each regime we tune λ by ability-score risk and record the
 selected value; we also report the theoretical PPI++-score λ for
 reference.</p>
+<p>(λ is selected by <code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code>, which
+optimizes the risk directly, so the selected values are
+<em>continuous</em>. The means match a grid run to the third decimal and
+the regime ordering is identical, but the medians are off-grid and
+<code>prop_zero</code> — the fraction selecting <em>exactly</em> 0 — is
+lower than a grid gives, because the optimizer resolves the shallow
+<em>positive</em> optimum that a grid rounds down to 0.)</p>
 <table class="table">
 <caption>Selected lambda by regime (ability-risk tuning).</caption>
 <thead><tr class="header">
@@ -167,29 +179,29 @@ reference.</p>
 <tr class="odd">
 <td align="left">R1 perfect (F=Y)</td>
 <td align="right">0.750</td>
-<td align="right">0.75</td>
+<td align="right">0.750</td>
 <td align="right">0.00</td>
 <td align="right">0.750</td>
 </tr>
 <tr class="even">
 <td align="left">R2 same-DGP draw</td>
-<td align="right">0.118</td>
-<td align="right">0.10</td>
-<td align="right">0.22</td>
+<td align="right">0.119</td>
+<td align="right">0.108</td>
+<td align="right">0.07</td>
 <td align="right">0.004</td>
 </tr>
 <tr class="odd">
 <td align="left">R3 independent noise</td>
-<td align="right">0.062</td>
-<td align="right">0.00</td>
-<td align="right">0.55</td>
+<td align="right">0.063</td>
+<td align="right">0.040</td>
+<td align="right">0.35</td>
 <td align="right">0.000</td>
 </tr>
 <tr class="even">
 <td align="left">R4 LLM shift</td>
-<td align="right">0.107</td>
-<td align="right">0.10</td>
-<td align="right">0.27</td>
+<td align="right">0.105</td>
+<td align="right">0.104</td>
+<td align="right">0.16</td>
 <td align="right">0.002</td>
 </tr>
 </tbody>
@@ -201,9 +213,11 @@ reference.</p>
 <code>N / (n + N) = 1200 / 1600</code>, the theoretical maximum for a
 perfect paired predictor. The PPI++-score λ agrees to the decimal.</li>
 <li>
-<strong>R3 independent noise → λ ≈ 0.06</strong> (median 0; about
-half the reps select 0): a useless predictor is correctly down-weighted
-to near zero.</li>
+<strong>R3 independent noise → λ ≈ 0.06</strong> (median 0.04; about
+a third of reps select exactly 0): a useless predictor is correctly
+down-weighted to near zero. The small positive median is the optimizer
+resolving a shallow, noisy risk minimum — benign, since the downstream
+scoring is unaffected (Scenario 3).</li>
 <li>
 <strong>R2 same-DGP and R4 LLM shift → λ ≈ 0.11</strong>: fresh real
 responses (R2) and a correlated-but-biased LLM (R4) each carry a little
@@ -373,44 +387,44 @@ noise.</p>
 <td align="left">R1 perfect (F=Y)</td>
 <td align="right">0.750</td>
 <td align="right">1.4961</td>
-<td align="right">1.4921</td>
-<td align="right">-0.0040</td>
-<td align="right">-0.0075</td>
-<td align="right">-0.0005</td>
+<td align="right">1.4923</td>
+<td align="right">-0.0038</td>
+<td align="right">-0.0073</td>
+<td align="right">-0.0003</td>
 <td align="right">0.48</td>
-<td align="right">0.011</td>
+<td align="right">0.010</td>
 </tr>
 <tr class="even">
 <td align="left">R2 same-DGP draw</td>
-<td align="right">0.118</td>
+<td align="right">0.119</td>
 <td align="right">1.5023</td>
-<td align="right">1.5004</td>
+<td align="right">1.5005</td>
 <td align="right">-0.0019</td>
 <td align="right">-0.0027</td>
 <td align="right">-0.0011</td>
-<td align="right">0.54</td>
+<td align="right">0.59</td>
 <td align="right">0.025</td>
 </tr>
 <tr class="odd">
 <td align="left">R3 independent noise</td>
-<td align="right">0.062</td>
+<td align="right">0.063</td>
 <td align="right">1.5037</td>
-<td align="right">1.5031</td>
+<td align="right">1.5030</td>
 <td align="right">-0.0006</td>
 <td align="right">-0.0009</td>
 <td align="right">-0.0003</td>
-<td align="right">0.35</td>
+<td align="right">0.50</td>
 <td align="right">0.035</td>
 </tr>
 <tr class="even">
 <td align="left">R4 LLM shift</td>
-<td align="right">0.107</td>
+<td align="right">0.105</td>
 <td align="right">1.5064</td>
 <td align="right">1.5046</td>
 <td align="right">-0.0018</td>
 <td align="right">-0.0030</td>
 <td align="right">-0.0007</td>
-<td align="right">0.45</td>
+<td align="right">0.50</td>
 <td align="right">0.008</td>
 </tr>
 </tbody>
@@ -426,10 +440,9 @@ conditions</em>, not a general guarantee: the non-asymptotic PPI++
 literature shows that power-tuned estimators can underperform classical
 estimation when pseudo-label correlation is very weak. The
 <code>prop_improve</code> column keeps the claim honest at the
-per-replication level — only a third to a half of individual
-replications improve (0.35–0.54), so “no harm” is an average statement;
-the gains are consistent in aggregate but small relative to rep-level
-noise.</li>
+per-replication level — only about half of individual replications
+improve (0.48–0.59), so “no harm” is an average statement; the gains are
+consistent in aggregate but small relative to rep-level noise.</li>
 <li>
 <strong>Discrimination is unbiased</strong> at the selected λ
 (|bias_a| ≤ 0.04 everywhere), confirming the quadrature fix and that the
@@ -494,35 +507,35 @@ R1/R2/R4).</caption>
 <tr class="odd">
 <td align="left">R1 perfect (F=Y)</td>
 <td align="right">0.750</td>
-<td align="right">0.871</td>
-<td align="right">0.011</td>
-<td align="right">0.011</td>
-<td align="right">1.4921</td>
-<td align="right">1.4925</td>
+<td align="right">0.858</td>
+<td align="right">0.0104</td>
+<td align="right">0.0100</td>
+<td align="right">1.4923</td>
+<td align="right">1.4927</td>
 <td align="right">0.954</td>
-<td align="right">0.948</td>
+<td align="right">0.949</td>
 </tr>
 <tr class="even">
 <td align="left">R2 same-DGP draw</td>
-<td align="right">0.118</td>
-<td align="right">0.134</td>
-<td align="right">0.025</td>
-<td align="right">0.026</td>
-<td align="right">1.5004</td>
-<td align="right">1.5004</td>
-<td align="right">0.955</td>
+<td align="right">0.119</td>
+<td align="right">0.135</td>
+<td align="right">0.0250</td>
+<td align="right">0.0258</td>
+<td align="right">1.5005</td>
+<td align="right">1.5005</td>
+<td align="right">0.954</td>
 <td align="right">0.956</td>
 </tr>
 <tr class="odd">
 <td align="left">R4 LLM shift</td>
-<td align="right">0.095</td>
-<td align="right">0.113</td>
-<td align="right">0.038</td>
-<td align="right">0.037</td>
+<td align="right">0.100</td>
+<td align="right">0.115</td>
+<td align="right">0.0374</td>
+<td align="right">0.0372</td>
 <td align="right">1.5027</td>
-<td align="right">1.5028</td>
-<td align="right">0.954</td>
-<td align="right">0.954</td>
+<td align="right">1.5029</td>
+<td align="right">0.953</td>
+<td align="right">0.956</td>
 </tr>
 </tbody>
 </table>
@@ -531,12 +544,166 @@ Item-parameter bias, held-out RMSE, and 95% Wald coverage are
 essentially identical between the non-cross-fitted and cross-fitted
 tuners (differences in the fourth decimal). The one systematic
 difference is the selected λ: cross-fitting picks a slightly
-<em>higher</em> value (e.g. R1 0.75 → 0.87) because it tunes on held-out
-folds and so avoids the mild downward optimism of using a fold’s own
-labels to both tune and fit. Because the downstream quantities are
-unchanged, the cheaper non-cross-fitted tuner is an adequate default;
-cross-fitting is the more principled choice when the selected λ itself
-is reported.</p>
+<em>higher</em> value (e.g. R1 0.75 → 0.86). This is a sample-size
+effect of the split, not a better λ — these runs use 2 folds, so each
+fold tunes on only <code>n_train = n/2 = 200</code> labeled subjects,
+and the PPI-optimal λ grows as labeled data shrinks (it tracks
+<code>N/(N + n_train) = 1200/1400 ≈ 0.86</code>). The fold λ’s are tuned
+for <code>n_train</code> but applied to the full sample, so they run a
+little high; more folds shrink the gap. The genuine reason to cross-fit
+is not the λ value but that λ is selected without each fold’s own
+labels, so reported uncertainty is not optimistic about a λ tuned on the
+same data. Because the downstream quantities are unchanged, the cheaper
+non-cross-fitted tuner is an adequate default; prefer cross-fitting when
+the selected λ or its uncertainty is itself reported.</p>
+</div>
+<div class="section level2">
+<h2 id="scenario-5-operational-coverage-at-the-tuned-λ">Scenario 5: operational coverage at the <em>tuned</em> λ<a class="anchor" aria-label="anchor" href="#scenario-5-operational-coverage-at-the-tuned-%CE%BB"></a>
+</h2>
+<p>Scenario 2 validated the covariance <em>formula</em> at a
+<strong>fixed</strong> λ. But the λ you report is <strong>tuned from the
+data</strong>, and <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> treats λ as known — it does not
+propagate the uncertainty in λ̂. There is no free lunch: choosing λ on
+the same data used to estimate the item parameters induces a
+<strong>finite-sample bias</strong> in those estimates (and, in
+principle, anti-conservative intervals). <strong>Split-sample
+(cross-fit) λ estimation removes that bias.</strong> This scenario
+measures the size of the effect by comparing Wald coverage of the
+<em>true</em> item parameters at three operating points: fixed λ = 0.5,
+the same-data tuned λ̂ with <code>vcov(best_fit)</code>, and the
+cross-fit tuned λ̂ with <code>vcov(final_fit)</code>. It reuses the
+Scenario 2 seeds, so the fixed-λ column reproduces Scenario 2
+exactly.</p>
+<table class="table">
+<caption>95% Wald coverage of the true item parameters at the fixed,
+same-data-tuned, and cross-fit-tuned λ (200 reps). lambda_sd / lambda_xf
+are the mean selected λ for each tuner.</caption>
+<colgroup>
+<col width="28%">
+<col width="13%">
+<col width="13%">
+<col width="12%">
+<col width="16%">
+<col width="16%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">label</th>
+<th align="right">lambda_sd</th>
+<th align="right">lambda_xf</th>
+<th align="right">fixed_95</th>
+<th align="right">samedata_95</th>
+<th align="right">crossfit_95</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">R1 perfect (F=Y)</td>
+<td align="right">0.751</td>
+<td align="right">0.859</td>
+<td align="right">0.955</td>
+<td align="right">0.955</td>
+<td align="right">0.953</td>
+</tr>
+<tr class="even">
+<td align="left">R2 same-DGP draw</td>
+<td align="right">0.116</td>
+<td align="right">0.135</td>
+<td align="right">0.957</td>
+<td align="right">0.956</td>
+<td align="right">0.956</td>
+</tr>
+<tr class="odd">
+<td align="left">R3 independent noise</td>
+<td align="right">0.053</td>
+<td align="right">0.074</td>
+<td align="right">0.961</td>
+<td align="right">0.958</td>
+<td align="right">0.958</td>
+</tr>
+<tr class="even">
+<td align="left">R4 LLM shift</td>
+<td align="right">0.103</td>
+<td align="right">0.130</td>
+<td align="right">0.954</td>
+<td align="right">0.958</td>
+<td align="right">0.958</td>
+</tr>
+</tbody>
+</table>
+<p>And the matching item-parameter (discrimination) bias — the
+no-free-lunch term read off directly:</p>
+<table class="table">
+<caption>Mean discrimination bias E[a-hat - a] at each operating point.
+Same-data vs cross-fit differ by &lt;= 0.001 except R1.</caption>
+<thead><tr class="header">
+<th align="left">label</th>
+<th align="right">bias_a_fixed</th>
+<th align="right">bias_a_samedata</th>
+<th align="right">bias_a_crossfit</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td align="left">R1 perfect (F=Y)</td>
+<td align="right">0.0097</td>
+<td align="right">0.0063</td>
+<td align="right">0.0051</td>
+</tr>
+<tr class="even">
+<td align="left">R2 same-DGP draw</td>
+<td align="right">0.0280</td>
+<td align="right">0.0224</td>
+<td align="right">0.0222</td>
+</tr>
+<tr class="odd">
+<td align="left">R3 independent noise</td>
+<td align="right">0.0365</td>
+<td align="right">0.0286</td>
+<td align="right">0.0289</td>
+</tr>
+<tr class="even">
+<td align="left">R4 LLM shift</td>
+<td align="right">0.0207</td>
+<td align="right">0.0159</td>
+<td align="right">0.0166</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Findings.</strong></p>
+<ul>
+<li>
+<strong>The fixed-λ column reproduces Scenario 2</strong> (0.955 /
+0.957 / 0.961 / 0.954) — the seed reuse is exact, confirming the
+harness.</li>
+<li>
+<strong>Same-data tuning keeps coverage at nominal here</strong>
+(95% coverage 0.955–0.958), and the no-free-lunch finite-sample bias it
+warns about is <strong>small</strong>: same-data vs cross-fit
+discrimination bias differ by ≤ 0.001 in every regime except R1.</li>
+<li>
+<strong>The one place the bias term is visible is R1</strong> (the
+perfect predictor, where λ̂ is large and the optimum is sharp):
+cross-fitting trims <code>bias_a</code> from <strong>0.0063 →
+0.0051</strong>. That is the no-free-lunch bias, removed by split-sample
+tuning — present and in the expected direction, but tiny.</li>
+<li>
+<strong>Both tuned estimators are <em>less</em> biased than the
+fixed λ = 0.5</strong> (e.g. R3 0.0365 → ≈ 0.029): λ = 0.5 is simply a
+poor operating point, and tuning toward the optimum reduces bias more
+than same-data tuning could ever add. (Intercept bias is smaller still,
+≤ 0.014.)</li>
+<li>
+<strong>Cross-fitting gives the same coverage</strong> (0.953–0.958)
+and removes the finite-sample tuning bias <em>by construction</em>; it
+selects a higher λ̂ (the small-per-fold inflation of Scenario 4) but,
+since the estimator is unbiased at any λ, coverage is unchanged.</li>
+</ul>
+<p>So in this design the cheap <strong>same-data tuner is
+adequate</strong> — its reported intervals are valid and its bias is
+within Monte Carlo noise of the cross-fit estimator.
+<strong>Cross-fitting is the principled default</strong>: it is
+<em>guaranteed</em> free of the finite-sample tuning bias (visible at
+R1), and it costs nothing here. Prefer it when the tuning is more
+aggressive (a finer or wider λ search), the predictor is flexible, or
+the selected λ̂ and its uncertainty are themselves reported.</p>
 </div>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
@@ -563,13 +730,18 @@ bread under-covers</td>
 </tr>
 <tr class="odd">
 <td>Does the method harm scoring?</td>
-<td>No average harm in these simulations; per-rep improvement is a third
-to a half of reps</td>
+<td>No average harm in these simulations; per-rep improvement is about
+half of reps</td>
 </tr>
 <tr class="even">
 <td>Does cross-fitting change conclusions?</td>
 <td>No: bias/RMSE/coverage unchanged; cross-fit selects a slightly
 higher λ</td>
+</tr>
+<tr class="odd">
+<td>Is coverage valid at the tuned λ?</td>
+<td>Yes here: same-data ~nominal (the no-free-lunch finite-sample bias
+is small); cross-fit removes it by construction</td>
 </tr>
 </tbody>
 </table>
