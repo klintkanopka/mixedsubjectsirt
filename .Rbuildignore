@@ -9,3 +9,5 @@
 ^simulations$
 ^data-raw$
 ^vignettes/largeN_.*\.rds$
+^figure$
+^vignettes/figure$

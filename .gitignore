@@ -6,3 +6,6 @@
 .quarto
 docs
 .claude
+
+# knitr figure artifacts (vignettes are knit fresh at build time)
+figure/

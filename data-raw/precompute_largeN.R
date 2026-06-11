@@ -82,7 +82,13 @@ one_rep <- function(seed) {
                risk   = risk_of(f, d$observed))
   }))
   curve$rep <- seed
-  list(curve = curve,
+  # Per-dataset optimal lambda by DIRECT 1-D optimization (continuous) -- the same
+  # quantity optimize() / tune_lambda_ability_risk() target on real data, NOT the
+  # grid argmin. (The grid above is only used to draw the average risk surface.)
+  opt_rep <- stats::optimize(
+    function(lam) risk_of(fit_lambda(d, lam, human), d$observed),
+    interval = c(0, 1), tol = 0.01)$minimum
+  list(curve = curve, opt_rep = opt_rep,
        naive_a = mean(naive$a - true_pars$a), naive_d = mean(naive$d - true_pars$d),
        human_a = mean(human$a - true_pars$a), human_d = mean(human$d - true_pars$d))
 }
@@ -108,30 +114,23 @@ naive_bias <- c(a = mean(vapply(res, `[[`, numeric(1), "naive_a")),
 human_bias <- c(a = mean(vapply(res, `[[`, numeric(1), "human_a")),
                 d = mean(vapply(res, `[[`, numeric(1), "human_d")))
 
-# Per-dataset optimal lambda: the argmin of EACH replication's own risk surface
-# (the quantity optimize() targets on real data). Its spread shows how the optimum
-# varies around the population optimum (the minimum of the AVERAGED curve).
-per_rep_opt <- vapply(res, function(r) r$curve$lambda[which.min(r$curve$risk)],
-                      numeric(1))
-
-# --- Direct 1-D optimization of lambda on a single dataset --------------------
-# optimize() finds the risk-minimizing lambda continuously, vs the grid argmin.
-d1   <- gen_one(1L)
-init <- fit_2pl(d1$observed, technical = list(NCYCLES = 300))$pars
-risk_at <- function(lam) risk_of(fit_lambda(d1, lam, init), d1$observed)
-opt  <- stats::optimize(risk_at, interval = c(0, 1), tol = 0.01)
-grid_argmin <- curve$lambda[which.min(curve$risk)]   # argmin of the MC risk curve
+# Per-dataset optimal lambda: each replication's own risk-minimizing lambda, found
+# by DIRECT 1-D optimization (continuous). Its spread shows how the optimum varies
+# around the population optimum (the minimum of the AVERAGED curve).
+per_rep_opt <- vapply(res, `[[`, numeric(1), "opt_rep")
+opt_lambda  <- per_rep_opt[1]                        # rep 1's continuous optimum
+grid_argmin <- curve$lambda[which.min(curve$risk)]   # argmin of the averaged MC curve
 
 saveRDS(
   list(curve = curve, naive_bias = naive_bias, human_bias = human_bias,
-       opt_lambda = opt$minimum, opt_risk = opt$objective,
+       opt_lambda = opt_lambda,
        grid_argmin = grid_argmin, per_rep_opt = per_rep_opt, lam_grid = lam_grid,
        n = n, N = N, n_reps = m, true_pars = true_pars, llm = llm),
   "vignettes/largeN_results.rds"
 )
 
 cat(sprintf("\nN=%d, n=%d, %d reps. Direct optimize() lambda=%.3f (grid argmin %.2f).\n",
-            N, n, m, opt$minimum, grid_argmin))
+            N, n, m, opt_lambda, grid_argmin))
 cat(sprintf("per-dataset optimal lambda: mean=%.2f, sd=%.2f, range=[%.1f, %.1f]\n",
             mean(per_rep_opt), stats::sd(per_rep_opt),
             min(per_rep_opt), max(per_rep_opt)))
