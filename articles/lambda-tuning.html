@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mixedsubjectsirt</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -77,9 +77,10 @@
 
     
     
-<p>The mixed-subjects estimator calibrates a 2PL model by minimizing a
-PPI++-style combined loss over observed human responses, paired LLM
-responses, and additional generated LLM responses.</p>
+<p>The mixed-subjects estimator calibrates a 2PL IRT model by minimizing
+a PPI++-style combined loss over observed human responses, paired
+predicted responses, and additional generated responses. Predicted and
+generated responses will, in practice, typically come from an LLM.</p>
 <p>This vignette explains how to choose
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 and which functions to use. The short answer:</p>
@@ -94,22 +95,20 @@ and which functions to use. The short answer:</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>Theoretical diagnostic</td>
-<td><code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code></td>
+<td><strong>Recommended workflow (cross-fit)</strong></td>
+<td><strong><code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code></strong></td>
 </tr>
 <tr class="even">
-<td><strong>Recommended practical tuning</strong></td>
-<td><strong><code>tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects_mml)</code></strong></td>
+<td>Exploratory tuning</td>
+<td><code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code></td>
 </tr>
 <tr class="odd">
-<td>Frozen EC (fast approximation)</td>
-<td>
-<code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> (default
-<code>fit_fn</code>)</td>
+<td>Fast approximation (frozen EC)</td>
+<td><code>tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects)</code></td>
 </tr>
 <tr class="even">
-<td>Cross-fitted tuning</td>
-<td><code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code></td>
+<td>Theoretical diagnostic</td>
+<td><code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code></td>
 </tr>
 <tr class="odd">
 <td>Per-item tuning (experimental)</td>
@@ -117,37 +116,58 @@ and which functions to use. The short answer:</p>
 </tr>
 </tbody>
 </table>
+<p>All of these now use the marginal-MML estimator
+([<code><a href="../reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code>]) by default; the frozen
+expected-count estimator is available via
+<code>fit_fn = fit_mixed_subjects</code> but is discouraged (see
+below).</p>
 <div class="section level2">
 <h2 id="two-objectives-two-estimators">Two objectives, two estimators<a class="anchor" aria-label="anchor" href="#two-objectives-two-estimators"></a>
 </h2>
 <p><strong>Why there are two lambda objectives:</strong></p>
 <ul>
 <li><p><code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code> minimizes
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Tr</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\text{Tr}(\Sigma_\gamma)</annotation></semantics></math>
-— the trace of the item-parameter covariance matrix (PPI++ Proposition
-2). This is a <em>theoretical diagnostic</em>: it measures whether the
-LLM prediction reduces item-parameter variance. It answers “is the
-predictor statistically useful?”</p></li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Tr</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\text{Tr}(\Sigma_\gamma)</annotation></semantics></math>.
+This is the trace of the item-parameter covariance matrix and the tuning
+rule from the original PPI++ implementation.[^1] This is most useful as
+a tuning target when doing inference on estimated parameters (such as in
+causal inference applications).[^2] Here, this is merely implemented as
+a theoretical diagnostic.</p></li>
 <li><p><code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> minimizes
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">E[g'\Sigma_\gamma g]</annotation></semantics></math>
-— the propagated ability-score risk. This is the <em>practical
-criterion</em>: it answers “does using the LLM improve downstream test
-scoring?” Use this for operational calibration.</p></li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">E[g'\Sigma_\gamma g]</annotation></semantics></math>.
+This is the propagated ability-score risk. This is the preferred
+practical criterion for IRT applications and optimizes the choice of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+to minimize measurement error in downstream ability estimation.
+Importantly, the PPI++ objective only cares about the trace of the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><annotation encoding="application/x-tex">\Sigma_\gamma</annotation></semantics></math>,
+while this method uses information about scale structure derived from
+the off-diagonal covariance terms. Use this for operational
+calibration.</p></li>
 </ul>
 <p><strong>Why there are two estimators:</strong></p>
+<p><code><a href="../reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code> is the default estimator for
+every tuner <em>except</em> <code>tune_lambda_ability_risk_item</code>.
+It is a consistent iterative MML-based estimator that marginalizes over
+the ability distribution. The implementation recomputes posteriors at
+every gradient evaluation, and its sandwich covariance
+(<code>vcov_mixed_subjects_mml</code>, called automatically via
+<code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>) uses Louis’ observed-information correction for the
+bread, providing proper coverage.[^3]</p>
 <p>The original <code><a href="../reference/fit_mixed_subjects.html">fit_mixed_subjects()</a></code> uses frozen
-expected-count posteriors. This creates a gradient asymmetry when the
-LLM item parameters differ from human parameters, systematically
-inflating discriminations and driving
+expected-count posteriors and is still available by passing
+<code>fit_fn = fit_mixed_subjects</code>, but it is <strong>highly
+discouraged</strong>: the frozen posteriors create a gradient asymmetry
+when the LLM item parameters differ from human parameters,
+systematically inflating discriminations and driving
 <code>tune_lambda_ability_risk</code> to select
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
-even when the LLM is genuinely informative.</p>
-<p><code><a href="../reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code> recomputes posteriors at every
-gradient evaluation, eliminating this asymmetry. Its sandwich covariance
-(<code>vcov_mixed_subjects_mml</code>, called automatically via
-<code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code>) uses Louis’ (1982) observed-information correction
-for the bread, giving honest uncertainty estimates. Use the MML
-estimator unless speed is a binding constraint.</p>
+even when the LLM is genuinely informative (it also requires a
+<code>slope_upper</code> cap for stability). Use it only as a fast
+approximation when computate time is a binding constraint. Note that the
+current implementation of <code>tune_lambda_ability_risk_item</code>
+uses this estimation procedure and should be considered
+experimental.</p>
 </div>
 <div class="section level2">
 <h2 id="example-data">Example data<a class="anchor" aria-label="anchor" href="#example-data"></a>
@@ -155,7 +175,7 @@ estimator unless speed is a binding constraint.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://klintkanopka.com/mixedsubjectsirt/">mixedsubjectsirt</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2027</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">242424</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">n_human</span>     <span class="op">&lt;-</span> <span class="fl">120</span></span>
 <span><span class="va">n_generated</span> <span class="op">&lt;-</span> <span class="fl">350</span></span>
@@ -183,51 +203,32 @@ estimator unless speed is a binding constraint.</p>
 for speed.</p>
 </div>
 <div class="section level2">
-<h2 id="step-1-ppi-score-diagnostic">Step 1: PPI++ score diagnostic<a class="anchor" aria-label="anchor" href="#step-1-ppi-score-diagnostic"></a>
-</h2>
-<p><code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code> estimates the PPI++ Proposition
-2 lambda using the same human posterior weights for both human and
-paired-LLM score vectors. F = Y (identical predictions) gives exactly
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">N/(n+N)</annotation></semantics></math>.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ppi_score</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score</a></span><span class="op">(</span></span>
-<span>  observed    <span class="op">=</span> <span class="va">observed</span>,</span>
-<span>  predicted   <span class="op">=</span> <span class="va">predicted</span>,</span>
-<span>  item_pars   <span class="op">=</span> <span class="va">human_pars</span>,</span>
-<span>  n_generated <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">generated</span><span class="op">)</span>,</span>
-<span>  n_quad      <span class="op">=</span> <span class="fl">7</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"PPI++ score lambda:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">ppi_score</span><span class="op">$</span><span class="va">lambda</span>, <span class="fl">3</span><span class="op">)</span>,</span>
-<span>    <span class="st">" r ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">ppi_score</span><span class="op">$</span><span class="va">r</span>, <span class="fl">3</span><span class="op">)</span>,</span>
-<span>    <span class="st">" N/(n+N) ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="va">ppi_score</span><span class="op">$</span><span class="va">r</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; PPI++ score lambda: 0  r = 0.343  N/(n+N) = 0.745</span></span></code></pre></div>
-<p>A value near zero means the paired LLM responses do not
-systematically reduce gradient variance in the person-level score
-formulation. This is expected for stochastic binary LLM responses. For F
-= Y the formula recovers
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">N/(n+N)</annotation></semantics></math>.</p>
-</div>
-<div class="section level2">
-<h2 id="step-2-recommended-ability-risk-tuning-with-mml-estimator">Step 2: Recommended — ability-risk tuning with MML estimator<a class="anchor" aria-label="anchor" href="#step-2-recommended-ability-risk-tuning-with-mml-estimator"></a>
+<h2 id="ability-risk-tuning-minimizing-mathbbegsigma_gamma-g">Ability-risk tuning: Minimizing
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}[g'\Sigma_\gamma g]</annotation></semantics></math><a class="anchor" aria-label="anchor" href="#ability-risk-tuning-minimizing-mathbbegsigma_gamma-g"></a>
 </h2>
 <p>The key result from the <a href="linking-comparison.html">Linking and
-Gradient Asymmetry</a> vignette: when the LLM parameters differ from
-human parameters, the frozen expected-count estimator drives
+Gradient Asymmetry</a> vignette is that when the LLM parameters differ
+from human parameters, the frozen expected-count estimator drives
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>→</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda \to 0</annotation></semantics></math>
-due to an artificial gradient asymmetry. The MML estimator removes this
-asymmetry. With a good predictor (F = Y),
-<code>tune_lambda_ability_risk</code> with MML correctly selects
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda &gt; 0</annotation></semantics></math>.</p>
+due to an artificial gradient asymmetry. The default MML estimator
+removes this asymmetry, so with a good predictor
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><mo>=</mo><mi>Y</mi></mrow><annotation encoding="application/x-tex">F = Y</annotation></semantics></math>)
+<code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> correctly selects
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>&gt;</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda &gt; 0</annotation></semantics></math>.
+Because <code><a href="../reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code> is the default
+<code>fit_fn</code>, no estimator argument is needed.</p>
 <p>By default <code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> chooses
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-by <strong>direct 1-D optimization</strong> of the risk over
-<code>[0, 1]</code> (continuous, no grid). Here we pass
-<code>method = "grid"</code> with <code>lambda_grid</code> so the
-<code>summary</code> shows the risk at each candidate — handy for
-<em>seeing</em> the surface. In practice you can omit both and let it
-optimize.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+by direct optimization of the risk over <code>[0, 1]</code>. Here we
+pass <code>method = "grid"</code> with <code>lambda_grid</code> so the
+<code>summary</code> shows the risk at each candidate, which handy for
+visualizing the
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>-risk
+surface. In practice you will likely omit both arguments and let it
+optimize
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+directly.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ability_tuned_mml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="va">lambda_grid</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
@@ -235,60 +236,49 @@ optimize.</p>
 <span>  generated    <span class="op">=</span> <span class="va">generated</span>,</span>
 <span>  target_resp  <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_pars</span>,</span>
-<span>  fit_fn       <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>,     <span class="co"># marginal MML estimator</span></span>
-<span>  method       <span class="op">=</span> <span class="st">"grid"</span>,                     <span class="co"># show the risk at each candidate</span></span>
-<span>  n_quad       <span class="op">=</span> <span class="fl">7</span>,</span>
+<span>  method       <span class="op">=</span> <span class="st">"grid"</span>,                <span class="co"># show the risk at each candidate value</span></span>
 <span>  control      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ability_tuned_mml</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lambda"</span>, <span class="st">"mean_param_var"</span>, <span class="st">"mean_total_risk"</span>,</span>
 <span>                               <span class="st">"convergence"</span>, <span class="st">"selection_risk"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   lambda mean_param_var mean_total_risk convergence selection_risk</span></span>
-<span><span class="co">#&gt; 1   0.00      0.4341733       0.4341733           0      0.4341733</span></span>
-<span><span class="co">#&gt; 2   0.25      0.4402754       0.4402754           0      0.4402754</span></span>
-<span><span class="co">#&gt; 3   0.50      0.6286167       0.6286167           0      0.6286167</span></span>
-<span><span class="co">#&gt; 4   0.75      0.6339994       0.6339994           0            Inf</span></span>
-<span><span class="co">#&gt; 5   1.00      1.3329374       1.3329374           0            Inf</span></span>
+<span><span class="co">#&gt; 1   0.00      0.5748958       0.5748958           0      0.5748958</span></span>
+<span><span class="co">#&gt; 2   0.25      0.6728206       0.6728206           0      0.6728206</span></span>
+<span><span class="co">#&gt; 3   0.50      1.0477476       1.0477476           0      1.0477476</span></span>
+<span><span class="co">#&gt; 4   0.75      4.3282612       4.3282612           0      4.3282612</span></span>
+<span><span class="co">#&gt; 5   1.00    113.3301603     113.3301603           0    113.3301603</span></span>
 <span><span class="va">ability_tuned_mml</span><span class="op">$</span><span class="va">best_lambda</span></span>
 <span><span class="co">#&gt; [1] 0</span></span>
 <span></span>
-<span><span class="co"># The default (method = "optimize") returns a continuous lambda directly:</span></span>
 <span><span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
 <span>  observed <span class="op">=</span> <span class="va">observed</span>, predicted <span class="op">=</span> <span class="va">predicted</span>, generated <span class="op">=</span> <span class="va">generated</span>,</span>
 <span>  target_resp <span class="op">=</span> <span class="va">observed</span>, initial_pars <span class="op">=</span> <span class="va">human_pars</span>,</span>
-<span>  fit_fn <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>, n_quad <span class="op">=</span> <span class="fl">7</span>, control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
+<span>  control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">$</span><span class="va">best_lambda</span></span>
-<span><span class="co">#&gt; [1] 0.07626505</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
 <p><code>selection_risk</code> is <code>Inf</code> for any candidate
 with non-zero convergence code or non-finite risk, protecting selection
 from numerical failures.</p>
-<p>The selected calibration carries a correctly-sized Louis-corrected
-covariance:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">Sigma_mml</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">ability_tuned_mml</span><span class="op">$</span><span class="va">best_fit</span><span class="op">)</span>  <span class="co"># dispatches to vcov_mixed_subjects_mml</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">Sigma_mml</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 10 10</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="step-3-ability-score-risk-inspect-components">Step 3: Ability-score risk (inspect components)<a class="anchor" aria-label="anchor" href="#step-3-ability-score-risk-inspect-components"></a>
-</h2>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">risk</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ability_risk.html">ability_risk</a></span><span class="op">(</span></span>
+<p>We can inspect the components of the ability risk:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="va">risk</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ability_risk.html">ability_risk</a></span><span class="op">(</span></span>
 <span>  resp        <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  fit_or_pars <span class="op">=</span> <span class="va">ability_tuned_mml</span><span class="op">$</span><span class="va">best_fit</span>,</span>
-<span>  vcov        <span class="op">=</span> <span class="va">Sigma_mml</span></span>
+<span>  vcov        <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">ability_tuned_mml</span><span class="op">$</span><span class="va">best_fit</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">risk</span><span class="op">$</span><span class="va">summary</span></span>
 <span><span class="co">#&gt;   mean_param_var mean_squared_error mean_total_risk</span></span>
-<span><span class="co">#&gt; 1      0.4341733                 NA       0.4341733</span></span></code></pre></div>
+<span><span class="co">#&gt; 1      0.5748958                 NA       0.5748958</span></span></code></pre></div>
 <p><code>mean_squared_error</code> is <code>NA</code> because
 <code>theta_true</code> was not supplied; it is only computed in
 simulation studies. <code>mean_param_var</code> is the propagated
-item-parameter uncertainty — the criterion that
-<code>tune_lambda_ability_risk</code> minimizes.</p>
+item-parameter uncertainty. <code>mean_total_risk</code> is the ability
+risk target that the method optimizes for.</p>
 <p>In simulation studies, pass <code>theta_true = theta_human</code> to
 also include squared ability-estimation error:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ability_tuned_truth</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="va">lambda_grid</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
@@ -299,26 +289,34 @@ also include squared ability-estimation error:</p>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_pars</span>,</span>
 <span>  fit_fn       <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>,</span>
 <span>  method       <span class="op">=</span> <span class="st">"grid"</span>,</span>
-<span>  n_quad       <span class="op">=</span> <span class="fl">7</span>,</span>
 <span>  control      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ability_tuned_truth</span><span class="op">$</span><span class="va">summary</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lambda"</span>, <span class="st">"mean_param_var"</span>,</span>
 <span>                                 <span class="st">"mean_squared_error"</span>, <span class="st">"mean_total_risk"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   lambda mean_param_var mean_squared_error mean_total_risk</span></span>
-<span><span class="co">#&gt; 1   0.00      0.4341733           4.689478        5.123652</span></span>
-<span><span class="co">#&gt; 2   0.25      0.4402754           4.676972        5.117247</span></span>
-<span><span class="co">#&gt; 3   0.50      0.6286167           4.650725        5.279342</span></span>
-<span><span class="co">#&gt; 4   0.75      0.6339994           4.575805        5.209805</span></span>
-<span><span class="co">#&gt; 5   1.00      1.3329374           4.595487        5.928425</span></span></code></pre></div>
+<span><span class="co">#&gt; 1   0.00      0.5748958           4.455476        5.030372</span></span>
+<span><span class="co">#&gt; 2   0.25      0.6728206           4.481827        5.154648</span></span>
+<span><span class="co">#&gt; 3   0.50      1.0477476           4.517292        5.565039</span></span>
+<span><span class="co">#&gt; 4   0.75      4.3282612           4.542339        8.870600</span></span>
+<span><span class="co">#&gt; 5   1.00    113.3301603           6.078139      119.408300</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="step-4-cross-fitted-ability-risk-tuning">Step 4: Cross-fitted ability-risk tuning<a class="anchor" aria-label="anchor" href="#step-4-cross-fitted-ability-risk-tuning"></a>
-</h2>
-<p><code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code> estimates
+<h2 id="cross-fit-lambda-tuning-recommended-workflow">Cross-fit
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-per fold on training data, then fits a final split-sample model. Two
-important arguments:</p>
+tuning (recommended workflow)<a class="anchor" aria-label="anchor" href="#cross-fit-lambda-tuning-recommended-workflow"></a>
+</h2>
+<p><code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code> is the recommended
+workflow for all serious analyses: it estimates
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+per fold on the <em>other</em> folds’ labels, so the selected
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+is not tuned on the same rows it is applied to. By default both the fold
+tuning (<code>fit_fn</code>) and the final fit
+(<code>final_fit_fn</code>) use the MML estimator, and the fold
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>’s
+are averaged (weighted by fold size) into a single scalar for the final
+full-sample fit. Two further arguments:</p>
 <ul>
 <li>
 <code>target_mode = "fixed"</code> (default): the full
@@ -330,7 +328,7 @@ independent of the calibration sample.</li>
 <code>target_resp</code> to training rows, valid when
 <code>target_resp = observed</code>.</li>
 </ul>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">split_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, length.out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">observed</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">crossfit_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit</a></span><span class="op">(</span></span>
@@ -344,19 +342,22 @@ independent of the calibration sample.</li>
 <span>  control      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">crossfit_tuned</span><span class="op">$</span><span class="va">lambda_by_split</span></span>
-<span><span class="co">#&gt; [1] 0.07109222 0.00000000</span></span></code></pre></div>
+<span><span class="va">crossfit_tuned</span><span class="op">$</span><span class="va">lambda_by_split</span>   <span class="co"># per-fold tuned lambda</span></span>
+<span><span class="co">#&gt; [1] 0.05572809 0.00000000</span></span>
+<span><span class="va">crossfit_tuned</span><span class="op">$</span><span class="va">lambda_final</span>      <span class="co"># fold-size-weighted scalar used for the final fit</span></span>
+<span><span class="co">#&gt; [1] 0.02786405</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="step-5-frozen-expected-count-estimator-fast-approximation">Step 5: Frozen expected-count estimator (fast approximation)<a class="anchor" aria-label="anchor" href="#step-5-frozen-expected-count-estimator-fast-approximation"></a>
+<h2 id="frozen-expected-count-estimator-fast-approximation">Frozen expected-count estimator (fast approximation)<a class="anchor" aria-label="anchor" href="#frozen-expected-count-estimator-fast-approximation"></a>
 </h2>
-<p>The default <code>fit_fn = fit_mixed_subjects</code> uses the older
-frozen expected-count estimator. This is faster but produces inflated
-discriminations when the LLM parameters differ from human parameters,
-driving
+<p>Passing <code>fit_fn = fit_mixed_subjects</code> selects the older
+frozen expected-count estimator. It is faster than the default MML path
+but produces inflated discriminations when the LLM parameters differ
+from human parameters, driving
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>→</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda \to 0</annotation></semantics></math>
-even when the LLM is informative.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+even when the LLM is informative. As such, it is <strong>strongly
+discouraged</strong>.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ability_tuned_ec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="va">lambda_grid</span>,</span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
@@ -364,16 +365,57 @@ even when the LLM is informative.</p>
 <span>  generated    <span class="op">=</span> <span class="va">generated</span>,</span>
 <span>  target_resp  <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_pars</span>,</span>
+<span>  fit_fn       <span class="op">=</span> <span class="va">fit_mixed_subjects</span>,   <span class="co"># opt in to the frozen EC estimator</span></span>
 <span>  n_quad       <span class="op">=</span> <span class="fl">7</span>,</span>
 <span>  slope_upper  <span class="op">=</span> <span class="fl">4</span>,           <span class="co"># required to prevent divergence</span></span>
 <span>  control      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ability_tuned_ec</span><span class="op">$</span><span class="va">best_lambda</span></span>
-<span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.007928954</span></span></code></pre></div>
 <p><code>slope_upper = 4</code> is required to prevent discriminations
-from diverging. The MML estimator does not need this cap because it has
-no false minimum at large discrimination values.</p>
+from diverging. The default MML estimator does not need this cap because
+it has no false minimum at large discrimination values.</p>
+</div>
+<div class="section level2">
+<h2 id="minimizing-texttrbigsigma_gammabig-diagnostic-only">Minimizing
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Tr</mtext><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">[</mo><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\text{Tr}\big[\Sigma_\gamma\big]</annotation></semantics></math>
+(diagnostic only)<a class="anchor" aria-label="anchor" href="#minimizing-texttrbigsigma_gammabig-diagnostic-only"></a>
+</h2>
+<p><code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code> estimates the PPI++ Proposition
+2 lambda using the same human posterior weights for both human and
+paired-LLM score vectors. F = Y (identical predictions) gives exactly
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">N/(n+N)</annotation></semantics></math>.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ppi_score</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score</a></span><span class="op">(</span></span>
+<span>  observed    <span class="op">=</span> <span class="va">observed</span>,</span>
+<span>  predicted   <span class="op">=</span> <span class="va">predicted</span>,</span>
+<span>  item_pars   <span class="op">=</span> <span class="va">human_pars</span>,</span>
+<span>  n_generated <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">generated</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"PPI++ score lambda:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">ppi_score</span><span class="op">$</span><span class="va">lambda</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>    <span class="st">" r ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">ppi_score</span><span class="op">$</span><span class="va">r</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>    <span class="st">" N/(n+N) ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="va">ppi_score</span><span class="op">$</span><span class="va">r</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; PPI++ score lambda: 0  r = 0.343  N/(n+N) = 0.745</span></span></code></pre></div>
+<p>A value near zero means the paired LLM responses do not
+systematically reduce gradient variance in the person-level score
+formulation. This is expected for stochastic binary LLM responses. For
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><mo>=</mo><mi>Y</mi></mrow><annotation encoding="application/x-tex">F = Y</annotation></semantics></math>
+the formula recovers
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">N/(n+N)</annotation></semantics></math>.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ppi_score_match</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score</a></span><span class="op">(</span></span>
+<span>  observed    <span class="op">=</span> <span class="va">observed</span>,</span>
+<span>  predicted   <span class="op">=</span> <span class="va">observed</span>,</span>
+<span>  item_pars   <span class="op">=</span> <span class="va">human_pars</span>,</span>
+<span>  n_generated <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">generated</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"PPI++ score lambda:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">ppi_score_match</span><span class="op">$</span><span class="va">lambda</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>    <span class="st">" r ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">ppi_score</span><span class="op">$</span><span class="va">r</span>, <span class="fl">3</span><span class="op">)</span>,</span>
+<span>    <span class="st">" N/(n+N) ="</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="va">ppi_score_match</span><span class="op">$</span><span class="va">r</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; PPI++ score lambda: 0.745  r = 0.343  N/(n+N) = 0.745</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="choosing-a-procedure">Choosing a procedure<a class="anchor" aria-label="anchor" href="#choosing-a-procedure"></a>
@@ -391,41 +433,46 @@ no false minimum at large discrimination values.</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code></td>
-<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Tr</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\text{Tr}(\Sigma_\gamma)</annotation></semantics></math></td>
-<td>Method diagnostics only</td>
+<td><code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code></td>
+<td>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}[g'\Sigma_\gamma g]</annotation></semantics></math>,
+computed out-of-fold</td>
+<td><strong>Recommended workflow</strong></td>
 </tr>
 <tr class="even">
-<td><code>tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects_mml)</code></td>
+<td><code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code></td>
 <td>
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">E[g'\Sigma_\gamma g]</annotation></semantics></math>,
-Louis bread</td>
-<td><strong>Recommended default</strong></td>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}[g'\Sigma_\gamma g]</annotation></semantics></math>,
+Louis bread (MML default)</td>
+<td>Exploratory single-sample tuning</td>
 </tr>
 <tr class="odd">
+<td><code>tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects)</code></td>
 <td>
-<code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> (default
-<code>fit_fn</code>)</td>
-<td>Same risk, EM bread</td>
-<td>Fast approximation; requires <code>slope_upper</code>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}[g'\Sigma_\gamma g]</annotation></semantics></math>,
+EM bread</td>
+<td>Fast approximation; discouraged, requires
+<code>slope_upper</code>
 </td>
 </tr>
 <tr class="even">
-<td><code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code></td>
-<td>Out-of-sample risk</td>
-<td>Final inferential analyses</td>
-</tr>
-<tr class="odd">
 <td><code><a href="../reference/tune_lambda_ability_risk_item.html">tune_lambda_ability_risk_item()</a></code></td>
 <td>Per-item risk (approx.)</td>
 <td>Experimental; some items poor predictors</td>
 </tr>
+<tr class="odd">
+<td><code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code></td>
+<td><math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">Tr</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\text{Tr}(\Sigma_\gamma)</annotation></semantics></math></td>
+<td>Theoretical diagnostic only</td>
+</tr>
 </tbody>
 </table>
-<p>The target population matters. <code>target_resp = observed</code>
-tunes for the observed human response patterns. In operational scoring,
-use a larger target matrix representing the actual scoring
-population.</p>
+<p>Also note that the target population matters, as ability risk is
+integrated over that population’s ability distribution.
+<code>target_resp = observed</code> tunes for the observed human
+response patterns. In operational scoring, you may use a larger target
+matrix representing the actual scoring population while calibrating item
+parameters on a pilot sample.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

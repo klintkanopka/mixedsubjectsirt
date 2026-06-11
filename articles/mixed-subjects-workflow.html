@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mixedsubjectsirt</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,31 +78,37 @@
     
     
 <p>This vignette shows the recommended mixed-subjects workflow for a
-unidimensional 2PL model using the <strong>marginal
-maximum-likelihood-based estimator</strong>
-(<code>fit_mixed_subjects_mml</code>). The package expects three
-response matrices with the same item columns:</p>
+unidimensional 2PL model using the marginal maximum-likelihood (MML)
+estimator (<code>fit_mixed_subjects_mml</code>). The package expects
+three item response matrices with no respondent IDs and the same
+ordering of item columns:</p>
 <ul>
 <li>
 <code>observed</code>:
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-rows of binary human responses</li>
+rows of binary human item responses</li>
 <li>
 <code>predicted</code>:
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-rows of binary predicted LLM-generated responses that correspond to the
-observed human data</li>
+rows of binary LLM-predicted item responses for the human respondents;
+rows must be ordered to correspond to respondents in
+<code>observed</code>
+</li>
 <li>
 <code>generated</code>:
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>N</mi><annotation encoding="application/x-tex">N</annotation></semantics></math>
-rows of additional binary LLM-generated responses (typically
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>≫</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">N \gg n</annotation></semantics></math>)</li>
+rows of additional binary LLM-generated item responses (typically
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>≫</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">N \gg n</annotation></semantics></math>),
+generated from the same model and procedure as
+<code>predicted</code>
+</li>
 </ul>
-<p>All three matrices must contain binary 0/1 responses. Probability
-(fractional) predictions are not accepted — they are not a valid
-likelihood input for the marginal IRT objective and break the PPI
-correction — so if you have LLM-derived probabilities, sample binary
-responses from them first (e.g. <code>rbinom</code>).</p>
+<p>All three matrices must contain binary responses
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><msub><mi>Y</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>∈</mo><mo stretchy="false" form="prefix">{</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">}</mo><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(Y_{ij} \in \{0,1\})</annotation></semantics></math>.
+Probability (fractional) predictions are <strong>not</strong> accepted,
+as they are not a valid likelihood input for the MML IRT objective and
+break the correction. If your prediction model outputs probabilities,
+sample binary responses from them first (e.g. <code>rbinom</code>).</p>
 <p>The fitted objective is</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>L</mi><mi>o</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">g</mi></mrow></msubsup><mo stretchy="false" form="prefix">(</mo><mi>γ</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>λ</mi><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">[</mo><msubsup><mi>L</mi><mi>g</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">g</mi></mrow></msubsup><mo stretchy="false" form="prefix">(</mo><mi>γ</mi><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msubsup><mi>L</mi><mi>p</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">g</mi></mrow></msubsup><mo stretchy="false" form="prefix">(</mo><mi>γ</mi><mo stretchy="false" form="postfix">)</mo><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">L_o^{\mathrm{marg}}(\gamma) + \lambda\bigl[ L_g^{\mathrm{marg}}(\gamma) - L_p^{\mathrm{marg}}(\gamma)\bigr]</annotation></semantics></math></p>
 <p>where
@@ -115,8 +121,8 @@ recomputed from the current candidate
 at every gradient step. Setting
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda = 0</annotation></semantics></math>
 recovers the human-only MML calibration. See the <a href="lambda-tuning.html">Choosing Lambda</a> vignette for the specific
-background on why the marginal-MML objective is preferred over the
-previous frozen expected-count estimator.</p>
+background on why the MML objective is preferred over expected-count
+based estimators.</p>
 <div class="section level2">
 <h2 id="simulate-example-data">Simulate example data<a class="anchor" aria-label="anchor" href="#simulate-example-data"></a>
 </h2>
@@ -124,7 +130,7 @@ previous frozen expected-count estimator.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://klintkanopka.com/mixedsubjectsirt/">mixedsubjectsirt</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2026</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">242424</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">n_human</span>    <span class="op">&lt;-</span> <span class="fl">400</span></span>
 <span><span class="va">n_generated</span> <span class="op">&lt;-</span> <span class="fl">1200</span></span>
@@ -140,73 +146,85 @@ previous frozen expected-count estimator.</p>
 <span><span class="va">theta_human</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_human</span><span class="op">)</span></span>
 <span><span class="va">observed</span>    <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="va">theta_human</span>, <span class="va">true_pars</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># A strongly informative LLM. On the n labeled subjects the LLM's predictions</span></span>
-<span><span class="co"># match the human responses (the F = Y benchmark from the simulation study), and</span></span>
-<span><span class="co"># it supplies N additional unlabeled responses drawn from the same 2PL. This is</span></span>
-<span><span class="co"># the "good predictor" regime, where the method should lean on the LLM data.</span></span>
-<span><span class="co"># (Further down we show the complementary case of an uninformative LLM, where the</span></span>
-<span><span class="co"># criterion instead drives lambda to 0.)</span></span>
+<span><span class="co"># Strongly informative predictions. On the n labeled subjects, predictions</span></span>
+<span><span class="co"># match human responses (the F = Y benchmark from the simulation study), and</span></span>
+<span><span class="co"># N additional unlabeled responses are drawn from the same 2PL. This is</span></span>
+<span><span class="co"># the "good predictor" regime, where the method should lean on unlabeled data.</span></span>
+<span><span class="co"># (Further down we show the complementary case of an uninformative predictor,</span></span>
+<span><span class="co"># where the criterion instead drives lambda to 0.)</span></span>
 <span><span class="va">predicted</span> <span class="op">&lt;-</span> <span class="va">observed</span></span>
 <span><span class="va">generated</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_2pl.html">simulate_2pl</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_generated</span><span class="op">)</span>, <span class="va">true_pars</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-1-fit-the-human-baseline">Step 1: Fit the human baseline<a class="anchor" aria-label="anchor" href="#step-1-fit-the-human-baseline"></a>
 </h2>
+<p>Baseline models are estimated using <code>mirt</code>.<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://www.jstatsoft.org/article/view/v048i06/0" class="external-link"&gt;Chalmers, R. P.
+(2012). mirt: A multidimensional item response theory package for the R
+environment._Journal of statistical Software_, 48, 1-29.&lt;/a&gt;&lt;/p&gt;'><sup>1</sup></a></p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">human_start</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">observed</span>, technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>NCYCLES <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="step-2-fit-the-marginal-mml-mixed-subjects-model">Step 2: Fit the marginal-MML mixed-subjects model<a class="anchor" aria-label="anchor" href="#step-2-fit-the-marginal-mml-mixed-subjects-model"></a>
+<h2 id="step-2-fit-the-mml-mixed-subjects-model">Step 2: Fit the MML mixed-subjects model<a class="anchor" aria-label="anchor" href="#step-2-fit-the-mml-mixed-subjects-model"></a>
 </h2>
-<p><code><a href="../reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code> recomputes posterior weights at
-every gradient evaluation, eliminating the frozen-posterior gradient
-asymmetry that causes the older <code><a href="../reference/fit_mixed_subjects.html">fit_mixed_subjects()</a></code> to
-inflate item discriminations when the LLM parameters differ from the
-human calibration.</p>
+<p><code><a href="../reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code> uses a MML-based EM procedure
+for iterative estimation at a given
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+value. If you have a value of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+already (say from a pilot study or previous ability tuning), the model
+can be estimated directly here.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mixed_mml</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml</a></span><span class="op">(</span></span>
 <span>  observed  <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  predicted <span class="op">=</span> <span class="va">predicted</span>,</span>
 <span>  generated <span class="op">=</span> <span class="va">generated</span>,</span>
 <span>  lambda    <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span>,</span>
-<span>  n_quad    <span class="op">=</span> <span class="fl">11</span></span>
+<span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">mixed_mml</span></span>
 <span><span class="co">#&gt; mixedsubjectsirt 2PL fit</span></span>
 <span><span class="co">#&gt;   items:      8</span></span>
 <span><span class="co">#&gt;   lambda:     0.5</span></span>
-<span><span class="co">#&gt;   loss:       4.86386</span></span>
+<span><span class="co">#&gt;   loss:       4.91044</span></span>
 <span><span class="co">#&gt;   convergence: 0 </span></span>
 <span><span class="co">#&gt;   estimator:  marginal MML PPI++</span></span></code></pre></div>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mixed_mml</span><span class="op">$</span><span class="va">item_pars</span></span>
 <span><span class="co">#&gt;    item         a          d          b</span></span>
-<span><span class="co">#&gt; 1 Item1 0.6805024 -1.0137298  1.4896785</span></span>
-<span><span class="co">#&gt; 2 Item2 1.0593574 -0.8338784  0.7871549</span></span>
-<span><span class="co">#&gt; 3 Item3 1.0686089 -0.3816318  0.3571295</span></span>
-<span><span class="co">#&gt; 4 Item4 1.0460975 -0.2835142  0.2710209</span></span>
-<span><span class="co">#&gt; 5 Item5 1.3649490  0.1870879 -0.1370659</span></span>
-<span><span class="co">#&gt; 6 Item6 1.5335270  0.4766917 -0.3108467</span></span>
-<span><span class="co">#&gt; 7 Item7 1.5124249  0.7093155 -0.4689922</span></span>
-<span><span class="co">#&gt; 8 Item8 1.7327698  1.1534664 -0.6656778</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 Item1 0.7431515 -1.0825772  1.4567382</span></span>
+<span><span class="co">#&gt; 2 Item2 1.0067308 -0.7278419  0.7229757</span></span>
+<span><span class="co">#&gt; 3 Item3 0.8547961 -0.4113346  0.4812078</span></span>
+<span><span class="co">#&gt; 4 Item4 1.0999070 -0.1453192  0.1321195</span></span>
+<span><span class="co">#&gt; 5 Item5 1.1673630  0.1875514 -0.1606624</span></span>
+<span><span class="co">#&gt; 6 Item6 1.2566356  0.4923054 -0.3917646</span></span>
+<span><span class="co">#&gt; 7 Item7 1.5526271  0.8477928 -0.5460376</span></span>
+<span><span class="co">#&gt; 8 Item8 1.5472343  1.1508445 -0.7438075</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="step-3-select-lambda-by-ability-score-risk">Step 3: Select lambda by ability-score risk<a class="anchor" aria-label="anchor" href="#step-3-select-lambda-by-ability-score-risk"></a>
+<h2 id="step-3-select-lambda-by-ability-score-risk">Step 3: Select
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+by ability-score risk<a class="anchor" aria-label="anchor" href="#step-3-select-lambda-by-ability-score-risk"></a>
 </h2>
 <p><code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> with
 <code>fit_fn = fit_mixed_subjects_mml</code> selects the
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 that minimizes propagated ability-score risk
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo stretchy="false" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">E[g'\Sigma_\gamma g]</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mi>g</mi><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}\big[g'\Sigma_\gamma g\big]</annotation></semantics></math>
 (where
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><annotation encoding="application/x-tex">\Sigma_\gamma</annotation></semantics></math>
-is the <strong>Louis-corrected</strong> marginal sandwich covariance).
-By default it does this by <strong>direct 1-D optimization</strong> over
-<code>[0, 1]</code>, returning a continuous
+is the Louis-corrected marginal sandwich covariance).<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://bpspsychub.onlinelibrary.wiley.com/doi/full/10.1111/bmsp.12207" class="external-link"&gt;Liu,
+C. W., &amp;amp; Chalmers, R. P. (2021). A note on computing Louis’ observed
+information matrix identity for IRT and cognitive diagnostic models.
+&lt;em&gt;British Journal of Mathematical and Statistical Psychology&lt;/em&gt;,
+74(1), 118-138.&lt;/a&gt;&lt;/p&gt;'><sup>2</sup></a> By default this is
+done by direct 1-D optimization over <code>[0, 1]</code>. The final fit
+from this optimal
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-— no grid needed.</p>
+is also returned as the <code>best_fit</code> object within the output
+list, so the user is not required to call
+<code>fit_mixed_subjects_mml</code> again.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ability_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
@@ -215,56 +233,56 @@ By default it does this by <strong>direct 1-D optimization</strong> over
 <span>  target_resp  <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span>,</span>
 <span>  fit_fn       <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>,</span>
-<span>  n_quad       <span class="op">=</span> <span class="fl">11</span>,</span>
 <span>  control      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ability_tuned</span><span class="op">$</span><span class="va">best_lambda</span></span>
-<span><span class="co">#&gt; [1] 0.7446881</span></span></code></pre></div>
-<p>Because the predictor is highly informative, the criterion selects a
-substantial
+<span><span class="co">#&gt; [1] 0.7924548</span></span></code></pre></div>
+<p>Because the predictor is highly informative, the approach selects a
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-— near the theoretical maximum
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>1200</mn><mi>/</mi><mn>1600</mn><mo>=</mo><mn>0.75</mn></mrow><annotation encoding="application/x-tex">N/(n+N) = 1200/1600 = 0.75</annotation></semantics></math>
-— so the method leans heavily on the generated LLM data. (The returned
-<code>summary</code> records each
+near the theoretical maximum
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mn>1200</mn><mi>/</mi><mn>1600</mn><mo>=</mo><mn>0.75</mn></mrow><annotation encoding="application/x-tex">N/(n+N) = 1200/1600 = 0.75</annotation></semantics></math>.
+As such, the method leans heavily on the unlabeled response data. (The
+returned <code>summary</code> records each
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 the optimizer evaluated, with <code>selection_risk = Inf</code> for any
 that failed to converge, so selection is protected against numerical
-failures. When the predictor is <em>un</em>informative the same
-criterion drives
+failures. When the predictor is uninformative the same criterion drives
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-to 0 instead; see “When the LLM is uninformative” below.)</p>
+to 0 instead; see below.)</p>
 </div>
 <div class="section level2">
-<h2 id="step-3b-recommended-cross-fitted-lambda-tuning">Step 3b (recommended): cross-fitted
+<h2 id="step-3b-recommended-workflow-cross-fit-lambda-tuning">Step 3b (recommended workflow): cross-fit
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-tuning<a class="anchor" aria-label="anchor" href="#step-3b-recommended-cross-fitted-lambda-tuning"></a>
+tuning<a class="anchor" aria-label="anchor" href="#step-3b-recommended-workflow-cross-fit-lambda-tuning"></a>
 </h2>
-<p><code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> above selects
+<p><code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> above estimated an
+appropriate
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-and fits the final model on the <strong>same</strong> data. There is no
-free lunch in doing so: <em>no-free-lunch</em> analyses of tuned
-prediction-powered inference show that choosing the power parameter on
-the data you also estimate with is optimistic — the selected
+and fits the final model on the same data used for this estimation.
+Previous analysis of prediction-powered inference in finite samples
+shows that estimating
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-is biased toward looking more helpful than it is, and Wald intervals
-built around it can be anti-conservative.
-<!-- TODO: cite the "no free lunch" PPI tuning paper here. --></p>
-<p><code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code> removes this
-optimism by tuning
+on the data you also estimate model parameters with is optimistic. Item
+parameters estimated this are biased in finite samples and may
+undercover true parameter values.<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://arxiv.org/abs/2505.20178" class="external-link"&gt;Mani, P., Xu,
+P., Lipton, Z. C., &amp;amp; Oberst, M. (2025). No free lunch:
+Non-asymptotic analysis of prediction-powered inference. &lt;em&gt;arXiv
+preprint arXiv:2505.20178&lt;/em&gt;.&lt;/a&gt;&lt;/p&gt;'><sup>3</sup></a></p>
+<p><code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code> removes this bias by
+tuning
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-on held-out folds: each fold’s
+on held-out data: each fold’s
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-is chosen using only the <em>other</em> folds’ labels, and the final fit
-combines them. Pass <code>fit_fn = fit_mixed_subjects_mml</code> for the
-per-fold tuning and <code>final_fit_fn = fit_mixed_subjects_mml</code>
-so the final fit is a single
+is chosen using only out of fold item responses, and the final fit
+combines them. Passing <code>fit_fn = fit_mixed_subjects_mml</code> for
+the per-fold tuning and
+<code>final_fit_fn = fit_mixed_subjects_mml</code> for the final fit
+produces a single
 scalar-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-MML model (the fold
+mixed subjects calibration fit (the fold-specific
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>’s
-are averaged, weighted by fold size) that <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> handles
-exactly as in Step 4.</p>
+are averaged, weighted by fold size).</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cf_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit</a></span><span class="op">(</span></span>
 <span>  observed     <span class="op">=</span> <span class="va">observed</span>,</span>
@@ -274,22 +292,18 @@ exactly as in Step 4.</p>
 <span>  fit_fn       <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>,</span>
 <span>  final_fit_fn <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>,</span>
 <span>  n_splits     <span class="op">=</span> <span class="fl">2</span>,          <span class="co"># the standard PPI sample split (also the default)</span></span>
-<span>  n_quad       <span class="op">=</span> <span class="fl">11</span>,</span>
 <span>  control      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">cf_tuned</span><span class="op">$</span><span class="va">lambda_by_split</span>   <span class="co"># one tuned lambda per held-out fold</span></span>
-<span><span class="co">#&gt; [1] 0.8474932 0.8581241</span></span>
+<span><span class="co">#&gt; [1] 0.8758023 0.8896977</span></span>
 <span><span class="va">cf_tuned</span><span class="op">$</span><span class="va">lambda_final</span>      <span class="co"># fold-size-weighted scalar used for the final fit</span></span>
-<span><span class="co">#&gt; [1] 0.8528086</span></span></code></pre></div>
-<p><code>cf_tuned$final_fit</code> is the calibration to report, and
-<code>vcov(cf_tuned$final_fit)</code> gives its Louis-corrected
-covariance. In the package’s simulation study, cross-fitting leaves
-item-parameter bias, held-out scoring RMSE, and 95% interval coverage
-essentially unchanged relative to the same-data tuner.</p>
-<p>We use <code>n_splits = 2</code>, the standard PPI sample split (one
-half tunes, the other estimates, then swap) and the function’s default.
-You may notice the cross-fitted
+<span><span class="co">#&gt; [1] 0.88275</span></span></code></pre></div>
+<p>The object <code>cf_tuned$final_fit</code> provides the final model
+fit from calibration, and <code>vcov(cf_tuned$final_fit)</code> gives
+its Louis-corrected covariance. We suggest use of the default
+<code>n_splits = 2</code>, the standard PPI sample split (one half
+tunes, the other estimates, then swap). You may notice the cross-fit
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 (here
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>≈</mo><mn>0.85</mn></mrow><annotation encoding="application/x-tex">\approx 0.85</annotation></semantics></math>)
@@ -305,44 +319,39 @@ is tuned on only half the labeled subjects
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>n</mi><mtext mathvariant="normal">train</mtext></msub><mo>=</mo><mi>n</mi><mi>/</mi><mn>2</mn><mo>=</mo><mn>200</mn></mrow><annotation encoding="application/x-tex">n_\text{train} = n/2 = 200</annotation></semantics></math>),
 and the PPI-optimal
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-grows as labeled data shrinks — it tracks
+grows as labeled data shrinks (it tracks
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>N</mi><mo>+</mo><msub><mi>n</mi><mtext mathvariant="normal">train</mtext></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">N/(N + n_\text{train})</annotation></semantics></math>,
 here
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1200</mn><mi>/</mi><mn>1400</mn><mo>≈</mo><mn>0.86</mn></mrow><annotation encoding="application/x-tex">1200/1400 \approx 0.86</annotation></semantics></math>.
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1200</mn><mi>/</mi><mn>1400</mn><mo>≈</mo><mn>0.86</mn></mrow><annotation encoding="application/x-tex">1200/1400 \approx 0.86</annotation></semantics></math>).
 The fold
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>’s
 are tuned for
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>n</mi><mtext mathvariant="normal">train</mtext></msub><annotation encoding="application/x-tex">n_\text{train}</annotation></semantics></math>
 but the final fit applies their average to the full sample, so they run
-a little high; more folds would push
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>n</mi><mtext mathvariant="normal">train</mtext></msub><annotation encoding="application/x-tex">n_\text{train}</annotation></semantics></math>
-toward
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>n</mi><annotation encoding="application/x-tex">n</annotation></semantics></math>
-and pull
+a little higher than
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-back toward the full-sample optimum, but two folds is the convention.
-The reason to cross-fit is not the
+estimated in the same sample; in operational settings where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>≫</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">N \gg n</annotation></semantics></math>,
+this difference shrinks to zero. Importantly, the reason to cross-fit is
+not the
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-value but that
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-is chosen without each fold’s own labels, so the reported uncertainty is
-not optimistic about a
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-tuned on the same data. The cheaper same-data tuner in Step 3 is fine
-for exploration; prefer the cross-fitted estimate when the selected
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-or its uncertainty is part of what you report.</p>
+value, but to remove finite-sample item parameter bias. The cheaper
+same-data tuner in Step 3 is fine for exploration; prefer the cross-fit
+estimate for operational calibrations or further research.</p>
 </div>
 <div class="section level2">
 <h2 id="step-4-inspect-the-covariance">Step 4: Inspect the covariance<a class="anchor" aria-label="anchor" href="#step-4-inspect-the-covariance"></a>
 </h2>
 <p><code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> on a scalar-lambda MML fit automatically uses
-<code><a href="../reference/vcov_mixed_subjects_mml.html">vcov_mixed_subjects_mml()</a></code>, which applies Louis’ (1982)
-observed-information correction — the marginal bread is
+<code><a href="../reference/vcov_mixed_subjects_mml.html">vcov_mixed_subjects_mml()</a></code>, which applies Louis’
+observed-information correction.<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://academic.oup.com/jrsssb/article/44/2/226/7027638" class="external-link"&gt;Louis,
+T. A. (1982). Finding the observed information matrix when using the EM
+algorithm. &lt;em&gt;Journal of the Royal Statistical Society Series B:
+Statistical Methodology&lt;/em&gt;, 44(2), 226-233.&lt;/a&gt;&lt;/p&gt;'><sup>4</sup></a> Here, the bread is
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">p</mi></mrow></msub><mo>−</mo><msub><mi>I</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">s</mi></mrow></msub></mrow><annotation encoding="application/x-tex">H_\mathrm{comp} - I_\mathrm{miss}</annotation></semantics></math>
 rather than the EM complete-data Hessian alone.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">Sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">ability_tuned</span><span class="op">$</span><span class="va">best_fit</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">Sigma</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov</a></span><span class="op">(</span><span class="va">cf_tuned</span><span class="op">$</span><span class="va">final_fit</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">Sigma</span><span class="op">)</span>  <span class="co"># 2J × 2J</span></span>
 <span><span class="co">#&gt; [1] 16 16</span></span></code></pre></div>
 </div>
@@ -355,8 +364,7 @@ rather than the EM complete-data Hessian alone.</p>
 <span>  predicted <span class="op">=</span> <span class="va">predicted</span>,</span>
 <span>  generated <span class="op">=</span> <span class="va">generated</span>,</span>
 <span>  lambda    <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span>,</span>
-<span>  n_quad    <span class="op">=</span> <span class="fl">11</span></span>
+<span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">estimates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
@@ -378,12 +386,14 @@ rather than the EM complete-data Hessian alone.</p>
 <div class="section level2">
 <h2 id="when-the-llm-is-uninformative">When the LLM is uninformative<a class="anchor" aria-label="anchor" href="#when-the-llm-is-uninformative"></a>
 </h2>
-<p>The flip side of exploiting a good predictor is doing no harm with a
-bad one. Here the LLM answers are essentially unrelated to ability
-(drawn from scrambled item parameters), so the paired correction carries
-no usable signal:</p>
+<p>While the method is able to efficiently exploit information derived
+from a good predictor, it is also capable of rejecting useless
+information derived from a bad one. Here we simulate responses that are
+essentially unrelated to ability (drawn from scrambled item parameters),
+so the paired correction between <code>observed</code> and
+<code>predicted</code> carries no usable signal:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">7</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">242424</span><span class="op">)</span></span>
 <span><span class="va">bad_pars</span>    <span class="op">&lt;-</span> <span class="va">true_pars</span></span>
 <span><span class="va">bad_pars</span><span class="op">$</span><span class="va">a</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="fl">0.05</span>, <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_items</span>, <span class="fl">0</span>, <span class="fl">0.1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>   <span class="co"># near-zero slopes</span></span>
 <span><span class="va">bad_pars</span><span class="op">$</span><span class="va">d</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n_items</span>, <span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span>                       <span class="co"># difficulties unrelated to truth</span></span>
@@ -398,22 +408,20 @@ no usable signal:</p>
 <span>  target_resp  <span class="op">=</span> <span class="va">observed</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="va">human_start</span><span class="op">$</span><span class="va">pars</span>,</span>
 <span>  fit_fn       <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>,</span>
-<span>  n_quad       <span class="op">=</span> <span class="fl">11</span>,</span>
 <span>  control      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">200</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">tuned_bad</span><span class="op">$</span><span class="va">best_lambda</span>   <span class="co"># expect ~0: the useless LLM is correctly ignored</span></span>
-<span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.03332212</span></span></code></pre></div>
 <p>The criterion drives
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>→</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda \to 0</annotation></semantics></math>,
-recovering the human-only calibration. So the same selection rule both
-<strong>exploits</strong> an informative LLM (the main example,
+recovering the human-only item parameters. As such, the same
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
-near
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">N/(n+N)</annotation></semantics></math>)
-and <strong>protects against</strong> an uninformative one
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda \approx 0</annotation></semantics></math>)
-— the “no average harm” property quantified in the simulation study.</p>
+tuning procedure both embraces informative predictions (as in the main
+example,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>→</mo><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\lambda \to N/(n+N)</annotation></semantics></math>)
+and rejects an uninformative predictions
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda \approx 0</annotation></semantics></math>).</p>
 </div>
 <div class="section level2">
 <h2 id="validation">Validation<a class="anchor" aria-label="anchor" href="#validation"></a>
@@ -422,26 +430,30 @@ and <strong>protects against</strong> an uninformative one
 intended:</p>
 <ul>
 <li>
-<strong>λ selection tracks predictor quality</strong> — a perfect
-paired predictor (F = Y) selects λ ≈ N/(n+N) = 0.75; a useless predictor
-is down-weighted to λ ≈ 0.</li>
-<li>
-<strong>The Louis-corrected standard errors are honest</strong> —
-across all regimes, including a useless or biased LLM,
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝛌</mi><annotation encoding="application/x-tex">\mathbf{\lambda}</annotation></semantics></math>-selection
+tracks predictor quality. A perfect paired predictor
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>F</mi><mo>=</mo><mi>Y</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(F = Y)</annotation></semantics></math>
+selects
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>≈</mo><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>n</mi><mo>+</mo><mi>N</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">\lambda \approx N/(n+N)</annotation></semantics></math>;
+a useless predictor is down-weighted to
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>≈</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda \approx 0</annotation></semantics></math>.</li>
+<li>The Louis-corrected standard errors provide correct coverage. Across
+all simulation conditions, including a useless or biased predictor,
 <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> on a scalar MML fit attains nominal Wald-interval
 coverage (~0.91/0.96) for both discriminations and intercepts, whereas
 the uncorrected EM-Hessian covariance under-covers (~0.71/0.79).</li>
-<li>
-<strong>No average harm</strong> — tuned ability-score RMSE is no
-worse than the human-only calibration on average (every regime’s mean
-ΔRMSE is ≤ 0); when the predictor is uninformative the method
-down-weights toward it.</li>
+<li>No average harm done to ability scoring. The tuned ability-score
+RMSE is no worse than the human-only calibration on average (every
+regime’s mean
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><mtext mathvariant="normal">RMSE</mtext><mo>≤</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\Delta \text{RMSE} \leq 0</annotation></semantics></math>)
+when the predictor is uninformative.</li>
 </ul>
 <p>See the <a href="simulation-validation.html">Simulation
 Validation</a> vignette for the full results, and
-<code>simulations/</code> in the source tree for the reproducible
-harness.</p>
+<code>simulations/</code> in the source tree for the reproduction
+code.</p>
 </div>
+
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>

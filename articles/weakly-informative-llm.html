@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mixedsubjectsirt</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -78,21 +78,20 @@
     
     
 <p>This vignette treats the regime prediction-powered inference is built
-for: a <strong>small human sample</strong> (here <code>n = 500</code>)
-alongside a <strong>large synthetic / LLM sample</strong>
-(<code>N = 100000</code>). The LLM is <strong>biased</strong> — its item
-parameters are systematically off — and only <strong>weakly
-informative</strong> about the human responses.</p>
-<p>The whole story is one distinction, made visual below:</p>
-<blockquote>
-<p>The mixed-subjects (PPI) estimator is <strong>asymptotically unbiased
-for the true human parameters at <em>every</em> λ.</strong> λ is an
-<strong>efficiency</strong> knob, not a bias knob. Bias is a property of
-the <em>estimation structure</em>, not of λ. A <em>naive</em> fit that
-pools the human and LLM responses has no such protection: the
-<code>n = 500</code> humans are outvoted by the <code>N = 100000</code>
-LLM rows, and the estimate inherits the LLM’s bias.</p>
-</blockquote>
+for: a smaller human sample (here <code>n = 500</code>) alongside a much
+larger synthetic / LLM sample (<code>N = 100000</code>). The LLM here is
+biased, in that its item parameters are systematically off, making them
+only weakly informative about the human responses.</p>
+<p>Importantly, the mixed-subjects (PPI) estimator is asymptotically
+unbiased for the true human parameters at every
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>.
+Tuning
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+is an efficiency knob, not a bias knob.A naive fit that pools the human
+and LLM responses has no such protection: the <code>n = 500</code>
+humans are outvoted by the <code>N = 100000</code> rows of LLM-generated
+repsonses, and the estimate inherits the LLM’s biased data generating
+process.</p>
 <p><em>All numbers are precomputed
 (<code>data-raw/precompute_largeN.R</code>): n = 500, N = 100000, 16
 Monte Carlo replications.</em></p>
@@ -101,8 +100,8 @@ Monte Carlo replications.</em></p>
 </h2>
 <p>Human responses come from a true 8-item 2PL model
 (<code>a ∈ [0.8, 1.6]</code>, <code>d ∈ [-1.1, 1.1]</code>). The LLM is
-a <strong>shifted</strong> version — slopes attenuated by 10%,
-intercepts shifted up by 0.25 — so its responses are plausible but
+a shifted version with discriminations attenuated by 10% and intercepts
+shifted up by 0.25. This makes the response structure plausible but
 biased:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">true_pars</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>item <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Item"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">8</span><span class="op">)</span>,</span>
@@ -123,9 +122,9 @@ biased:</p>
 <p>The obvious move is to pool everything and fit one model:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">naive</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">observed</span>, <span class="va">generated</span><span class="op">)</span><span class="op">)</span>   <span class="co"># 500 human + 100000 LLM rows</span></span></code></pre></div>
-<p>The 500 humans <em>are</em> in the fit, but against 100,000 LLM rows
-their information is washed out, and the estimate is dragged onto the
-LLM’s shifted parameters:</p>
+<p>The 500 humans are in the fit, but against 100,000 LLM rows their
+information is washed out, and the estimate is dragged onto the LLM’s
+shifted parameters:</p>
 <p>Averaged over the replications, the naive estimator’s item-parameter
 bias is <strong>-0.119</strong> in the slopes and
 <strong>+0.248</strong> in the intercepts — essentially the LLM’s shift
@@ -134,46 +133,54 @@ estimated <em>very precisely</em> (a tiny standard error); more LLM data
 only sharpens the bias.</p>
 </div>
 <div class="section level2">
-<h2 id="λ-moves-efficiency-not-bias">λ moves efficiency, not bias<a class="anchor" aria-label="anchor" href="#%CE%BB-moves-efficiency-not-bias"></a>
+<h2 id="lambda-moves-efficiency-not-bias">
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+moves efficiency, not bias<a class="anchor" aria-label="anchor" href="#lambda-moves-efficiency-not-bias"></a>
 </h2>
-<p>The mixed-subjects estimator minimizes</p>
+<p>The mixed-subjects estimator minimizes the loss</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>L</mi><mi>o</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">g</mi></mrow></msubsup><mo stretchy="false" form="prefix">(</mo><mi>γ</mi><mo stretchy="false" form="postfix">)</mo><mspace width="0.278em"></mspace><mo>+</mo><mspace width="0.278em"></mspace><mi>λ</mi><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">[</mo><msubsup><mi>L</mi><mi>g</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">g</mi></mrow></msubsup><mo stretchy="false" form="prefix">(</mo><mi>γ</mi><mo stretchy="false" form="postfix">)</mo><mo>−</mo><msubsup><mi>L</mi><mi>p</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">a</mi><mi mathvariant="normal">r</mi><mi mathvariant="normal">g</mi></mrow></msubsup><mo stretchy="false" form="prefix">(</mo><mi>γ</mi><mo stretchy="false" form="postfix">)</mo><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">]</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">L_o^{\mathrm{marg}}(\gamma) \;+\; \lambda\bigl[L_g^{\mathrm{marg}}(\gamma) - L_p^{\mathrm{marg}}(\gamma)\bigr].</annotation></semantics></math></p>
-<p>At the true parameters the human score is mean-zero and the paired
-correction <code>L_g − L_p</code> is <em>also</em> mean-zero (generated
-and paired LLM responses share a distribution and ability spread), so
-the estimating equation is mean-zero <strong>for every λ</strong>.
-Unbiasedness comes from this <em>structure</em>, not from λ.</p>
-<p>To see it directly, fit the estimator across a fine grid of λ and
-track two things: the <strong>item-parameter bias</strong> (Monte Carlo
-mean of <code>estimate − truth</code>) and the <strong>model-based
-ability-score risk</strong> <code>E[g'Σ_γ(λ) g]</code> — the quantity
-the tuner actually minimizes.</p>
+<p>At the true parameters the human loss is mean-zero and the paired
+correction <code>L_g − L_p</code> is also mean-zero, so the estimating
+equation is mean-zero for every
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>.
+Unbiasedness comes from this structure, not from a specific value of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>.
+To see it directly, we fit the estimator across a grid of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+values and track two things: the item-parameter bias (Monte Carlo mean
+of <code>estimate − truth</code>) and the model-based ability-score risk
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>𝔼</mi><mo minsize="120%" maxsize="120%" stretchy="true" form="prefix">[</mo><msup><mi>g</mi><mo>′</mo></msup><msub><mi mathvariant="normal">Σ</mi><mi>γ</mi></msub><mo stretchy="false" form="prefix">(</mo><mi>λ</mi><mo stretchy="false" form="postfix">)</mo><mi>g</mi><mo minsize="120%" maxsize="120%" stretchy="true" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">\mathbb{E}\big[g'\Sigma_\gamma(\lambda) g\big]</annotation></semantics></math>
+(the quantity the tuner actually minimizes).</p>
 <p><img src="weakly-informative-llm_files/figure-html/bias-curve-1.png" class="r-plt" alt="Item-parameter bias of the mixed-subjects estimator is flat near zero across all lambda, far from the naive pooled bias shown as dashed reference lines." width="672"></p>
-<p>The mixed-subjects bias sits on zero across the entire range of λ
-(the shaded band is ±2 Monte Carlo SE); the dashed red lines mark the
-naive pooled bias, off the chart. <strong>No λ buys or removes
-bias.</strong> What λ does change is efficiency:</p>
+<p>The mixed-subjects bias sits on zero across the entire range of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+(the shaded band is
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>±</mi><mn>2</mn></mrow><annotation encoding="application/x-tex">\pm 2</annotation></semantics></math>
+Monte Carlo SE); the dashed red lines mark the naive pooled bias. Tuning
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+changes efficiency:</p>
 <p><img src="weakly-informative-llm_files/figure-html/risk-curve-1.png" class="r-plt" alt="Model-based ability-score risk as a function of lambda, with a shallow minimum near the optimized lambda." width="518.4"></p>
-<p>For this weakly-informative LLM the averaged risk curve is
-<strong>shallow</strong> and rises for larger λ: leaning on a
-poorly-correlated predictor <em>adds</em> item-parameter variance. Its
-minimum sits near λ ≈ 0.1, only about 2% below the λ = 0 (human-only)
-risk — almost no efficiency to be gained. Because the curve is so flat,
-each individual dataset’s optimum scatters around this value (the red
-ticks); see the next section. Every point on the curve is unbiased.</p>
+<p>For this weakly-informative LLM the averaged risk curve is shallow
+and rises for larger λ: leaning on a poorly-correlated predictor
+<em>adds</em> measurement error to latent ability. Its minimum sits near
+λ ≈ 0.1, onlyabout 2% below the λ = 0 (human-only) risk — almost no
+efficiency to begained. Because the curve is so flat, each individual
+dataset’s optimum scatters around this value (the red ticks); see the
+next section. Every pointon the curve is unbiased.</p>
 </div>
 <div class="section level2">
-<h2 id="choosing-λ-the-tuner-optimizes-directly">Choosing λ: the tuner optimizes directly<a class="anchor" aria-label="anchor" href="#choosing-%CE%BB-the-tuner-optimizes-directly"></a>
+<h2 id="choosing-lambda">Choosing
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math><a class="anchor" aria-label="anchor" href="#choosing-lambda"></a>
 </h2>
-<p>The curve above was sampled on a grid only to <em>draw the
-surface</em> — in fact with
-<code>tune_lambda_ability_risk(..., method = "grid")</code>. To
-<strong>choose</strong> an operating λ you do not need a grid at all. By
-default <code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> selects λ by
-<strong>direct 1-D optimization</strong> of the risk over
-<code>[0, 1]</code> (<code><a href="https://rdrr.io/r/stats/optimize.html" class="external-link">stats::optimize()</a></code>), returning a
-continuous value with no grid rounding and no evaluations wasted far
-from the optimum:</p>
+<p>The curve above was sampled on a grid only to draw the surface using
+<code>tune_lambda_ability_risk(..., method = "grid")</code>. To choose
+an operating
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+you do not need a grid at all. By default,
+<code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> selects
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+by direct optimization of the risk over <code>[0, 1]</code>
+(<code><a href="https://rdrr.io/r/stats/optimize.html" class="external-link">stats::optimize()</a></code>):</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Direct optimization is the default (method = "optimize").</span></span>
 <span><span class="va">tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
@@ -183,48 +190,45 @@ from the optimum:</p>
 <span><span class="op">)</span></span>
 <span><span class="va">tuned</span><span class="op">$</span><span class="va">best_lambda</span>            <span class="co"># continuous lambda</span></span>
 <span></span>
-<span><span class="co"># Pass method = "grid" (and a lambda_grid) to scan instead -- how the curve above</span></span>
-<span><span class="co"># was drawn. lambda_grid otherwise just bounds the optimizer's search.</span></span></code></pre></div>
-<p>The optimizer returns the minimizer of <em>this dataset’s</em> risk
-surface continuously — here λ = <strong>0.27</strong>. That is a genuine
-per-dataset optimum, not noise: every dataset has its own (noisy) risk
-surface, so its optimal λ varies around the population value. Across the
-16 replications the per-dataset optimum averaged 0.14 and ranged [0.0,
-0.3], scattering around the minimum of the <em>averaged</em> curve (≈
-0.1). (These are not the same point — the minimum of the average risk is
-not the average of the per-dataset minima.) The scatter is wide here
-because the surface is shallow; an informative LLM sharpens it.
-<code>method = "grid"</code> would snap each of these to the nearest
-node; the default optimizer resolves them continuously. Either way the
-estimate is unbiased.</p>
+<span><span class="co"># Pass method = "grid" (and a lambda_grid) to scan instead -- how the curve</span></span>
+<span><span class="co"># above was drawn. lambda_grid otherwise just bounds the optimizer's search.</span></span></code></pre></div>
+<p>The optimizer returns the minimizer of this dataset’s risk surface.
+Here, λ = 0.27. Every dataset has its own (noisy) risk surface, so its
+optimal λ varies. Across the 16 replications the per-dataset optimum
+averaged 0.14 and ranged [0.0, 0.3], scattering around the minimum of
+the <em>averaged</em> curve (≈ 0.1). (These are not the same point — the
+minimum of the average risk is not the average of the per-dataset
+minima.) The scatter is wide here because the surface is shallow;
+informative predictions sharpens it.</p>
 <p>(The 2-fold cross-fitted tuner,
 <code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code>, lands at the same
-place: at <code>N ≫ n</code> the cross-fit λ-inflation
-<code>N/(N + n/2)</code> vs <code>N/(N + n)</code> is negligible, so
-cross-fitting changes neither the bias nor the selected λ here.)</p>
+place: at
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mo>≫</mo><mi>n</mi></mrow><annotation encoding="application/x-tex">N \gg n</annotation></semantics></math>
+the cross-fit
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>-inflation
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>N</mi><mo>+</mo><mi>n</mi><mi>/</mi><mn>2</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">N/(N + n/2)</annotation></semantics></math>
+vs
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>N</mi><mi>/</mi><mo stretchy="false" form="prefix">(</mo><mi>N</mi><mo>+</mo><mi>n</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">N/(N + n)</annotation></semantics></math>
+is negligible, so cross-fitting does not change the selected
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>.)</p>
 </div>
 <div class="section level2">
 <h2 id="takeaways">Takeaways<a class="anchor" aria-label="anchor" href="#takeaways"></a>
 </h2>
 <ol style="list-style-type: decimal">
+<li>The mixed-subjects estimator is unbiased for the true human
+parameters at every
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>;
+pooling lets a large biased LLM sample outvote the human anchor and
+inherits its bias.</li>
 <li>
-<strong>Bias is set by the estimation structure, not by λ.</strong>
-The mixed-subjects estimator is unbiased for the true human parameters
-at every λ; pooling lets a large biased LLM sample outvote the human
-anchor and inherits its bias.</li>
-<li>
-<strong>λ tunes efficiency, and the objective decides
-which.</strong> <code>tune_lambda_ppi_score</code> minimizes the
-item-parameter trace <code>Tr(Σ_γ)</code>;
-<code>tune_lambda_ability_risk</code> minimizes the propagated
-ability-recovery risk <code>E[g'Σ_γ g]</code>. For a weakly-informative
-LLM both curves are shallow — little efficiency to gain — but neither
-sacrifices unbiasedness.</li>
-<li>
-<strong>You don’t need a grid to tune.</strong>
-<code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> selects λ by direct 1-D
-optimization by default; a grid (<code>method = "grid"</code>) is just a
-convenient way to <em>see</em> the whole risk surface, as above.</li>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+tuning is performed directly and efficiently.
+<code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> selects
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
+by direct 1-D optimization by default; a grid
+(<code>method = "grid"</code>) is just a convenient way to visualize the
+whole risk surface.</li>
 </ol>
 </div>
 <div class="section level2">

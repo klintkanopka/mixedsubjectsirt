@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">mixedsubjectsirt</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,8 +69,8 @@
 </h1></div>
 <!-- badges: start -->
 
-<p><code>mixedsubjectsirt</code> is a package that facilitates augmenting human pilot data with LLM-generated item responses in psychometric calibration studies. We do this by implementing the Mixed-Subject Design<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://journals.sagepub.com/doi/abs/10.1177/00491241251326865" class="external-link"&gt;Broska, D., Howes, M., &amp;amp; van Loon, A. (2025). The mixed subjects design: Treating large language models as potentially informative observations. &lt;em&gt;Sociological Methods &amp;amp; Research&lt;/em&gt;, 54(3), 1074-1109.&lt;/a&gt;&lt;/p&gt;'><sup>1</sup></a><a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://osf.io/preprints/socarxiv/y74mu" class="external-link"&gt;Van Loon, A., &amp;amp; Kanopka, K. (2026). Using large language models as a source of human behavioral data in social science experiments. &lt;em&gt;SocArXiv preprint&lt;/em&gt;.&lt;/a&gt;&lt;/p&gt;'><sup>2</sup></a> for latent variable measurement models. This package ports the Prediction Powered Inference (PPI)<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://www.science.org/doi/abs/10.1126/science.adi6000" class="external-link"&gt;Angelopoulos, A. N., Bates, S., Fannjiang, C., Jordan, M. I., &amp;amp; Zrnic, T. (2023). Prediction-powered inference. &lt;em&gt;Science, 382&lt;/em&gt;(6671), 669-674.&lt;/a&gt;&lt;/p&gt;'><sup>3</sup></a> and PPI++<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://arxiv.org/abs/2311.01453" class="external-link"&gt;Angelopoulos, A. N., Duchi, J. C., &amp;amp; Zrnic, T. (2023). Ppi++: Efficient prediction-powered inference. &lt;em&gt;arXiv preprint arXiv:2311.01453&lt;/em&gt;.&lt;/a&gt;&lt;/p&gt;'><sup>4</sup></a> paradigms to EM-based estimation procedures that don’t have the clear independent and dependent variables usually thought of in these PPI-based workflows. <strong>The goal is item-parameter estimates that retain the human-data target while using synthetic responses only when they appear informative</strong> — the estimator is anchored to the human responses, and the LLM contribution is down-weighted when it does not help.</p>
-<p>The strength of this method is that it tunes the contribution of the LLM-generated responses based on how informative they are. This is done through a procedure called <em>power tuning</em> (derived from PPI++) with one key deviation: Instead of selecting a tuning parameter to minimize the standard errors of the estimated model parameters, we minimize <em>ability risk</em>, a quantification of the expected measurement error in downstream ability estimation, integrated over the assumed ability distribution. This allows our method to target parts of the scale where reductions in item parameter uncertainty are the most valuable, increasing operational measurement precision. Additionally, this approach guards against poor-quality synthetic data: <strong>ability-risk tuning can shrink the tuning parameter λ toward zero when synthetic responses do not improve downstream scoring precision</strong>, so estimation leans on the human responses where the LLM is uninformative. This means that whenever users are able to produce better quality predictions (through the use of using auxiliary data, better prompting, stronger models, or other new and unforeseen advances in LLMs or response prediction), the utility of this method increases in kind.</p>
+<p><code>mixedsubjectsirt</code> is a package that facilitates augmenting human pilot data with LLM-generated item responses in psychometric calibration studies. We do this by implementing the Mixed-Subject Design<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://journals.sagepub.com/doi/abs/10.1177/00491241251326865" class="external-link"&gt;Broska, D., Howes, M., &amp;amp; van Loon, A. (2025). The mixed subjects design: Treating large language models as potentially informative observations. &lt;em&gt;Sociological Methods &amp;amp; Research&lt;/em&gt;, 54(3), 1074-1109.&lt;/a&gt;&lt;/p&gt;'><sup>1</sup></a><a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://osf.io/preprints/socarxiv/y74mu" class="external-link"&gt;Van Loon, A., &amp;amp; Kanopka, K. (2026). Using large language models as a source of human behavioral data in social science experiments. &lt;em&gt;SocArXiv preprint&lt;/em&gt;.&lt;/a&gt;&lt;/p&gt;'><sup>2</sup></a> for latent variable measurement models. This package ports the Prediction Powered Inference (PPI)<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://www.science.org/doi/abs/10.1126/science.adi6000" class="external-link"&gt;Angelopoulos, A. N., Bates, S., Fannjiang, C., Jordan, M. I., &amp;amp; Zrnic, T. (2023). Prediction-powered inference. &lt;em&gt;Science, 382&lt;/em&gt;(6671), 669-674.&lt;/a&gt;&lt;/p&gt;'><sup>3</sup></a> and PPI++<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://arxiv.org/abs/2311.01453" class="external-link"&gt;Angelopoulos, A. N., Duchi, J. C., &amp;amp; Zrnic, T. (2023). Ppi++: Efficient prediction-powered inference. &lt;em&gt;arXiv preprint arXiv:2311.01453&lt;/em&gt;.&lt;/a&gt;&lt;/p&gt;'><sup>4</sup></a> paradigms to EM-based estimation procedures that don’t have the clear independent and dependent variables usually thought of in these PPI-based workflows. The goal is item-parameter estimates that retain the human-data target while using synthetic responses only when they appear informative. This works because the estimator is anchored to the human responses and the LLM contribution is down-weighted when it does not help.</p>
+<p>The strength of this method is that it tunes the contribution of the LLM-generated responses based on how informative they are. This is done through a procedure called <em>power tuning</em> (derived from PPI++) with one key deviation: Instead of selecting a tuning parameter to minimize the standard errors of the estimated model parameters, we minimize <em>ability risk</em>, a quantification of the expected measurement error in downstream ability estimation, integrated over the assumed ability distribution. This allows our method to target parts of the scale where reductions in item parameter uncertainty are the most valuable, increasing operational measurement precision. Additionally, this approach guards against poor-quality synthetic data: ability-risk tuning can shrink the tuning parameter λ toward zero when synthetic responses do not improve downstream scoring precision, so estimation leans on the human responses where the LLM is uninformative. This means that whenever users are able to produce better quality predictions (through the use of using auxiliary data, better prompting, stronger models, or other new and unforeseen advances in LLMs or response prediction), the utility of this method increases in kind.</p>
 <p>Implemented here are methods for standard dichotomous 2PL and 1PL IRT models. There are multiple options for estimation, with the recommended approach being Marginal Maximum Likelihood-based EM cross-fit to split samples.<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://arxiv.org/abs/2505.20178" class="external-link"&gt;Mani, P., Xu, P., Lipton, Z. C., &amp;amp; Oberst, M. (2025). No free lunch: Non-asymptotic analysis of prediction-powered inference. &lt;em&gt;arXiv preprint arXiv:2505.20178&lt;/em&gt;.&lt;/a&gt;&lt;/p&gt;'><sup>5</sup></a> Other options include approximations based upon quadrature-based expected count regressions and iterated expected counts. This package is under active development, with experimental features such as per-item power tuning available for users to try.</p>
 <div class="section level2">
 <h2 id="what-should-i-use">What should I use?<a class="anchor" aria-label="anchor" href="#what-should-i-use"></a>
@@ -86,28 +86,20 @@
 </tr></thead>
 <tbody>
 <tr>
-<td>Primary 2PL mixed-subjects fit</td>
-<td><code><a href="reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code></td>
-</tr>
-<tr>
-<td>Choose scalar lambda for scoring</td>
-<td><code>tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects_mml)</code></td>
-</tr>
-<tr>
-<td>Theoretical score-covariance diagnostic</td>
-<td><code><a href="reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code></td>
-</tr>
-<tr>
-<td>Conservative cross-fitted workflow</td>
+<td>Complete calibration workflow, including cross-fit λ tuning</td>
 <td><code><a href="reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code></td>
 </tr>
 <tr>
-<td>Experimental item-specific tuning</td>
-<td><code><a href="reference/tune_lambda_ability_risk_item.html">tune_lambda_ability_risk_item()</a></code></td>
+<td>Complete workflow without cross-fit λ tuning</td>
+<td><code><a href="reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code></td>
 </tr>
 <tr>
-<td>Legacy expected-count fit</td>
-<td><code><a href="reference/fit_mixed_subjects.html">fit_mixed_subjects()</a></code></td>
+<td>Fitting models with user-specified λ value</td>
+<td><code><a href="reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code></td>
+</tr>
+<tr>
+<td>Experimental item-specific λ tuning</td>
+<td><code><a href="reference/tune_lambda_ability_risk_item.html">tune_lambda_ability_risk_item()</a></code></td>
 </tr>
 </tbody>
 </table>

@@ -6,10 +6,10 @@ studies. We do this by implementing the Mixed-Subject Design[^1][^2] for
 latent variable measurement models. This package ports the Prediction
 Powered Inference (PPI)[^3] and PPI++[^4] paradigms to EM-based
 estimation procedures that don’t have the clear independent and
-dependent variables usually thought of in these PPI-based workflows.
-**The goal is item-parameter estimates that retain the human-data target
-while using synthetic responses only when they appear informative** —
-the estimator is anchored to the human responses, and the LLM
+dependent variables usually thought of in these PPI-based workflows. The
+goal is item-parameter estimates that retain the human-data target while
+using synthetic responses only when they appear informative. This works
+because the estimator is anchored to the human responses and the LLM
 contribution is down-weighted when it does not help.
 
 The strength of this method is that it tunes the contribution of the
@@ -22,11 +22,11 @@ ability estimation, integrated over the assumed ability distribution.
 This allows our method to target parts of the scale where reductions in
 item parameter uncertainty are the most valuable, increasing operational
 measurement precision. Additionally, this approach guards against
-poor-quality synthetic data: **ability-risk tuning can shrink the tuning
+poor-quality synthetic data: ability-risk tuning can shrink the tuning
 parameter λ toward zero when synthetic responses do not improve
-downstream scoring precision**, so estimation leans on the human
-responses where the LLM is uninformative. This means that whenever users
-are able to produce better quality predictions (through the use of using
+downstream scoring precision, so estimation leans on the human responses
+where the LLM is uninformative. This means that whenever users are able
+to produce better quality predictions (through the use of using
 auxiliary data, better prompting, stronger models, or other new and
 unforeseen advances in LLMs or response prediction), the utility of this
 method increases in kind.
@@ -43,12 +43,10 @@ features such as per-item power tuning available for users to try.
 
 | Goal | Recommended function |
 |----|----|
-| Primary 2PL mixed-subjects fit | [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md) |
-| Choose scalar lambda for scoring | `tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects_mml)` |
-| Theoretical score-covariance diagnostic | [`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md) |
-| Conservative cross-fitted workflow | [`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md) |
-| Experimental item-specific tuning | [`tune_lambda_ability_risk_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md) |
-| Legacy expected-count fit | [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md) |
+| Complete calibration workflow, including cross-fit λ tuning | [`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md) |
+| Complete workflow without cross-fit λ tuning | [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) |
+| Fitting models with user-specified λ value | [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md) |
+| Experimental item-specific λ tuning | [`tune_lambda_ability_risk_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md) |
 
 See the [Mixed-Subjects
 Workflow](https://klintkanopka.com/mixedsubjectsirt/articles/mixed-subjects-workflow.html)

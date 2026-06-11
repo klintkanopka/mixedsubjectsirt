@@ -1,8 +1,11 @@
 # Cross-fit ability-score-risk lambda tuning
 
 Estimates lambda separately for each held-out split using only the
-remaining labeled rows, then fits a final model with those fold-specific
-lambda values.
+remaining labeled rows, then fits a final model. By default
+(`final_fit_fn = fit_mixed_subjects_mml`) the fold lambdas are averaged
+(weighted by fold size) into a single scalar and the full sample is
+refit; pass `final_fit_fn = fit_mixed_subjects_split` to instead fit
+each fold's rows with its own out-of-fold lambda.
 
 ## Usage
 
@@ -20,8 +23,8 @@ tune_lambda_ability_risk_crossfit(
   n_quad = 31,
   initial_pars = NULL,
   target_mode = c("fixed", "row_aligned"),
-  fit_fn = fit_mixed_subjects,
-  final_fit_fn = fit_mixed_subjects_split,
+  fit_fn = fit_mixed_subjects_mml,
+  final_fit_fn = fit_mixed_subjects_mml,
   tuning_args = list(),
   final_args = list(),
   bounds = c(-6, 6),
@@ -92,24 +95,22 @@ tune_lambda_ability_risk_crossfit(
   Fitting function used for each fold's ability-risk tuning (passed to
   [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)).
   Defaults to
-  [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
-  (frozen expected-count). Pass
   [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
-  for marginal-MML fold tuning.
+  (marginal MML, recommended). The frozen expected-count estimator
+  [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
+  is still available but discouraged.
 
 - final_fit_fn:
 
   Function used to produce the final combined-data fit. Defaults to
-  [`fit_mixed_subjects_split()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.md),
-  which accepts a per-fold `lambda` vector natively. Pass
-  [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
-  to get a scalar marginal-MML final fit: the fold-specific lambdas are
-  averaged (weighted by fold size) into a single scalar, avoiding the
-  accidental per-item lambda problem that occurs when a
-  length-`n_splits` vector is passed directly to
-  [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md).
-  Note that mixing MML fold-tuning with a frozen final fit is an
-  approximation; document this when reporting results.
+  [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md),
+  giving a scalar marginal-MML final fit: the fold-specific lambdas are
+  averaged (weighted by fold size) into a single scalar and the full
+  sample is refit. Pass
+  [`fit_mixed_subjects_split()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.md)
+  to instead keep the per-fold `lambda` vector and fit each fold's rows
+  with its own out-of-fold lambda — the textbook cross-fit decoupling,
+  but it uses the discouraged frozen expected-count split estimator.
 
 - tuning_args:
 

@@ -11,7 +11,7 @@ propagated ability-score risk on a target response matrix."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">mixedsubjectsirt</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -68,7 +68,7 @@ propagated ability-score risk on a target response matrix.</p>
 <span>  theta_true <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n_quad <span class="op">=</span> <span class="fl">31</span>,</span>
 <span>  initial_pars <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  fit_fn <span class="op">=</span> <span class="va">fit_mixed_subjects</span>,</span>
+<span>  fit_fn <span class="op">=</span> <span class="va">fit_mixed_subjects_mml</span>,</span>
 <span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"optimize"</span>, <span class="st">"grid"</span><span class="op">)</span>,</span>
 <span>  bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">6</span>, <span class="fl">6</span><span class="op">)</span>,</span>
 <span>  max_discrimination <span class="op">=</span> <span class="fl">10</span>,</span>
@@ -115,10 +115,12 @@ computed.</p></dd>
 
 
 <dt id="arg-fit-fn">fit_fn<a class="anchor" aria-label="anchor" href="#arg-fit-fn"></a></dt>
-<dd><p>Fitting function to use. Defaults to <code><a href="fit_mixed_subjects.html">fit_mixed_subjects()</a></code>
-(frozen expected-count). Pass <code><a href="fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code> to use the
-marginal-likelihood PPI++ estimator, which eliminates gradient asymmetry
-and should select <code>lambda &gt; 0</code> for genuinely informative predictors.</p></dd>
+<dd><p>Fitting function to use. Defaults to <code><a href="fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code>,
+the marginal-likelihood PPI++ estimator (recommended). The frozen
+expected-count estimator <code><a href="fit_mixed_subjects.html">fit_mixed_subjects()</a></code> is still available by passing
+it here, but is <strong>discouraged</strong>: it has a gradient asymmetry that inflates
+discriminations and can drive <code>lambda</code> to 0 even for an informative
+predictor, and it requires a <code>slope_upper</code> cap for stability.</p></dd>
 
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>

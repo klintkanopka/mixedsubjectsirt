@@ -16,7 +16,7 @@ tune_lambda_ability_risk(
   theta_true = NULL,
   n_quad = 31,
   initial_pars = NULL,
-  fit_fn = fit_mixed_subjects,
+  fit_fn = fit_mixed_subjects_mml,
   method = c("optimize", "grid"),
   bounds = c(-6, 6),
   max_discrimination = 10,
@@ -63,12 +63,14 @@ tune_lambda_ability_risk(
 - fit_fn:
 
   Fitting function to use. Defaults to
+  [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md),
+  the marginal-likelihood PPI++ estimator (recommended). The frozen
+  expected-count estimator
   [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
-  (frozen expected-count). Pass
-  [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
-  to use the marginal-likelihood PPI++ estimator, which eliminates
-  gradient asymmetry and should select `lambda > 0` for genuinely
-  informative predictors.
+  is still available by passing it here, but is **discouraged**: it has
+  a gradient asymmetry that inflates discriminations and can drive
+  `lambda` to 0 even for an informative predictor, and it requires a
+  `slope_upper` cap for stability.
 
 - method:
 

@@ -1,54 +1,72 @@
 # Choosing Lambda in Mixed-Subjects IRT
 
-The mixed-subjects estimator calibrates a 2PL model by minimizing a
-PPI++-style combined loss over observed human responses, paired LLM
-responses, and additional generated LLM responses.
+The mixed-subjects estimator calibrates a 2PL IRT model by minimizing a
+PPI++-style combined loss over observed human responses, paired
+predicted responses, and additional generated responses. Predicted and
+generated responses will, in practice, typically come from an LLM.
 
 This vignette explains how to choose $`\lambda`$ and which functions to
 use. The short answer:
 
 | Task | Function |
 |----|----|
+| **Recommended workflow (cross-fit)** | **[`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md)** |
+| Exploratory tuning | [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) |
+| Fast approximation (frozen EC) | `tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects)` |
 | Theoretical diagnostic | [`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md) |
-| **Recommended practical tuning** | **`tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects_mml)`** |
-| Frozen EC (fast approximation) | [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) (default `fit_fn`) |
-| Cross-fitted tuning | [`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md) |
 | Per-item tuning (experimental) | [`tune_lambda_ability_risk_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md) |
+
+All of these now use the marginal-MML estimator
+(\[[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)\])
+by default; the frozen expected-count estimator is available via
+`fit_fn = fit_mixed_subjects` but is discouraged (see below).
 
 ## Two objectives, two estimators
 
 **Why there are two lambda objectives:**
 
 - [`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
-  minimizes $`\text{Tr}(\Sigma_\gamma)`$ — the trace of the
-  item-parameter covariance matrix (PPI++ Proposition 2). This is a
-  *theoretical diagnostic*: it measures whether the LLM prediction
-  reduces item-parameter variance. It answers “is the predictor
-  statistically useful?”
+  minimizes $`\text{Tr}(\Sigma_\gamma)`$. This is the trace of the
+  item-parameter covariance matrix and the tuning rule from the original
+  PPI++ implementation.\[^1\] This is most useful as a tuning target
+  when doing inference on estimated parameters (such as in causal
+  inference applications).\[^2\] Here, this is merely implemented as a
+  theoretical diagnostic.
 
 - [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
-  minimizes $`E[g'\Sigma_\gamma g]`$ — the propagated ability-score
-  risk. This is the *practical criterion*: it answers “does using the
-  LLM improve downstream test scoring?” Use this for operational
+  minimizes $`E[g'\Sigma_\gamma g]`$. This is the propagated
+  ability-score risk. This is the preferred practical criterion for IRT
+  applications and optimizes the choice of $`\lambda`$ to minimize
+  measurement error in downstream ability estimation. Importantly, the
+  PPI++ objective only cares about the trace of the $`\Sigma_\gamma`$,
+  while this method uses information about scale structure derived from
+  the off-diagonal covariance terms. Use this for operational
   calibration.
 
 **Why there are two estimators:**
 
+[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+is the default estimator for every tuner *except*
+`tune_lambda_ability_risk_item`. It is a consistent iterative MML-based
+estimator that marginalizes over the ability distribution. The
+implementation recomputes posteriors at every gradient evaluation, and
+its sandwich covariance (`vcov_mixed_subjects_mml`, called automatically
+via [`vcov()`](https://rdrr.io/r/stats/vcov.html)) uses Louis’
+observed-information correction for the bread, providing proper
+coverage.\[^3\]
+
 The original
 [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
-uses frozen expected-count posteriors. This creates a gradient asymmetry
-when the LLM item parameters differ from human parameters,
-systematically inflating discriminations and driving
-`tune_lambda_ability_risk` to select $`\lambda = 0`$ even when the LLM
-is genuinely informative.
-
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
-recomputes posteriors at every gradient evaluation, eliminating this
-asymmetry. Its sandwich covariance (`vcov_mixed_subjects_mml`, called
-automatically via [`vcov()`](https://rdrr.io/r/stats/vcov.html)) uses
-Louis’ (1982) observed-information correction for the bread, giving
-honest uncertainty estimates. Use the MML estimator unless speed is a
-binding constraint.
+uses frozen expected-count posteriors and is still available by passing
+`fit_fn = fit_mixed_subjects`, but it is **highly discouraged**: the
+frozen posteriors create a gradient asymmetry when the LLM item
+parameters differ from human parameters, systematically inflating
+discriminations and driving `tune_lambda_ability_risk` to select
+$`\lambda = 0`$ even when the LLM is genuinely informative (it also
+requires a `slope_upper` cap for stability). Use it only as a fast
+approximation when computate time is a binding constraint. Note that the
+current implementation of `tune_lambda_ability_risk_item` uses this
+estimation procedure and should be considered experimental.
 
 ## Example data
 
@@ -56,7 +74,7 @@ binding constraint.
 
 library(mixedsubjectsirt)
 
-set.seed(2027)
+set.seed(242424)
 
 n_human     <- 120
 n_generated <- 350
@@ -84,51 +102,26 @@ lambda_grid <- c(0, 0.25, 0.5, 0.75, 1)
 
 The examples use `human_pars` as `initial_pars` for speed.
 
-## Step 1: PPI++ score diagnostic
-
-[`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
-estimates the PPI++ Proposition 2 lambda using the same human posterior
-weights for both human and paired-LLM score vectors. F = Y (identical
-predictions) gives exactly $`N/(n+N)`$.
-
-``` r
-
-ppi_score <- tune_lambda_ppi_score(
-  observed    = observed,
-  predicted   = predicted,
-  item_pars   = human_pars,
-  n_generated = nrow(generated),
-  n_quad      = 7
-)
-
-cat("PPI++ score lambda:", round(ppi_score$lambda, 3),
-    " r =", round(ppi_score$r, 3),
-    " N/(n+N) =", round(1 / (1 + ppi_score$r), 3), "\n")
-#> PPI++ score lambda: 0  r = 0.343  N/(n+N) = 0.745
-```
-
-A value near zero means the paired LLM responses do not systematically
-reduce gradient variance in the person-level score formulation. This is
-expected for stochastic binary LLM responses. For F = Y the formula
-recovers $`N/(n+N)`$.
-
-## Step 2: Recommended — ability-risk tuning with MML estimator
+## Ability-risk tuning: Minimizing $`\mathbb{E}[g'\Sigma_\gamma g]`$
 
 The key result from the [Linking and Gradient
 Asymmetry](http://klintkanopka.com/mixedsubjectsirt/articles/linking-comparison.md)
-vignette: when the LLM parameters differ from human parameters, the
-frozen expected-count estimator drives $`\lambda \to 0`$ due to an
-artificial gradient asymmetry. The MML estimator removes this asymmetry.
-With a good predictor (F = Y), `tune_lambda_ability_risk` with MML
-correctly selects $`\lambda > 0`$.
+vignette is that when the LLM parameters differ from human parameters,
+the frozen expected-count estimator drives $`\lambda \to 0`$ due to an
+artificial gradient asymmetry. The default MML estimator removes this
+asymmetry, so with a good predictor ($`F = Y`$)
+[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+correctly selects $`\lambda > 0`$. Because
+[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+is the default `fit_fn`, no estimator argument is needed.
 
 By default
 [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
-chooses $`\lambda`$ by **direct 1-D optimization** of the risk over
-`[0, 1]` (continuous, no grid). Here we pass `method = "grid"` with
-`lambda_grid` so the `summary` shows the risk at each candidate — handy
-for *seeing* the surface. In practice you can omit both and let it
-optimize.
+chooses $`\lambda`$ by direct optimization of the risk over `[0, 1]`.
+Here we pass `method = "grid"` with `lambda_grid` so the `summary` shows
+the risk at each candidate, which handy for visualizing the
+$`\lambda`$-risk surface. In practice you will likely omit both
+arguments and let it optimize $`\lambda`$ directly.
 
 ``` r
 
@@ -139,63 +132,51 @@ ability_tuned_mml <- tune_lambda_ability_risk(
   generated    = generated,
   target_resp  = observed,
   initial_pars = human_pars,
-  fit_fn       = fit_mixed_subjects_mml,     # marginal MML estimator
-  method       = "grid",                     # show the risk at each candidate
-  n_quad       = 7,
+  method       = "grid",                # show the risk at each candidate value
   control      = list(maxit = 100)
 )
 
 ability_tuned_mml$summary[, c("lambda", "mean_param_var", "mean_total_risk",
                                "convergence", "selection_risk")]
 #>   lambda mean_param_var mean_total_risk convergence selection_risk
-#> 1   0.00      0.4341733       0.4341733           0      0.4341733
-#> 2   0.25      0.4402754       0.4402754           0      0.4402754
-#> 3   0.50      0.6286167       0.6286167           0      0.6286167
-#> 4   0.75      0.6339994       0.6339994           0            Inf
-#> 5   1.00      1.3329374       1.3329374           0            Inf
+#> 1   0.00      0.5748958       0.5748958           0      0.5748958
+#> 2   0.25      0.6728206       0.6728206           0      0.6728206
+#> 3   0.50      1.0477476       1.0477476           0      1.0477476
+#> 4   0.75      4.3282612       4.3282612           0      4.3282612
+#> 5   1.00    113.3301603     113.3301603           0    113.3301603
 ability_tuned_mml$best_lambda
 #> [1] 0
 
-# The default (method = "optimize") returns a continuous lambda directly:
 tune_lambda_ability_risk(
   observed = observed, predicted = predicted, generated = generated,
   target_resp = observed, initial_pars = human_pars,
-  fit_fn = fit_mixed_subjects_mml, n_quad = 7, control = list(maxit = 100)
+  control = list(maxit = 100)
 )$best_lambda
-#> [1] 0.07626505
+#> [1] 0
 ```
 
 `selection_risk` is `Inf` for any candidate with non-zero convergence
 code or non-finite risk, protecting selection from numerical failures.
 
-The selected calibration carries a correctly-sized Louis-corrected
-covariance:
+We can inspect the components of the ability risk:
 
 ``` r
 
-Sigma_mml <- vcov(ability_tuned_mml$best_fit)  # dispatches to vcov_mixed_subjects_mml
-dim(Sigma_mml)
-#> [1] 10 10
-```
-
-## Step 3: Ability-score risk (inspect components)
-
-``` r
 
 risk <- ability_risk(
   resp        = observed,
   fit_or_pars = ability_tuned_mml$best_fit,
-  vcov        = Sigma_mml
+  vcov        = vcov(ability_tuned_mml$best_fit)
 )
 risk$summary
 #>   mean_param_var mean_squared_error mean_total_risk
-#> 1      0.4341733                 NA       0.4341733
+#> 1      0.5748958                 NA       0.5748958
 ```
 
 `mean_squared_error` is `NA` because `theta_true` was not supplied; it
 is only computed in simulation studies. `mean_param_var` is the
-propagated item-parameter uncertainty — the criterion that
-`tune_lambda_ability_risk` minimizes.
+propagated item-parameter uncertainty. `mean_total_risk` is the ability
+risk target that the method optimizes for.
 
 In simulation studies, pass `theta_true = theta_human` to also include
 squared ability-estimation error:
@@ -212,25 +193,29 @@ ability_tuned_truth <- tune_lambda_ability_risk(
   initial_pars = human_pars,
   fit_fn       = fit_mixed_subjects_mml,
   method       = "grid",
-  n_quad       = 7,
   control      = list(maxit = 100)
 )
 
 ability_tuned_truth$summary[, c("lambda", "mean_param_var",
                                  "mean_squared_error", "mean_total_risk")]
 #>   lambda mean_param_var mean_squared_error mean_total_risk
-#> 1   0.00      0.4341733           4.689478        5.123652
-#> 2   0.25      0.4402754           4.676972        5.117247
-#> 3   0.50      0.6286167           4.650725        5.279342
-#> 4   0.75      0.6339994           4.575805        5.209805
-#> 5   1.00      1.3329374           4.595487        5.928425
+#> 1   0.00      0.5748958           4.455476        5.030372
+#> 2   0.25      0.6728206           4.481827        5.154648
+#> 3   0.50      1.0477476           4.517292        5.565039
+#> 4   0.75      4.3282612           4.542339        8.870600
+#> 5   1.00    113.3301603           6.078139      119.408300
 ```
 
-## Step 4: Cross-fitted ability-risk tuning
+## Cross-fit $`\lambda`$ tuning (recommended workflow)
 
 [`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md)
-estimates $`\lambda`$ per fold on training data, then fits a final
-split-sample model. Two important arguments:
+is the recommended workflow for all serious analyses: it estimates
+$`\lambda`$ per fold on the *other* folds’ labels, so the selected
+$`\lambda`$ is not tuned on the same rows it is applied to. By default
+both the fold tuning (`fit_fn`) and the final fit (`final_fit_fn`) use
+the MML estimator, and the fold $`\lambda`$’s are averaged (weighted by
+fold size) into a single scalar for the final full-sample fit. Two
+further arguments:
 
 - `target_mode = "fixed"` (default): the full `target_resp` is used for
   every fold’s risk evaluation, which is correct when the target is an
@@ -253,16 +238,19 @@ crossfit_tuned <- tune_lambda_ability_risk_crossfit(
   control      = list(maxit = 100)
 )
 
-crossfit_tuned$lambda_by_split
-#> [1] 0.07109222 0.00000000
+crossfit_tuned$lambda_by_split   # per-fold tuned lambda
+#> [1] 0.05572809 0.00000000
+crossfit_tuned$lambda_final      # fold-size-weighted scalar used for the final fit
+#> [1] 0.02786405
 ```
 
-## Step 5: Frozen expected-count estimator (fast approximation)
+## Frozen expected-count estimator (fast approximation)
 
-The default `fit_fn = fit_mixed_subjects` uses the older frozen
-expected-count estimator. This is faster but produces inflated
-discriminations when the LLM parameters differ from human parameters,
-driving $`\lambda \to 0`$ even when the LLM is informative.
+Passing `fit_fn = fit_mixed_subjects` selects the older frozen
+expected-count estimator. It is faster than the default MML path but
+produces inflated discriminations when the LLM parameters differ from
+human parameters, driving $`\lambda \to 0`$ even when the LLM is
+informative. As such, it is **strongly discouraged**.
 
 ``` r
 
@@ -273,29 +261,75 @@ ability_tuned_ec <- tune_lambda_ability_risk(
   generated    = generated,
   target_resp  = observed,
   initial_pars = human_pars,
+  fit_fn       = fit_mixed_subjects,   # opt in to the frozen EC estimator
   n_quad       = 7,
   slope_upper  = 4,           # required to prevent divergence
   control      = list(maxit = 100)
 )
 
 ability_tuned_ec$best_lambda
-#> [1] 0
+#> [1] 0.007928954
 ```
 
 `slope_upper = 4` is required to prevent discriminations from diverging.
-The MML estimator does not need this cap because it has no false minimum
-at large discrimination values.
+The default MML estimator does not need this cap because it has no false
+minimum at large discrimination values.
+
+## Minimizing $`\text{Tr}\big[\Sigma_\gamma\big]`$ (diagnostic only)
+
+[`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
+estimates the PPI++ Proposition 2 lambda using the same human posterior
+weights for both human and paired-LLM score vectors. F = Y (identical
+predictions) gives exactly $`N/(n+N)`$.
+
+``` r
+
+ppi_score <- tune_lambda_ppi_score(
+  observed    = observed,
+  predicted   = predicted,
+  item_pars   = human_pars,
+  n_generated = nrow(generated)
+)
+
+cat("PPI++ score lambda:", round(ppi_score$lambda, 3),
+    " r =", round(ppi_score$r, 3),
+    " N/(n+N) =", round(1 / (1 + ppi_score$r), 3), "\n")
+#> PPI++ score lambda: 0  r = 0.343  N/(n+N) = 0.745
+```
+
+A value near zero means the paired LLM responses do not systematically
+reduce gradient variance in the person-level score formulation. This is
+expected for stochastic binary LLM responses. For $`F = Y`$ the formula
+recovers $`N/(n+N)`$.
+
+``` r
+
+ppi_score_match <- tune_lambda_ppi_score(
+  observed    = observed,
+  predicted   = observed,
+  item_pars   = human_pars,
+  n_generated = nrow(generated)
+)
+
+cat("PPI++ score lambda:", round(ppi_score_match$lambda, 3),
+    " r =", round(ppi_score$r, 3),
+    " N/(n+N) =", round(1 / (1 + ppi_score_match$r), 3), "\n")
+#> PPI++ score lambda: 0.745  r = 0.343  N/(n+N) = 0.745
+```
 
 ## Choosing a procedure
 
 | Procedure | Objective | When to use |
 |----|----|----|
-| [`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md) | $`\text{Tr}(\Sigma_\gamma)`$ | Method diagnostics only |
-| `tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects_mml)` | $`E[g'\Sigma_\gamma g]`$, Louis bread | **Recommended default** |
-| [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) (default `fit_fn`) | Same risk, EM bread | Fast approximation; requires `slope_upper` |
-| [`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md) | Out-of-sample risk | Final inferential analyses |
+| [`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md) | $`\mathbb{E}[g'\Sigma_\gamma g]`$, computed out-of-fold | **Recommended workflow** |
+| [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) | $`\mathbb{E}[g'\Sigma_\gamma g]`$, Louis bread (MML default) | Exploratory single-sample tuning |
+| `tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects)` | $`\mathbb{E}[g'\Sigma_\gamma g]`$, EM bread | Fast approximation; discouraged, requires `slope_upper` |
 | [`tune_lambda_ability_risk_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md) | Per-item risk (approx.) | Experimental; some items poor predictors |
+| [`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md) | $`\text{Tr}(\Sigma_\gamma)`$ | Theoretical diagnostic only |
 
-The target population matters. `target_resp = observed` tunes for the
-observed human response patterns. In operational scoring, use a larger
-target matrix representing the actual scoring population.
+Also note that the target population matters, as ability risk is
+integrated over that population’s ability distribution.
+`target_resp = observed` tunes for the observed human response patterns.
+In operational scoring, you may use a larger target matrix representing
+the actual scoring population while calibrating item parameters on a
+pilot sample.

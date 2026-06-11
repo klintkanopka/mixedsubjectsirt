@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mixedsubjectsirt</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,30 +47,15 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.0.1" id="mixedsubjectsirt-001-development-version">mixedsubjectsirt 0.0.1 (development version)<a class="anchor" aria-label="anchor" href="#mixedsubjectsirt-001-development-version"></a></h2>
-<div class="section level3">
-<h3 id="lambda-tuning-0-0-1">Lambda tuning<a class="anchor" aria-label="anchor" href="#lambda-tuning-0-0-1"></a></h3>
-<ul><li>
-<code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> and <code><a href="../reference/tune_lambda_ability_risk_1pl.html">tune_lambda_ability_risk_1pl()</a></code> now select lambda by <strong>direct 1-D optimization</strong> (<code><a href="https://rdrr.io/r/stats/optimize.html" class="external-link">stats::optimize()</a></code>) by default, returning a continuous lambda with no grid rounding. Pass <code>method = "grid"</code> to recover the previous behaviour (evaluate every value of <code>lambda_grid</code> and take the argmin), which is still useful for inspecting the risk surface. For <code>method = "optimize"</code>, <code>lambda_grid</code> only sets the search range via <code>range(lambda_grid)</code>. The cross-fitted tuner (<code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code>) inherits the new default through its per-fold calls. The runaway-discrimination guard and the <code>lambda = 0</code> (human-only) fallback are unchanged.</li>
+<h2 class="pkg-version" data-toc-text="0.1.0" id="mixedsubjectsirt-010-development-version">mixedsubjectsirt 0.1.0 (development version)<a class="anchor" aria-label="anchor" href="#mixedsubjectsirt-010-development-version"></a></h2>
+<p>Initial development release.</p>
+<ul><li>Mixed-subjects 2PL/1PL IRT calibration that augments human responses with LLM-generated responses through a PPI++ marginal-MML estimator (<code><a href="../reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code> and relatives). The estimator is anchored to the human data and is asymptotically unbiased for the human item parameters at any tuning weight.</li>
+<li>Power tuning by <strong>ability-score risk</strong> (<code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code>), which selects the tuning weight by direct 1-D optimization of propagated ability-recovery risk (pass <code>method = "grid"</code> to scan a grid instead). Also included: a theoretical PPI++ score diagnostic (<code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code>), cross-fitted tuning (<code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code>, the recommended workflow for reported analyses), and experimental per-item tuning (<code><a href="../reference/tune_lambda_ability_risk_item.html">tune_lambda_ability_risk_item()</a></code>). All non-experimental tuners use the marginal-MML estimator by default; the frozen expected-count estimator remains available via <code>fit_fn</code> but is discouraged.</li>
+<li>Louis-corrected marginal sandwich covariance through the <code><a href="https://rdrr.io/r/stats/vcov.html" class="external-link">vcov()</a></code> S3 method (<code><a href="../reference/vcov_mixed_subjects_mml.html">vcov_mixed_subjects_mml()</a></code>), with ability scoring and item-parameter uncertainty propagation (<code><a href="../reference/score_theta.html">score_theta()</a></code>, <code><a href="../reference/ability_risk.html">ability_risk()</a></code>).</li>
+<li>Vignettes covering the recommended workflow, lambda tuning, the 1PL model, per-item tuning, scale linking, and a simulation-validation study; an <code>R-CMD-check</code> GitHub Actions workflow.</li>
+<li>Currently <code>predicted</code> and <code>generated</code> data must be <strong>binary 0/1 responses</strong> in the high-level fitting and PPI-score functions; the low-level quadrature utilities accept fractional input.</li>
 </ul></div>
-<div class="section level3">
-<h3 id="inputs-0-0-1">Inputs<a class="anchor" aria-label="anchor" href="#inputs-0-0-1"></a></h3>
-<ul><li>
-<code>predicted</code> and <code>generated</code> must now be <strong>binary 0/1 responses</strong> in all fitting and PPI-score functions; probability (fractional) inputs are rejected with a message to sample from them first. Fractional values are not a valid likelihood input for the marginal IRT objective and break the PPI correction. The low-level quadrature utilities still accept fractional input, and now document that the high-level fitters do not.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="robustness-0-0-1">Robustness<a class="anchor" aria-label="anchor" href="#robustness-0-0-1"></a></h3>
-<ul><li>
-<code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code> now wraps each candidate fit in <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code>, so a single failed fit (from bad starting values, aggressive bounds, or unusual response patterns) is treated as an ineligible (infinite-risk) candidate instead of aborting the whole tuning run — matching the 1PL tuner.</li>
-</ul></div>
-<div class="section level3">
-<h3 id="documentation-0-0-1">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-0-1"></a></h3>
-<ul><li>Softened the README’s headline claims to match the finite-sample validation results, and added a “What should I use?” function-selection table.</li>
-<li>Added a <code>R-CMD-check</code> GitHub Actions workflow.</li>
-</ul></div>
-</div>
-  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
-    </nav></aside></div>
+  </main></div>
 
 
     <footer><div class="pkgdown-footer-left">
