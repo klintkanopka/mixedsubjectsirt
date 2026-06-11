@@ -336,7 +336,7 @@ validate_lambda_vector <- function(lambda, n = NULL) {
     stop("lambda must contain finite values between 0 and 1.", call. = FALSE)
   }
   if (!is.null(n) && !(length(lambda) %in% c(1, n))) {
-    stop("lambda must be a scalar or have length equal to the number of splits.",
+    stop("lambda must be a scalar or have length ", n, " (the required target length).",
          call. = FALSE)
   }
   lambda

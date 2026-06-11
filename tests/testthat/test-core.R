@@ -480,6 +480,36 @@ test_that("optimize and grid tuning agree to within grid resolution", {
   expect_lt(abs(opt$best_lambda - grd$best_lambda), 0.1 + 1e-6)
 })
 
+test_that("ability-risk tuning tolerates candidate-fit failures", {
+  set.seed(34)
+  pars <- data.frame(item = paste0("I", 1:4), a = c(0.9, 1.1, 1.2, 1.0),
+                     d = c(-0.3, 0.1, 0.4, -0.2))
+  obs <- simulate_2pl(rnorm(120), pars)
+  gen <- simulate_2pl(rnorm(240), pars)
+
+  # A fit_fn that errors only for lambda > 0: the lambda = 0 endpoint still fits,
+  # so tuning must complete and select that human-only fallback rather than abort.
+  flaky_fn <- function(observed, predicted, generated, lambda, ...) {
+    if (lambda > 0) stop("synthetic fit failure")
+    fit_mixed_subjects_mml(observed, predicted, generated, lambda = lambda, ...)
+  }
+  tuned <- tune_lambda_ability_risk(
+    c(0, 1), obs, obs, gen, initial_pars = pars, fit_fn = flaky_fn,
+    n_quad = 7, control = list(maxit = 80))
+  expect_equal(tuned$best_lambda, 0)
+  expect_s3_class(tuned$best_fit, "mixedsubjects_fit")
+
+  # A fit_fn that always errors: tuning must warn and fall back to lambda = 0,
+  # not propagate the error.
+  always_fail <- function(...) stop("synthetic fit failure")
+  expect_warning(
+    tuned2 <- tune_lambda_ability_risk(
+      c(0, 1), obs, obs, gen, initial_pars = pars, fit_fn = always_fail,
+      n_quad = 7, control = list(maxit = 80)),
+    "No lambda candidate")
+  expect_equal(tuned2$best_lambda, 0)
+})
+
 test_that("per-item ability-risk tuning: optimize (continuous) and grid modes", {
   set.seed(33)
   pars <- data.frame(item = paste0("I", 1:4), a = c(1, 1.2, 0.9, 1.1),
@@ -579,7 +609,7 @@ test_that("fractional predicted/generated are rejected (binary inputs only)", {
                      d = c(0, -0.5, 0.3))
   obs  <- simulate_2pl(rnorm(40), pars)
   gen  <- simulate_2pl(rnorm(80), pars)
-  # Conditional-mean "probabilities" — the removed R2 construction.
+  # Fractional "probabilities" must be rejected by the high-level fitters.
   eta  <- outer(rnorm(40), pars$a) +
     matrix(pars$d, nrow = 40, ncol = 3, byrow = TRUE)
   frac <- plogis(eta)

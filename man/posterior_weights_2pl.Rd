@@ -34,8 +34,15 @@ Rows sum to one. Attributes \code{theta} and \code{weight} contain the grid.
 \description{
 Computes each subject's posterior distribution over a fixed quadrature grid
 under a 2PL model, using stable log-likelihood calculations. Fractional
-responses in \verb{[0, 1]} are allowed, which is useful when LLM output is stored
-as probabilities rather than sampled binary responses.
+responses in \verb{[0, 1]} are allowed at this low level, which is useful when LLM
+output is stored as probabilities rather than sampled binary responses.
+}
+\details{
+Note: the high-level mixed-subjects fitting functions
+(\code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}} and relatives) require \strong{binary} \code{predicted} and
+\code{generated}; fractional input is supported only in these low-level quadrature
+utilities. If you have LLM-derived probabilities, sample binary responses from
+them (e.g. with \code{\link[stats:Binomial]{stats::rbinom()}}) before calibrating.
 }
 \examples{
 pars <- data.frame(a = c(1, 1.2), d = c(0, -0.5))

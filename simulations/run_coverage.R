@@ -32,9 +32,7 @@
 # This is the flagship demonstration that PPI corrects biased LLM outputs.
 #
 # All predictors are binary (the package disallows probability inputs), so every
-# regime is consistent for true_pars and well-behaved at lambda = 0.5. (The former
-# fractional-prediction conditional-mean regimes were removed along with
-# probability support; see the package NEWS / change log.)
+# regime is consistent for true_pars and well-behaved at lambda = 0.5.
 #
 # All regimes are run at a fixed lambda (0.5) so the estimand is well defined.
 #

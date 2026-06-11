@@ -827,9 +827,24 @@ tune_lambda_ability_risk <- function(lambda_grid = seq(0, 1, by = 0.1),
     key <- sprintf("%.12f", lambda)
     hit <- get0(key, envir = cache, inherits = FALSE, ifnotfound = NULL)
     if (!is.null(hit)) return(hit)
-    fit <- fit_fn(observed = observed, predicted = predicted, generated = generated,
-                  lambda = lambda, n_quad = n_quad, initial_pars = initial_pars,
-                  control = control, ...)
+    # Guard the candidate fit: bad starting values, aggressive bounds, or unusual
+    # response patterns can make a single fit_fn() call error. Treat a failed
+    # candidate as ineligible (selection_risk = Inf) rather than aborting the whole
+    # tuning run -- mirrors the 1PL tuner.
+    fit <- tryCatch(
+      fit_fn(observed = observed, predicted = predicted, generated = generated,
+             lambda = lambda, n_quad = n_quad, initial_pars = initial_pars,
+             control = control, ...),
+      error = function(e) NULL)
+    if (is.null(fit)) {
+      out <- list(lambda = lambda, fit = NULL,
+                  risk = list(summary = data.frame(mean_param_var = Inf,
+                                                   mean_squared_error = Inf,
+                                                   mean_total_risk = Inf)),
+                  max_disc = Inf, convergence = 99L, selection_risk = Inf)
+      assign(key, out, envir = cache)
+      return(out)
+    }
     Sigma <- tryCatch(stats::vcov(fit), error = function(e) NULL)  # S3: MML -> Louis
     if (is.null(Sigma)) {
       risk <- list(summary = data.frame(mean_param_var = Inf,

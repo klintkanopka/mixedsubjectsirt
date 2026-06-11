@@ -52,10 +52,9 @@ llm_shift_pars <- function(true_pars) {
 #   true_pars   : the true item parameters
 #   regime      : the regime label
 #
-# All predictors are BINARY 0/1 responses. The package disallows probability
-# (fractional) predictions for `predicted`/`generated`, so the former
-# conditional-mean regimes (which fed fractional predictions) have been removed
-# and the four binary regimes are numbered contiguously R1-R4.
+# All predictors are BINARY 0/1 responses; the package disallows probability
+# (fractional) predictions for `predicted`/`generated`. The four binary regimes
+# are numbered contiguously R1-R4.
 #
 # Regimes:
 #   R1 "perfect"      predicted = observed                       (F = Y)
