@@ -209,6 +209,8 @@ Implementing mixed-subjects IRT calibration
 
 Choosing lambda and the simulation validation study
 
+- [Understanding Ability-Risk
+  Tuning](http://klintkanopka.com/mixedsubjectsirt/articles/understanding-ability-risk.md):
 - [Choosing Lambda in Mixed-Subjects
   IRT](http://klintkanopka.com/mixedsubjectsirt/articles/lambda-tuning.md):
 - [Simulation Validation of the Mixed-Subjects MML
