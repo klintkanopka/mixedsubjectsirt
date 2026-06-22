@@ -32,9 +32,9 @@ Interested users can install the development version using:
 devtools::install_github('klintkanopka/mixedsubjectsirt')
 ```
 
-[^1]: [Broska, D., Howes, M., & van Loon, A. (2025). The mixed subjects design: Treating large language models as potentially informative observations. _Sociological Methods & Research_, 54(3), 1074-1109.](https://journals.sagepub.com/doi/abs/10.1177/00491241251326865)
+[^1]: [Broska, D., Howes, M., & van Loon, A. (2025). The mixed subjects design: Treating large language models as potentially informative observations. _Sociological Methods & Research_, 54(3), 1074-1109.](https://doi.org/10.1177/00491241251326865)
 [^2]: [Van Loon, A., & Kanopka, K. (2026). Using large language models as a source of human behavioral data in social science experiments. _SocArXiv preprint_.](https://osf.io/preprints/socarxiv/y74mu)
-[^3]: [Angelopoulos, A. N., Bates, S., Fannjiang, C., Jordan, M. I., & Zrnic, T. (2023). Prediction-powered inference. _Science, 382_(6671), 669-674.](https://www.science.org/doi/abs/10.1126/science.adi6000)
+[^3]: [Angelopoulos, A. N., Bates, S., Fannjiang, C., Jordan, M. I., & Zrnic, T. (2023). Prediction-powered inference. _Science, 382_(6671), 669-674.](https://doi.org/10.1126/science.adi6000)
 [^4]: [Angelopoulos, A. N., Duchi, J. C., & Zrnic, T. (2023). Ppi++: Efficient prediction-powered inference. _arXiv preprint arXiv:2311.01453_.](https://arxiv.org/abs/2311.01453)
 [^5]: [Mani, P., Xu, P., Lipton, Z. C., & Oberst, M. (2025). No free lunch: Non-asymptotic analysis of prediction-powered inference. _arXiv preprint arXiv:2505.20178_.](https://arxiv.org/abs/2505.20178)
 

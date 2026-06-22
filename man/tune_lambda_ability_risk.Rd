@@ -104,7 +104,7 @@ implementation that removes this asymmetry.
 direct 1-D optimization (\code{\link[stats:optimize]{stats::optimize()}}) of the ability-score risk over the
 interval \code{range(lambda_grid)} (default \verb{[0, 1]}), returning a \emph{continuous}
 lambda with no grid rounding. With \code{method = "grid"} the risk is evaluated at
-each value of \code{lambda_grid} and the argmin returned (the previous behaviour;
+each value of \code{lambda_grid} and the argmin returned (the previous behavior;
 useful for inspecting the whole risk surface). Both share the same
 runaway-discrimination guard and the same lambda = 0 (human-only) fallback when
 no candidate is eligible.

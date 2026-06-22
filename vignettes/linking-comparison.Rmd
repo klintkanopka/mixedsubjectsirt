@@ -784,7 +784,7 @@ The best $\lambda$ for all methods in the table below is $\lambda = 0$ — the
 human-only estimate. This is the expected finding when the LLM's item parameters
 differ from the human calibration: the gradient asymmetry means any positive $\lambda$
 inflates discriminations and increases RMSE(a). The NA rows (Stocking-Lord at
-$\lambda = 0.5$) arise when the linked parameters destabilise the optimizer before
+$\lambda = 0.5$) arise when the linked parameters destabilize the optimizer before
 `tryCatch` can catch them at the sweep stage; the underlying cause is the same
 gradient asymmetry at extreme linking constants. `tune_lambda_ability_risk` correctly
 identifies $\lambda = 0$ as optimal for all methods in this scenario.

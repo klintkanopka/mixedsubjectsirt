@@ -735,7 +735,7 @@ tune_lambda_ppi_score <- function(observed, predicted, item_pars, n_generated,
 #' direct 1-D optimization ([stats::optimize()]) of the ability-score risk over the
 #' interval `range(lambda_grid)` (default `[0, 1]`), returning a *continuous*
 #' lambda with no grid rounding. With `method = "grid"` the risk is evaluated at
-#' each value of `lambda_grid` and the argmin returned (the previous behaviour;
+#' each value of `lambda_grid` and the argmin returned (the previous behavior;
 #' useful for inspecting the whole risk surface). Both share the same
 #' runaway-discrimination guard and the same lambda = 0 (human-only) fallback when
 #' no candidate is eligible.
@@ -1126,17 +1126,17 @@ tune_lambda_ability_risk_crossfit <- function(lambda_grid = seq(0, 1, by = 0.1),
 #' Per-item PPI++ optimal tuning parameters
 #'
 #' Applies the PPI++ Proposition 2 plug-in formula independently for each item,
-#' producing a vector of item-specific lambda values `λ_j ∈ [0, 1]`.
+#' producing a vector of item-specific lambda values `lambda_j` in `[0, 1]`.
 #'
 #' The global [tune_lambda_ppi_score()] uses the full parameter covariance matrix
-#' `Tr(Σ_γ)` as the objective. This function instead applies the same formula
-#' using only the 2×2 diagonal block of the inverse Hessian for item `j`, and
+#' `Tr(Sigma_gamma)` as the objective. This function instead applies the same formula
+#' using only the 2x2 diagonal block of the inverse Hessian for item `j`, and
 #' the 2D sub-vectors of the human and paired-LLM score vectors. The result is
-#' the λ that minimizes the marginal variance of `(a_j, d_j)` independently for
+#' the lambda that minimizes the marginal variance of `(a_j, d_j)` independently for
 #' each item.
 #'
-#' **Use case.** When a single global λ is forced to zero because a few items
-#' have poor LLM predictions, per-item λ_j allows well-predicted items to still
+#' **Use case.** When a single global lambda is forced to zero because a few items
+#' have poor LLM predictions, per-item lambda_j allows well-predicted items to still
 #' benefit from the LLM data. Pass the returned vector to
 #' [fit_mixed_subjects_mml()] as the `lambda` argument.
 #'
@@ -1226,9 +1226,9 @@ tune_lambda_ppi_score_item <- function(observed, predicted, item_pars, n_generat
 
 #' Per-item ability-risk lambda tuning via coordinate descent
 #'
-#' Finds a per-item vector of lambda values `λ_j ∈ [0, 1]` that minimizes
-#' propagated ability-score risk `E[g' Σ_γ g]` using coordinate descent on the
-#' items. Each coordinate step holds the other `λ_{j'}` fixed and selects `λ_j`
+#' Finds a per-item vector of lambda values `lambda_j` in `[0, 1]` that minimizes
+#' propagated ability-score risk `E[g' Sigma_gamma g]` using coordinate descent on the
+#' items. Each coordinate step holds the other `lambda_{j'}` fixed and selects `lambda_j`
 #' by direct 1-D optimization (`method = "optimize"`, the default, continuous) or
 #' over `lambda_grid` (`method = "grid"`).
 #'
@@ -1245,7 +1245,7 @@ tune_lambda_ppi_score_item <- function(observed, predicted, item_pars, n_generat
 #' endpoints). Use `n_pass = 1` (the default) for a single greedy sweep, which is
 #' usually sufficient.
 #'
-#' @param lambda_grid Numeric vector of candidate λ values in `[0, 1]` to try
+#' @param lambda_grid Numeric vector of candidate lambda values in `[0, 1]` to try
 #'   for each item independently.
 #' @param observed,predicted,generated Response matrices passed to
 #'   [fit_mixed_subjects_mml()].

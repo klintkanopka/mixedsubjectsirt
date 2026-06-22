@@ -67,7 +67,7 @@ avg_hessian_counts_1pl <- function(counts, item_pars) {
 #'   the EM complete-data Hessian for the 1PL model, rather than the Louis
 #'   (1982) marginal observed-information correction implemented for 2PL in
 #'   [vcov_mixed_subjects_mml()]. The EM bread over-states efficiency by
-#'   ignoring missing information about θ. A Louis-corrected 1PL bread is
+#'   ignoring missing information about theta. A Louis-corrected 1PL bread is
 #'   planned for a future release.
 #'
 #' @param object A `"mixedsubjects_1pl_fit"` object from [fit_mixed_subjects_1pl()]

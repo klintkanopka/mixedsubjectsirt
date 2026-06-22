@@ -190,7 +190,7 @@ if (!is.null(fit_per_item)) {
 }
 ```
 
-## Important note on initialisation
+## Important note on initialization
 
 Starting coordinate descent from all-zeros is not recommended. When all other
 items are at $\lambda_j = 0$, each single-item improvement is diluted across the

@@ -1,6 +1,6 @@
-# mixedsubjectsirt 0.1.0 (development version)
+# mixedsubjectsirt 1.0.0
 
-Initial development release.
+Initial CRAN release.
 
 * Mixed-subjects 2PL/1PL IRT calibration that augments human responses with
   LLM-generated responses through a PPI++ marginal-MML estimator

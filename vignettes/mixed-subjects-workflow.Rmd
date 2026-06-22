@@ -215,7 +215,7 @@ A full simulation study confirms the recommended workflow behaves as intended:
 
 See the [Simulation Validation](simulation-validation.html) vignette for the full results, and `simulations/` in the source tree for the reproduction code.
 
-[^1]: [Chalmers, R. P. (2012). mirt: A multidimensional item response theory package for the R environment._Journal of statistical Software_, 48, 1-29.](https://www.jstatsoft.org/article/view/v048i06/0)
-[^2]: [Liu, C. W., & Chalmers, R. P. (2021). A note on computing Louis’ observed information matrix identity for IRT and cognitive diagnostic models. _British Journal of Mathematical and Statistical Psychology_, 74(1), 118-138.](https://bpspsychub.onlinelibrary.wiley.com/doi/full/10.1111/bmsp.12207)
+[^1]: [Chalmers, R. P. (2012). mirt: A multidimensional item response theory package for the R environment._Journal of Statistical Software_, 48, 1-29.](https://doi.org/10.18637/jss.v048.i06)
+[^2]: [Liu, C. W., & Chalmers, R. P. (2021). A note on computing Louis’ observed information matrix identity for IRT and cognitive diagnostic models. _British Journal of Mathematical and Statistical Psychology_, 74(1), 118-138.](https://doi.org/10.1111/bmsp.12207)
 [^3]: [Mani, P., Xu, P., Lipton, Z. C., & Oberst, M. (2025). No free lunch: Non-asymptotic analysis of prediction-powered inference. _arXiv preprint arXiv:2505.20178_.](https://arxiv.org/abs/2505.20178)
-[^4]: [Louis, T. A. (1982). Finding the observed information matrix when using the EM algorithm. _Journal of the Royal Statistical Society Series B: Statistical Methodology_, 44(2), 226-233.](https://academic.oup.com/jrsssb/article/44/2/226/7027638)
+[^4]: [Louis, T. A. (1982). Finding the observed information matrix when using the EM algorithm. _Journal of the Royal Statistical Society Series B: Statistical Methodology_, 44(2), 226-233.](https://doi.org/10.1111/j.2517-6161.1982.tb01203.x)

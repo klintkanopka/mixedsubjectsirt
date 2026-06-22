@@ -11,3 +11,5 @@
 ^vignettes/largeN_.*\.rds$
 ^figure$
 ^vignettes/figure$
+^cran-comments\.md$
+^CRAN-SUBMISSION$

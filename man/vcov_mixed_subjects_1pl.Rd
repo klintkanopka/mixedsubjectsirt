@@ -27,6 +27,6 @@ discrimination and per-item intercepts of a 1PL mixed-subjects calibration.
 the EM complete-data Hessian for the 1PL model, rather than the Louis
 (1982) marginal observed-information correction implemented for 2PL in
 \code{\link[=vcov_mixed_subjects_mml]{vcov_mixed_subjects_mml()}}. The EM bread over-states efficiency by
-ignoring missing information about θ. A Louis-corrected 1PL bread is
+ignoring missing information about theta. A Louis-corrected 1PL bread is
 planned for a future release.
 }

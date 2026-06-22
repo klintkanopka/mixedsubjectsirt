@@ -54,7 +54,7 @@ if (is.null(res)) {
 
 This vignette treats the regime prediction-powered inference is built for: a smaller human sample (here `n = 500`) alongside a much larger synthetic / LLM sample (`N = 100000`). The LLM here is biased, in that its item parameters are systematically off, making them only weakly informative about the human responses.
 
-Importantly, the mixed-subjects (PPI) estimator is asymptotically unbiased for the true human parameters at every $\lambda$. Tuning $\lambda$ is an efficiency knob, not a bias knob.A naive fit that pools the human and LLM responses has no such protection: the `n = 500` humans are outvoted by the `N = 100000` rows of LLM-generated repsonses, and the estimate inherits the LLM's biased data generating process.
+Importantly, the mixed-subjects (PPI) estimator is asymptotically unbiased for the true human parameters at every $\lambda$. Tuning $\lambda$ is an efficiency knob, not a bias knob. A naive fit that pools the human and LLM responses has no such protection: the `n = 500` humans are outvoted by the `N = 100000` rows of LLM-generated responses, and the estimate inherits the LLM's biased data generating process.
 
 ```{r note-precompute, echo = FALSE, results = "asis"}
 cat(sprintf(

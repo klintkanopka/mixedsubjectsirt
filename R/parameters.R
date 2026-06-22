@@ -17,10 +17,11 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' fit <- fit_2pl(response_matrix)
+#' set.seed(1)
+#' pars <- data.frame(a = c(1, 1.2, 0.9, 1.1, 0.8), d = c(0, 0.5, -0.5, 0.2, -0.3))
+#' resp <- simulate_2pl(rnorm(500), pars)
+#' fit <- fit_2pl(resp)
 #' fit$pars
-#' }
 fit_2pl <- function(resp, technical = list(NCYCLES = 1000),
                     verbose = FALSE, ...) {
   resp <- validate_response_matrix(resp, name = "resp", allow_fractional = FALSE)

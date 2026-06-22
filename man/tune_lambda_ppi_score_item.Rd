@@ -33,18 +33,18 @@ A list with \code{lambda} (numeric vector of length \code{n_items}), \code{item}
 }
 \description{
 Applies the PPI++ Proposition 2 plug-in formula independently for each item,
-producing a vector of item-specific lambda values \verb{λ_j ∈ [0, 1]}.
+producing a vector of item-specific lambda values \code{lambda_j} in \verb{[0, 1]}.
 }
 \details{
 The global \code{\link[=tune_lambda_ppi_score]{tune_lambda_ppi_score()}} uses the full parameter covariance matrix
-\code{Tr(Σ_γ)} as the objective. This function instead applies the same formula
-using only the 2×2 diagonal block of the inverse Hessian for item \code{j}, and
+\code{Tr(Sigma_gamma)} as the objective. This function instead applies the same formula
+using only the 2x2 diagonal block of the inverse Hessian for item \code{j}, and
 the 2D sub-vectors of the human and paired-LLM score vectors. The result is
-the λ that minimizes the marginal variance of \verb{(a_j, d_j)} independently for
+the lambda that minimizes the marginal variance of \verb{(a_j, d_j)} independently for
 each item.
 
-\strong{Use case.} When a single global λ is forced to zero because a few items
-have poor LLM predictions, per-item λ_j allows well-predicted items to still
+\strong{Use case.} When a single global lambda is forced to zero because a few items
+have poor LLM predictions, per-item lambda_j allows well-predicted items to still
 benefit from the LLM data. Pass the returned vector to
 \code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}} as the \code{lambda} argument.
 
