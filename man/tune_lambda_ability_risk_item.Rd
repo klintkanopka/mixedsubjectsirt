@@ -23,7 +23,7 @@ tune_lambda_ability_risk_item(
 )
 }
 \arguments{
-\item{lambda_grid}{Numeric vector of candidate λ values in \verb{[0, 1]} to try
+\item{lambda_grid}{Numeric vector of candidate lambda values in \verb{[0, 1]} to try
 for each item independently.}
 
 \item{observed, predicted, generated}{Response matrices passed to
@@ -67,9 +67,9 @@ A list with \code{lambda} (per-item vector), \code{item} (item names),
 the selected lambda).
 }
 \description{
-Finds a per-item vector of lambda values \verb{λ_j ∈ [0, 1]} that minimizes
-propagated ability-score risk \verb{E[g' Σ_γ g]} using coordinate descent on the
-items. Each coordinate step holds the other \verb{λ_\{j'\}} fixed and selects \code{λ_j}
+Finds a per-item vector of lambda values \code{lambda_j} in \verb{[0, 1]} that minimizes
+propagated ability-score risk \verb{E[g' Sigma_gamma g]} using coordinate descent on the
+items. Each coordinate step holds the other \verb{lambda_\{j'\}} fixed and selects \code{lambda_j}
 by direct 1-D optimization (\code{method = "optimize"}, the default, continuous) or
 over \code{lambda_grid} (\code{method = "grid"}).
 }

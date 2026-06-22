@@ -105,7 +105,7 @@ Objective and gradient are mutually consistent (both use the same frozen
 posteriors) so L-BFGS-B converges correctly.  Useful when strong
 ability-level pairing is needed.  Note that \code{\link[=vcov_mixed_subjects_mml]{vcov_mixed_subjects_mml()}}
 applies Louis' formula to the stored fixed posteriors, which is
-approximately correct when \code{initial_pars} ≈ \code{conv_pars}.}
+approximately correct when \code{initial_pars} is close to \code{conv_pars}.}
 }
 
 \strong{Per-item lambda (vector \code{lambda}).}  When \code{lambda} is a length-\code{n_items}
@@ -115,7 +115,7 @@ vector rather than a scalar, \code{fit_mixed_subjects_mml} switches to a
 weighted by \code{lambda[j]}.  This is a consistent (objective, gradient) pair
 but is \emph{not} the full marginal-MML objective — it is a frozen expected-count
 approximation analogous to \code{\link[=fit_mixed_subjects]{fit_mixed_subjects()}}.  Per-item lambda values
-obtained from \code{\link[=tune_lambda_ability_risk_item]{tune_lambda_ability_risk_item()}} assign \verb{lambda_j ≈ 0} to
+obtained from \code{\link[=tune_lambda_ability_risk_item]{tune_lambda_ability_risk_item()}} assign \code{lambda_j} near 0 to
 items where the LLM correction is harmful, containing the frozen-posterior
 gradient asymmetry.  Document per-item lambda results as approximate.
 }

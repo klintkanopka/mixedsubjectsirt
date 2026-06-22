@@ -891,7 +891,7 @@ fit_mixed_subjects_iterative <- function(
 #'     posteriors) so L-BFGS-B converges correctly.  Useful when strong
 #'     ability-level pairing is needed.  Note that [vcov_mixed_subjects_mml()]
 #'     applies Louis' formula to the stored fixed posteriors, which is
-#'     approximately correct when `initial_pars` ≈ `conv_pars`.}
+#'     approximately correct when `initial_pars` is close to `conv_pars`.}
 #' }
 #'
 #' **Per-item lambda (vector `lambda`).**  When `lambda` is a length-`n_items`
@@ -901,7 +901,7 @@ fit_mixed_subjects_iterative <- function(
 #' weighted by `lambda[j]`.  This is a consistent (objective, gradient) pair
 #' but is *not* the full marginal-MML objective — it is a frozen expected-count
 #' approximation analogous to [fit_mixed_subjects()].  Per-item lambda values
-#' obtained from [tune_lambda_ability_risk_item()] assign `lambda_j ≈ 0` to
+#' obtained from [tune_lambda_ability_risk_item()] assign `lambda_j` near 0 to
 #' items where the LLM correction is harmful, containing the frozen-posterior
 #' gradient asymmetry.  Document per-item lambda results as approximate.
 #'
