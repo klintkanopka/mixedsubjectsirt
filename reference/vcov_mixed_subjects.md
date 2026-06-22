@@ -16,9 +16,9 @@ vcov_mixed_subjects(object, ridge = 1e-08, ...)
 - object:
 
   A fitted object returned by
-  [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
+  [`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
   or
-  [`fit_mixed_subjects_from_quadrature()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_from_quadrature.md)
+  [`fit_mixed_subjects_from_quadrature()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_from_quadrature.md)
   with response matrices and posterior weights available in its
   quadrature summaries.
 

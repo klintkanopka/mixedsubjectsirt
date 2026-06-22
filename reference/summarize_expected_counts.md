@@ -20,7 +20,7 @@ summarize_expected_counts(resp, weights)
 - weights:
 
   Posterior quadrature weights, usually returned by
-  [`posterior_weights_2pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/posterior_weights_2pl.md).
+  [`posterior_weights_2pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/posterior_weights_2pl.md).
 
 ## Value
 

@@ -8,9 +8,9 @@ informative about the human responses.
 
 Importantly, the mixed-subjects (PPI) estimator is asymptotically
 unbiased for the true human parameters at every $`\lambda`$. Tuning
-$`\lambda`$ is an efficiency knob, not a bias knob.A naive fit that
+$`\lambda`$ is an efficiency knob, not a bias knob. A naive fit that
 pools the human and LLM responses has no such protection: the `n = 500`
-humans are outvoted by the `N = 100000` rows of LLM-generated repsonses,
+humans are outvoted by the `N = 100000` rows of LLM-generated responses,
 and the estimate inherits the LLM’s biased data generating process.
 
 *All numbers are precomputed (`data-raw/precompute_largeN.R`): n = 500,
@@ -102,7 +102,7 @@ section. Every pointon the curve is unbiased.
 The curve above was sampled on a grid only to draw the surface using
 `tune_lambda_ability_risk(..., method = "grid")`. To choose an operating
 $`\lambda`$ you do not need a grid at all. By default,
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 selects $`\lambda`$ by direct optimization of the risk over `[0, 1]`
 ([`stats::optimize()`](https://rdrr.io/r/stats/optimize.html)):
 
@@ -130,7 +130,7 @@ minima.) The scatter is wide here because the surface is shallow;
 informative predictions sharpens it.
 
 (The 2-fold cross-fitted tuner,
-[`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md),
+[`tune_lambda_ability_risk_crossfit()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md),
 lands at the same place: at $`N \gg n`$ the cross-fit
 $`\lambda`$-inflation $`N/(N + n/2)`$ vs $`N/(N + n)`$ is negligible, so
 cross-fitting does not change the selected $`\lambda`$.)
@@ -141,7 +141,7 @@ cross-fitting does not change the selected $`\lambda`$.)
     parameters at every $`\lambda`$; pooling lets a large biased LLM
     sample outvote the human anchor and inherits its bias.
 2.  $`\lambda`$ tuning is performed directly and efficiently.
-    [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+    [`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
     selects $`\lambda`$ by direct 1-D optimization by default; a grid
     (`method = "grid"`) is just a convenient way to visualize the whole
     risk surface.

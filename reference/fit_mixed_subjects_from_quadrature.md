@@ -25,9 +25,9 @@ fit_mixed_subjects_from_quadrature(
 - q_observed:
 
   Quadrature summary for observed human responses. Usually returned by
-  [`mixed_subjects_quadrature()`](http://klintkanopka.com/mixedsubjectsirt/reference/mixed_subjects_quadrature.md),
+  [`mixed_subjects_quadrature()`](https://klintkanopka.com/mixedsubjectsirt/reference/mixed_subjects_quadrature.md),
   but a raw counts object returned by
-  [`summarize_expected_counts()`](http://klintkanopka.com/mixedsubjectsirt/reference/summarize_expected_counts.md)
+  [`summarize_expected_counts()`](https://klintkanopka.com/mixedsubjectsirt/reference/summarize_expected_counts.md)
   is also accepted.
 
 - q_predicted:

@@ -39,7 +39,7 @@ ability_risk(
 - bounds:
 
   Bounds passed to
-  [`score_theta()`](http://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
+  [`score_theta()`](https://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
 
 ## Value
 

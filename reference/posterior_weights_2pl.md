@@ -53,7 +53,7 @@ Rows sum to one. Attributes `theta` and `weight` contain the grid.
 ## Details
 
 Note: the high-level mixed-subjects fitting functions
-([`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+([`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 and relatives) require **binary** `predicted` and `generated`;
 fractional input is supported only in these low-level quadrature
 utilities. If you have LLM-derived probabilities, sample binary

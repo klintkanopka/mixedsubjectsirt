@@ -33,7 +33,7 @@ ability_gradient_1pl(
 - bounds:
 
   Bounds passed to
-  [`score_theta()`](http://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
+  [`score_theta()`](https://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
 
 - eps:
 

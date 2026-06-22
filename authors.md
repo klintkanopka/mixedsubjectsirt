@@ -3,17 +3,21 @@
 ## Authors
 
 - **Klint Kanopka**. Author, maintainer.
+  [](https://orcid.org/0000-0003-3196-9538)
 
 ## Citation
 
+Source:
+[`DESCRIPTION`](https://github.com/klintkanopka/mixedsubjectsirt/blob/main/DESCRIPTION)
+
 Kanopka K (2026). *mixedsubjectsirt: Item Response Theory Calibration
-with a Mixed Subjects Design*. R package version 0.1.0,
-<http://klintkanopka.com/mixedsubjectsirt/>.
+with a Mixed Subjects Design*. R package version 1.0.0,
+<https://klintkanopka.com/mixedsubjectsirt/>.
 
     @Manual{,
       title = {mixedsubjectsirt: Item Response Theory Calibration with a Mixed Subjects Design},
       author = {Klint Kanopka},
       year = {2026},
-      note = {R package version 0.1.0},
-      url = {http://klintkanopka.com/mixedsubjectsirt/},
+      note = {R package version 1.0.0},
+      url = {https://klintkanopka.com/mixedsubjectsirt/},
     }

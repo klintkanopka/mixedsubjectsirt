@@ -2,12 +2,12 @@
 
 Estimates item parameters using the true IRT marginal likelihood for all
 three loss terms. Unlike
-[`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md),
+[`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md),
 which freezes posterior quadrature weights at the initial parameter
 estimates before optimizing, this function recomputes posterior weights
 at every gradient evaluation. This eliminates the gradient asymmetry
 that causes
-[`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
+[`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
 to converge to false minima at inflated discrimination values when LLM
 item parameters differ from human parameters.
 
@@ -81,7 +81,7 @@ fit_mixed_subjects_mml(
 - slope_upper:
 
   Upper bound on discrimination parameters. Unlike
-  [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md),
+  [`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md),
   this function should not require capping for well-posed problems
   because the true marginal objective has no false minimum at large
   discrimination.
@@ -94,24 +94,24 @@ fit_mixed_subjects_mml(
 - ...:
 
   Additional arguments passed to
-  [`fit_2pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md)
+  [`fit_2pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md)
   when `initial_pars` is omitted.
 
 ## Value
 
 An object of class `"mixedsubjects_fit"` with the same structure as
-[`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md).
+[`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md).
 For **scalar** lambda fits, the quadrature summaries store posteriors at
 the converged parameters, and
 [`stats::vcov()`](https://rdrr.io/r/stats/vcov.html) dispatches
 automatically to
-[`vcov_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.md)
+[`vcov_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.md)
 to compute the Louis-corrected marginal sandwich covariance. Calling
-[`vcov_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects.md)
+[`vcov_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects.md)
 directly bypasses the Louis correction. For **vector** lambda fits, the
 summaries store the frozen posteriors used during optimization, and
 [`stats::vcov()`](https://rdrr.io/r/stats/vcov.html) dispatches to
-[`vcov_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects.md)
+[`vcov_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects.md)
 (EM bread) for consistency with the frozen Q-function objective.
 
 ## Details
@@ -123,7 +123,7 @@ posteriors while `L_gen` uses diffuse LLM posteriors, making
 upward at any `lambda > 0`. In the marginal-MML formulation all three
 terms use their own current-parameter posteriors, so the asymmetry is
 absent at the true optimum. As a result
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 selects `lambda > 0` whenever the LLM predictions are genuinely
 informative (e.g. `predicted = observed`), rather than collapsing to
 `lambda = 0` for all misaligned LLMs.
@@ -136,7 +136,7 @@ informative (e.g. `predicted = observed`), rather than collapsing to
   at the current parameter values. All three terms are true marginal
   likelihoods; objective and gradient are internally consistent.
   Recommended for most applications and required for
-  [`vcov_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.md)
+  [`vcov_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.md)
   to produce the fully correct Louis-formula bread.
 
 - `"human"`:
@@ -148,9 +148,9 @@ informative (e.g. `predicted = observed`), rather than collapsing to
   gradient are mutually consistent (both use the same frozen posteriors)
   so L-BFGS-B converges correctly. Useful when strong ability-level
   pairing is needed. Note that
-  [`vcov_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.md)
+  [`vcov_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.md)
   applies Louis' formula to the stored fixed posteriors, which is
-  approximately correct when `initial_pars` ≈ `conv_pars`.
+  approximately correct when `initial_pars` is close to `conv_pars`.
 
 **Per-item lambda (vector `lambda`).** When `lambda` is a
 length-`n_items` vector rather than a scalar, `fit_mixed_subjects_mml`
@@ -159,10 +159,10 @@ computed once from `initial_pars` and held fixed during L-BFGS-B, with
 item `j`'s counts weighted by `lambda[j]`. This is a consistent
 (objective, gradient) pair but is *not* the full marginal-MML objective
 — it is a frozen expected-count approximation analogous to
-[`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md).
+[`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md).
 Per-item lambda values obtained from
-[`tune_lambda_ability_risk_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md)
-assign `lambda_j ≈ 0` to items where the LLM correction is harmful,
+[`tune_lambda_ability_risk_item()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md)
+assign `lambda_j` near 0 to items where the LLM correction is harmful,
 containing the frozen-posterior gradient asymmetry. Document per-item
 lambda results as approximate.
 

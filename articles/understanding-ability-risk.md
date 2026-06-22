@@ -164,11 +164,11 @@ is consistent across respondents.
 There are two related (but distinct) tuning ideas in the package. The
 original PPI++ paper minimizes the standard errors of the estimated
 parameters (the trace of the covariance matrix). The function
-[`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
+[`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
 implements this.
 
 The function
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 asks a more practical psychometric question: Which value of $`\lambda`$
 minimizes *expected downstream ability-estimation error*?
 
@@ -418,7 +418,7 @@ not a bug.
 ## Technical Explanation
 
 The [Choosing
-Lambda](http://klintkanopka.com/mixedsubjectsirt/articles/lambda-tuning.md)
+Lambda](https://klintkanopka.com/mixedsubjectsirt/articles/lambda-tuning.md)
 vignette explains which tuning function to use and when. This section
 derives the mathematics those functions implement: how item-parameter
 uncertainty is propagated into ability scores, and why minimizing the
@@ -430,7 +430,7 @@ collect the $`2J`$ item parameters of a $`J`$-item 2PL model, ordered as
 all discriminations followed by all intercepts. This is the ordering
 convention used by package functions like `fit$par`,
 [`vcov()`](https://rdrr.io/r/stats/vcov.html), and
-[`ability_gradient()`](http://klintkanopka.com/mixedsubjectsirt/reference/ability_gradient.md).
+[`ability_gradient()`](https://klintkanopka.com/mixedsubjectsirt/reference/ability_gradient.md).
 The item response function is again
 
 ``` math
@@ -542,7 +542,7 @@ S(\theta;\gamma, y_i)
 ```
 
 which
-[`score_theta()`](http://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md)
+[`score_theta()`](https://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md)
 finds by 1-D optimization on the interval `bounds`. The risk machinery
 needs the sensitivity of that solution $`\hat\theta_i`$ to the item
 parameters, $`g_i = \partial \hat\theta_i / \partial \gamma`$. Because
@@ -575,7 +575,7 @@ are
 requires an *interior* optimum. At a boundary estimate (all-correct or
 all-incorrect patterns push $`\hat\theta_i`$ to a bound), the score
 equation does not hold and the gradient is theoretically undefined;
-[`ability_gradient()`](http://klintkanopka.com/mixedsubjectsirt/reference/ability_gradient.md)
+[`ability_gradient()`](https://klintkanopka.com/mixedsubjectsirt/reference/ability_gradient.md)
 returns `NA` for those rows, and they drop out of the risk average via
 `na.rm = TRUE`. Rows with vanishing test information
 $`(|\partial S/\partial\theta| < \varepsilon)`$ are treated the same
@@ -615,7 +615,7 @@ covariance,
 ```
 
 which
-[`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
+[`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
 evaluates in closed form. Writing $`\Sigma_\gamma = (\sigma_{kl})`$, the
 two objectives expand as
 
@@ -640,14 +640,14 @@ for operational scoring and the trace as a theoretical diagnostic.
 
 | Symbol | Meaning | Computed by |
 |----|----|----|
-| $`\hat\gamma(\lambda)`$ | Mixed-subjects item parameters | [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md) |
-| $`\Sigma_\gamma(\lambda)`$ | Sandwich covariance of $`\hat\gamma`$ | [`vcov()`](https://rdrr.io/r/stats/vcov.html) → [`vcov_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.md) |
-| $`\hat\theta_i`$ | Bounded ML ability score | [`score_theta()`](http://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md) |
-| $`g_i = \partial\hat\theta_i/\partial\gamma`$ | Implicit ability gradient | [`ability_gradient()`](http://klintkanopka.com/mixedsubjectsirt/reference/ability_gradient.md) |
-| $`g_i'\Sigma_\gamma g_i`$ | Propagated score variance | [`ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/ability_risk.md) |
-| $`R(\lambda) = \mathbb{E}[g'\Sigma_\gamma g]`$ | Ability-risk objective | [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) |
+| $`\hat\gamma(\lambda)`$ | Mixed-subjects item parameters | [`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md) |
+| $`\Sigma_\gamma(\lambda)`$ | Sandwich covariance of $`\hat\gamma`$ | [`vcov()`](https://rdrr.io/r/stats/vcov.html) → [`vcov_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.md) |
+| $`\hat\theta_i`$ | Bounded ML ability score | [`score_theta()`](https://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md) |
+| $`g_i = \partial\hat\theta_i/\partial\gamma`$ | Implicit ability gradient | [`ability_gradient()`](https://klintkanopka.com/mixedsubjectsirt/reference/ability_gradient.md) |
+| $`g_i'\Sigma_\gamma g_i`$ | Propagated score variance | [`ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/ability_risk.md) |
+| $`R(\lambda) = \mathbb{E}[g'\Sigma_\gamma g]`$ | Ability-risk objective | [`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) |
 
 For the practical workflow built on these pieces — cross-fitting, target
 populations, and the choice between estimators — see the [Choosing
-Lambda](http://klintkanopka.com/mixedsubjectsirt/articles/lambda-tuning.md)
+Lambda](https://klintkanopka.com/mixedsubjectsirt/articles/lambda-tuning.md)
 vignette.

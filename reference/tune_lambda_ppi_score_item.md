@@ -1,7 +1,8 @@
 # Per-item PPI++ optimal tuning parameters
 
 Applies the PPI++ Proposition 2 plug-in formula independently for each
-item, producing a vector of item-specific lambda values `λ_j ∈ [0, 1]`.
+item, producing a vector of item-specific lambda values `lambda_j` in
+`[0, 1]`.
 
 ## Usage
 
@@ -51,30 +52,31 @@ names), `n`, `n_generated`, and `r` (the ratio `n / n_generated`).
 ## Details
 
 The global
-[`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
-uses the full parameter covariance matrix `Tr(Σ_γ)` as the objective.
-This function instead applies the same formula using only the 2×2
-diagonal block of the inverse Hessian for item `j`, and the 2D
+[`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
+uses the full parameter covariance matrix `Tr(Sigma_gamma)` as the
+objective. This function instead applies the same formula using only the
+2x2 diagonal block of the inverse Hessian for item `j`, and the 2D
 sub-vectors of the human and paired-LLM score vectors. The result is the
-λ that minimizes the marginal variance of `(a_j, d_j)` independently for
-each item.
+lambda that minimizes the marginal variance of `(a_j, d_j)`
+independently for each item.
 
-**Use case.** When a single global λ is forced to zero because a few
-items have poor LLM predictions, per-item λ_j allows well-predicted
-items to still benefit from the LLM data. Pass the returned vector to
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+**Use case.** When a single global lambda is forced to zero because a
+few items have poor LLM predictions, per-item lambda_j allows
+well-predicted items to still benefit from the LLM data. Pass the
+returned vector to
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 as the `lambda` argument.
 
 This is a **theoretical diagnostic**: it minimizes item-parameter
 variance, not ability-score risk. For operational scoring use
-[`tune_lambda_ability_risk_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md)
+[`tune_lambda_ability_risk_item()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md)
 instead.
 
 ## See also
 
-[`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
+[`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
 for the global version;
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 to fit with a per-item lambda vector.
 
 ## Examples

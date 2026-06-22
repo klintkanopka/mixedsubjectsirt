@@ -18,7 +18,7 @@ item pool with homogeneous item characteristics. - When the 2PL
 discrimination estimates are very noisy (small $`n`$).
 
 > **Note on vcov.**
-> [`vcov_mixed_subjects_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_1pl.md)
+> [`vcov_mixed_subjects_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_1pl.md)
 > currently uses the EM complete-data Hessian (not Louis’
 > marginal-information correction). The uncertainty estimates are
 > slightly over-precise. A Louis-corrected 1PL bread is planned for a
@@ -59,7 +59,7 @@ generated <- simulate_2pl(rnorm(n_generated), llm_1pl)
 
 ## Step 1: Fit the 1PL baseline
 
-[`fit_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_1pl.md)
+[`fit_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_1pl.md)
 estimates $`a`$ and $`d_1, \ldots, d_J`$ by maximizing the IRT marginal
 likelihood under a standard-normal ability prior.
 
@@ -87,7 +87,7 @@ constraint.
 
 ## Step 2: Fit mixed-subjects MML (1PL)
 
-[`fit_mixed_subjects_mml_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml_1pl.md)
+[`fit_mixed_subjects_mml_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml_1pl.md)
 uses the true marginal likelihood with a 1PL-specific gradient: the
 shared discrimination gradient accumulates contributions from all $`J`$
 items, while each intercept has its own gradient.
@@ -127,7 +127,7 @@ fit_mml_1pl$item_pars
 ## Step 3: Correct covariance — $`(J+1) \times (J+1)`$ sandwich
 
 [`vcov()`](https://rdrr.io/r/stats/vcov.html) dispatches to
-[`vcov_mixed_subjects_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_1pl.md)
+[`vcov_mixed_subjects_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_1pl.md)
 for 1PL fits, returning a $`(J+1) \times (J+1)`$ matrix with `a_shared`
 and per-item `d_j` as rows/columns.
 
@@ -143,7 +143,7 @@ rownames(Sigma_1pl)
 
 ## Step 4: Ability-score risk and lambda tuning
 
-[`tune_lambda_ability_risk_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_1pl.md)
+[`tune_lambda_ability_risk_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_1pl.md)
 uses the 1PL-parameterized gradient
 $`\partial\hat\theta / \partial (a_\text{shared}, d_1, \ldots, d_J)`$
 for the ability-score risk. The chain rule gives

@@ -32,7 +32,7 @@ tune_lambda_ppi_score(
 
   Item parameters in slope-intercept form at which to evaluate the score
   vectors. Typically the human 2PL MLE from
-  [`fit_2pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md).
+  [`fit_2pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md).
 
 - n_generated:
 
@@ -60,9 +60,9 @@ A list with elements `lambda` (the plug-in estimate, clipped to \[0,
 **This is the item-parameter variance objective, not the psychometric
 scoring objective.** For IRT applications where accurate ability scoring
 is the goal, use
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 or
-[`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md)
+[`tune_lambda_ability_risk_crossfit()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md)
 instead. Those functions directly minimize the propagated ability-score
 risk `E[g' Sigma_gamma g]` — the quantity that matters for test scoring
 — rather than item-parameter estimation efficiency.

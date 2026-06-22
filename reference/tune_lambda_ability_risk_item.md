@@ -1,10 +1,11 @@
 # Per-item ability-risk lambda tuning via coordinate descent
 
-Finds a per-item vector of lambda values `λ_j ∈ [0, 1]` that minimizes
-propagated ability-score risk `E[g' Σ_γ g]` using coordinate descent on
-the items. Each coordinate step holds the other `λ_{j'}` fixed and
-selects `λ_j` by direct 1-D optimization (`method = "optimize"`, the
-default, continuous) or over `lambda_grid` (`method = "grid"`).
+Finds a per-item vector of lambda values `lambda_j` in `[0, 1]` that
+minimizes propagated ability-score risk `E[g' Sigma_gamma g]` using
+coordinate descent on the items. Each coordinate step holds the other
+`lambda_{j'}` fixed and selects `lambda_j` by direct 1-D optimization
+(`method = "optimize"`, the default, continuous) or over `lambda_grid`
+(`method = "grid"`).
 
 ## Usage
 
@@ -32,13 +33,13 @@ tune_lambda_ability_risk_item(
 
 - lambda_grid:
 
-  Numeric vector of candidate λ values in `[0, 1]` to try for each item
-  independently.
+  Numeric vector of candidate lambda values in `[0, 1]` to try for each
+  item independently.
 
 - observed, predicted, generated:
 
   Response matrices passed to
-  [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md).
+  [`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md).
 
 - target_resp:
 
@@ -65,7 +66,7 @@ tune_lambda_ability_risk_item(
 
   Starting lambda vector for coordinate descent. Supply the global
   scalar optimum from
-  [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+  [`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
   (e.g. `init_lambda = 0.5`) to start the search around a useful
   operating point. Starting from all-zeros is not recommended: each
   single-item improvement is too small to detect when other items are at
@@ -81,13 +82,13 @@ tune_lambda_ability_risk_item(
 - bounds:
 
   Bounds passed to
-  [`score_theta()`](http://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
+  [`score_theta()`](https://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
 
 - max_discrimination:
 
   Upper bound on plausible item discrimination; any candidate fit whose
   maximum `|a|` exceeds it is treated as degenerate and skipped. See
-  [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+  [`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
   for the rationale. Default 10.
 
 - control:
@@ -98,26 +99,26 @@ tune_lambda_ability_risk_item(
 - ...:
 
   Additional arguments passed to
-  [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md).
+  [`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md).
 
 ## Value
 
 A list with `lambda` (per-item vector), `item` (item names), `n_pass`,
 `method`, and `final_fit` (the
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 fit at the selected lambda).
 
 ## Details
 
 Calls
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 with a per-item lambda vector at each candidate evaluation. Because the
 lambda is a vector, that function **switches to its frozen
 expected-count Q-function path** — posteriors are frozen at
 `initial_pars`, not recomputed continuously. This is an approximation;
 see the `@note` below. The resulting lambda vector can be used directly
 with
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md).
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md).
 
 **Computational cost.** Each pass refits per item per candidate lambda:
 `method = "grid"` does `n_items × length(lambda_grid)` fits;
@@ -136,9 +137,9 @@ per-item results as experimental / approximate.
 
 ## See also
 
-[`tune_lambda_ppi_score_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score_item.md)
+[`tune_lambda_ppi_score_item()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score_item.md)
 for the faster PPI++-score version;
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 for the global scalar version.
 
 ## Examples

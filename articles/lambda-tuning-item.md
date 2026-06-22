@@ -7,7 +7,7 @@
 > objective does not yet exist in this package. Results from per-item
 > tuning should be treated as approximate and validated against the
 > scalar-lambda MML baseline. See the documentation of
-> [`tune_lambda_ability_risk_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md)
+> [`tune_lambda_ability_risk_item()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md)
 > for details.
 
 ## Why per-item lambda?
@@ -98,7 +98,7 @@ constrain it to a value smaller than what items 1–4 could support.
 
 ## Step 2: PPI++ score per item (fast diagnostic)
 
-[`tune_lambda_ppi_score_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score_item.md)
+[`tune_lambda_ppi_score_item()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score_item.md)
 applies the Proposition 2 formula independently per item using the 2×2
 diagonal block of $`H^{-1}`$ and the item-level sub-vectors of the score
 matrices. This is fast (no fitting required) and shows which items are
@@ -135,7 +135,7 @@ items 5–8 (random LLM) should show $`\lambda_j \approx 0`$.
 
 ## Step 3: Per-item ability-risk tuning
 
-[`tune_lambda_ability_risk_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md)
+[`tune_lambda_ability_risk_item()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md)
 uses coordinate descent: for each item $`j`$, it finds the $`\lambda_j`$
 that minimizes ability-score risk while holding all other
 $`\lambda_{j'}`$ fixed. By default each coordinate is solved by **direct
@@ -228,7 +228,7 @@ if (!is.null(fit_per_item)) {
 #> RMSE(a) per-item MML:  0.2479
 ```
 
-## Important note on initialisation
+## Important note on initialization
 
 Starting coordinate descent from all-zeros is not recommended. When all
 other items are at $`\lambda_j = 0`$, each single-item improvement is
@@ -238,7 +238,7 @@ to detect. The recommended workflow is:
 1.  Fit the scalar global optimum with
     `tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects_mml)`.
 2.  Pass that global value as `init_lambda` to
-    [`tune_lambda_ability_risk_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md).
+    [`tune_lambda_ability_risk_item()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md).
 3.  The coordinate descent then identifies which items should deviate
     from the global default — raising $`\lambda_j`$ for well-predicted
     items and lowering it for poorly-predicted ones.

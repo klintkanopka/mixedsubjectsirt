@@ -4,7 +4,7 @@ Computes `g_i' Sigma_1pl g_i` for each response pattern, where `g_i` is
 the `(J+1)`-dimensional gradient of the ability estimate with respect to
 `(a_shared, d_1, ..., d_J)` and `Sigma_1pl` is the sandwich covariance
 from
-[`vcov_mixed_subjects_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_1pl.md).
+[`vcov_mixed_subjects_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_1pl.md).
 
 ## Usage
 
@@ -40,9 +40,9 @@ ability_risk_1pl(
 - bounds:
 
   Bounds passed to
-  [`score_theta()`](http://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
+  [`score_theta()`](https://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
 
 ## Value
 
 A list with `summary` and per-pattern `details`, the same structure as
-[`ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/ability_risk.md).
+[`ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/ability_risk.md).

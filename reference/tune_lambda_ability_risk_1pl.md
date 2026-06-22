@@ -2,9 +2,9 @@
 
 Selects the lambda minimizing `E[g' Sigma_1pl g]` — the propagated
 ability-score risk in the 1PL parameterization — using
-[`fit_mixed_subjects_mml_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml_1pl.md)
+[`fit_mixed_subjects_mml_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml_1pl.md)
 by default. As in the 2PL
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md),
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md),
 lambda is chosen by direct 1-D optimization (`method = "optimize"`, the
 default) or over `lambda_grid` (`method = "grid"`).
 
@@ -42,7 +42,7 @@ tune_lambda_ability_risk_1pl(
 - observed, predicted, generated:
 
   Response matrices passed to
-  [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md).
+  [`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md).
 
 - target_resp:
 
@@ -67,7 +67,7 @@ tune_lambda_ability_risk_1pl(
 - fit_fn:
 
   Fitting function. Defaults to
-  [`fit_mixed_subjects_mml_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml_1pl.md).
+  [`fit_mixed_subjects_mml_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml_1pl.md).
 
 - method:
 
@@ -78,7 +78,7 @@ tune_lambda_ability_risk_1pl(
 - bounds:
 
   Bounds passed to
-  [`score_theta()`](http://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
+  [`score_theta()`](https://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
 
 - max_discrimination:
 
@@ -106,15 +106,15 @@ A list with `summary`, `best_lambda`, `best_fit`, `fits`, `risks`.
 
 Passes `fit_fn` to allow switching between the frozen expected-count
 estimator
-([`fit_mixed_subjects_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_1pl.md))
+([`fit_mixed_subjects_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_1pl.md))
 and the marginal-MML estimator
-([`fit_mixed_subjects_mml_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml_1pl.md)).
+([`fit_mixed_subjects_mml_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml_1pl.md)).
 
 ## See also
 
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 for the 2PL version;
-[`tune_lambda_ppi_score_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score_1pl.md)
+[`tune_lambda_ppi_score_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score_1pl.md)
 for the PPI++ score diagnostic.
 
 ## Examples

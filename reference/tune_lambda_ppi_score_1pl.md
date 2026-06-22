@@ -31,7 +31,7 @@ tune_lambda_ppi_score_1pl(
 
   Item parameters in slope-intercept form at which to evaluate the score
   vectors. Typically the human 2PL MLE from
-  [`fit_2pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md).
+  [`fit_2pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md).
 
 - n_generated:
 
@@ -55,7 +55,7 @@ A list with `lambda`, `n`, `n_generated`, `r`, `C_hf`, `V_f`.
 
 This is the **item-parameter variance** objective — it minimizes
 `Tr(Sigma_1pl)`. For practical scoring applications use
-[`tune_lambda_ability_risk_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_1pl.md)
+[`tune_lambda_ability_risk_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_1pl.md)
 instead.
 
 ## Examples

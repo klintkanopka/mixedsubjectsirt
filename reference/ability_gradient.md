@@ -24,13 +24,13 @@ ability_gradient(resp, item_pars, theta = NULL, bounds = c(-6, 6), eps = 1e-10)
 - theta:
 
   Optional precomputed ability estimates. If omitted,
-  [`score_theta()`](http://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md)
+  [`score_theta()`](https://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md)
   is used.
 
 - bounds:
 
   Bounds passed to
-  [`score_theta()`](http://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md)
+  [`score_theta()`](https://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md)
   when `theta` is omitted.
 
 - eps:

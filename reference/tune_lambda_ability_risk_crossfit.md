@@ -46,7 +46,7 @@ tune_lambda_ability_risk_crossfit(
 - observed, predicted, generated:
 
   Response matrices passed to
-  [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md).
+  [`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md).
 
 - target_resp:
 
@@ -93,21 +93,21 @@ tune_lambda_ability_risk_crossfit(
 - fit_fn:
 
   Fitting function used for each fold's ability-risk tuning (passed to
-  [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)).
+  [`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)).
   Defaults to
-  [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+  [`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
   (marginal MML, recommended). The frozen expected-count estimator
-  [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
+  [`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
   is still available but discouraged.
 
 - final_fit_fn:
 
   Function used to produce the final combined-data fit. Defaults to
-  [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md),
+  [`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md),
   giving a scalar marginal-MML final fit: the fold-specific lambdas are
   averaged (weighted by fold size) into a single scalar and the full
   sample is refit. Pass
-  [`fit_mixed_subjects_split()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.md)
+  [`fit_mixed_subjects_split()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.md)
   to instead keep the per-fold `lambda` vector and fit each fold's rows
   with its own out-of-fold lambda — the textbook cross-fit decoupling,
   but it uses the discouraged frozen expected-count split estimator.
@@ -115,7 +115,7 @@ tune_lambda_ability_risk_crossfit(
 - tuning_args:
 
   Named list of extra arguments forwarded only to the fold-level
-  [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+  [`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
   calls (and through them to `fit_fn`). For example,
   `tuning_args = list(slope_upper = 4)`.
 
@@ -129,7 +129,7 @@ tune_lambda_ability_risk_crossfit(
 - bounds:
 
   Bounds passed to
-  [`score_theta()`](http://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
+  [`score_theta()`](https://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
 
 - control:
 

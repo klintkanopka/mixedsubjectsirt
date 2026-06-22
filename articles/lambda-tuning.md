@@ -10,14 +10,14 @@ use. The short answer:
 
 | Task | Function |
 |----|----|
-| **Recommended workflow (cross-fit)** | **[`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md)** |
-| Exploratory tuning | [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) |
+| **Recommended workflow (cross-fit)** | **[`tune_lambda_ability_risk_crossfit()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md)** |
+| Exploratory tuning | [`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) |
 | Fast approximation (frozen EC) | `tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects)` |
-| Theoretical diagnostic | [`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md) |
-| Per-item tuning (experimental) | [`tune_lambda_ability_risk_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md) |
+| Theoretical diagnostic | [`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md) |
+| Per-item tuning (experimental) | [`tune_lambda_ability_risk_item()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md) |
 
 All of these now use the marginal-MML estimator
-(\[[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)\])
+(\[[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)\])
 by default; the frozen expected-count estimator is available via
 `fit_fn = fit_mixed_subjects` but is discouraged (see below).
 
@@ -25,7 +25,7 @@ by default; the frozen expected-count estimator is available via
 
 **Why there are two lambda objectives:**
 
-- [`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
+- [`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
   minimizes $`\text{Tr}(\Sigma_\gamma)`$. This is the trace of the
   item-parameter covariance matrix and the tuning rule from the original
   PPI++ implementation.\[^1\] This is most useful as a tuning target
@@ -33,7 +33,7 @@ by default; the frozen expected-count estimator is available via
   inference applications).\[^2\] Here, this is merely implemented as a
   theoretical diagnostic.
 
-- [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+- [`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
   minimizes $`E[g'\Sigma_\gamma g]`$. This is the propagated
   ability-score risk. This is the preferred practical criterion for IRT
   applications and optimizes the choice of $`\lambda`$ to minimize
@@ -45,7 +45,7 @@ by default; the frozen expected-count estimator is available via
 
 **Why there are two estimators:**
 
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 is the default estimator for every tuner *except*
 `tune_lambda_ability_risk_item`. It is a consistent iterative MML-based
 estimator that marginalizes over the ability distribution. The
@@ -56,7 +56,7 @@ observed-information correction for the bread, providing proper
 coverage.\[^3\]
 
 The original
-[`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
+[`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
 uses frozen expected-count posteriors and is still available by passing
 `fit_fn = fit_mixed_subjects`, but it is **highly discouraged**: the
 frozen posteriors create a gradient asymmetry when the LLM item
@@ -64,8 +64,8 @@ parameters differ from human parameters, systematically inflating
 discriminations and driving `tune_lambda_ability_risk` to select
 $`\lambda = 0`$ even when the LLM is genuinely informative (it also
 requires a `slope_upper` cap for stability). Use it only as a fast
-approximation when computate time is a binding constraint. Note that the
-current implementation of `tune_lambda_ability_risk_item` uses this
+approximation when computation time is a binding constraint. Note that
+the current implementation of `tune_lambda_ability_risk_item` uses this
 estimation procedure and should be considered experimental.
 
 ## Example data
@@ -105,18 +105,18 @@ The examples use `human_pars` as `initial_pars` for speed.
 ## Ability-risk tuning: Minimizing $`\mathbb{E}[g'\Sigma_\gamma g]`$
 
 The key result from the [Linking and Gradient
-Asymmetry](http://klintkanopka.com/mixedsubjectsirt/articles/linking-comparison.md)
+Asymmetry](https://klintkanopka.com/mixedsubjectsirt/articles/linking-comparison.md)
 vignette is that when the LLM parameters differ from human parameters,
 the frozen expected-count estimator drives $`\lambda \to 0`$ due to an
 artificial gradient asymmetry. The default MML estimator removes this
 asymmetry, so with a good predictor ($`F = Y`$)
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 correctly selects $`\lambda > 0`$. Because
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 is the default `fit_fn`, no estimator argument is needed.
 
 By default
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 chooses $`\lambda`$ by direct optimization of the risk over `[0, 1]`.
 Here we pass `method = "grid"` with `lambda_grid` so the `summary` shows
 the risk at each candidate, which handy for visualizing the
@@ -208,7 +208,7 @@ ability_tuned_truth$summary[, c("lambda", "mean_param_var",
 
 ## Cross-fit $`\lambda`$ tuning (recommended workflow)
 
-[`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md)
+[`tune_lambda_ability_risk_crossfit()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md)
 is the recommended workflow for all serious analyses: it estimates
 $`\lambda`$ per fold on the *other* folds’ labels, so the selected
 $`\lambda`$ is not tuned on the same rows it is applied to. By default
@@ -277,7 +277,7 @@ minimum at large discrimination values.
 
 ## Minimizing $`\text{Tr}\big[\Sigma_\gamma\big]`$ (diagnostic only)
 
-[`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
+[`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
 estimates the PPI++ Proposition 2 lambda using the same human posterior
 weights for both human and paired-LLM score vectors. F = Y (identical
 predictions) gives exactly $`N/(n+N)`$.
@@ -321,11 +321,11 @@ cat("PPI++ score lambda:", round(ppi_score_match$lambda, 3),
 
 | Procedure | Objective | When to use |
 |----|----|----|
-| [`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md) | $`\mathbb{E}[g'\Sigma_\gamma g]`$, computed out-of-fold | **Recommended workflow** |
-| [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) | $`\mathbb{E}[g'\Sigma_\gamma g]`$, Louis bread (MML default) | Exploratory single-sample tuning |
+| [`tune_lambda_ability_risk_crossfit()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md) | $`\mathbb{E}[g'\Sigma_\gamma g]`$, computed out-of-fold | **Recommended workflow** |
+| [`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) | $`\mathbb{E}[g'\Sigma_\gamma g]`$, Louis bread (MML default) | Exploratory single-sample tuning |
 | `tune_lambda_ability_risk(..., fit_fn = fit_mixed_subjects)` | $`\mathbb{E}[g'\Sigma_\gamma g]`$, EM bread | Fast approximation; discouraged, requires `slope_upper` |
-| [`tune_lambda_ability_risk_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md) | Per-item risk (approx.) | Experimental; some items poor predictors |
-| [`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md) | $`\text{Tr}(\Sigma_\gamma)`$ | Theoretical diagnostic only |
+| [`tune_lambda_ability_risk_item()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md) | Per-item risk (approx.) | Experimental; some items poor predictors |
+| [`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md) | $`\text{Tr}(\Sigma_\gamma)`$ | Theoretical diagnostic only |
 
 Also note that the target population matters, as ability risk is
 integrated over that population’s ability distribution.

@@ -3,9 +3,9 @@
 Fits or accepts a 2PL model, computes posterior quadrature weights for
 each subject, and returns expected counts for mixed-subjects
 calibration. This is a lower-level helper; most analyses should call
-[`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
+[`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
 or
-[`fit_mixed_subjects_split()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.md).
+[`fit_mixed_subjects_split()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.md).
 
 ## Usage
 
@@ -53,7 +53,7 @@ mixed_subjects_quadrature(
 
   Optional item parameters. If omitted, a 2PL model is fit to `resp`
   using
-  [`fit_2pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md).
+  [`fit_2pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md).
 
 - quadrature:
 
@@ -66,7 +66,7 @@ mixed_subjects_quadrature(
 - ...:
 
   Additional arguments passed to
-  [`fit_2pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md)
+  [`fit_2pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md)
   when `item_pars` is omitted.
 
 ## Value

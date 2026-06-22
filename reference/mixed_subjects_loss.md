@@ -20,7 +20,7 @@ mixed_subjects_loss(pars, q_observed, q_predicted, q_llm, lambda = 0)
 - q_observed:
 
   Quadrature summary for observed human responses, usually returned by
-  [`mixed_subjects_quadrature()`](http://klintkanopka.com/mixedsubjectsirt/reference/mixed_subjects_quadrature.md).
+  [`mixed_subjects_quadrature()`](https://klintkanopka.com/mixedsubjectsirt/reference/mixed_subjects_quadrature.md).
 
 - q_predicted:
 

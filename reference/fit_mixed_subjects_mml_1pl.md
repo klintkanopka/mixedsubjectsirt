@@ -1,7 +1,7 @@
 # Fit a mixed-subjects 1PL calibration via marginal maximum likelihood
 
 Analogous to
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 but estimates a shared discrimination parameter `a` across all items
 (1PL model). Posteriors are recomputed at every gradient evaluation — no
 frozen-posterior gradient asymmetry.
@@ -76,7 +76,7 @@ fit_mixed_subjects_mml_1pl(
 - slope_upper:
 
   Upper bound on discrimination parameters. Unlike
-  [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md),
+  [`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md),
   this function should not require capping for well-posed problems
   because the true marginal objective has no false minimum at large
   discrimination.
@@ -89,7 +89,7 @@ fit_mixed_subjects_mml_1pl(
 - ...:
 
   Additional arguments passed to
-  [`fit_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_1pl.md)
+  [`fit_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_1pl.md)
   when `initial_pars` is omitted.
 
 ## Value
@@ -103,9 +103,9 @@ the 1PL because the discrimination is shared across items.
 
 ## See also
 
-[`fit_mixed_subjects_1pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_1pl.md)
+[`fit_mixed_subjects_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_1pl.md)
 for the frozen expected-count version;
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 for the 2PL version.
 
 ## Examples

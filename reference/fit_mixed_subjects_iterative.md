@@ -1,7 +1,7 @@
 # Fit a mixed-subjects 2PL calibration with iterative EM
 
 Extends
-[`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
+[`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
 by iterating the E-step and M-step until convergence rather than fixing
 posterior quadrature weights at the initial parameter estimates. At
 every iteration the posterior weights for all three datasets (observed,
@@ -114,7 +114,7 @@ fit_mixed_subjects_iterative(
 - ...:
 
   Additional arguments passed to
-  [`fit_2pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md)
+  [`fit_2pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md)
   when `initial_pars` is omitted.
 
 ## Value
@@ -128,12 +128,12 @@ An object of class `"mixedsubjects_fit"` with the standard fields plus
 **Note on lambda selection.** This function accepts a fixed `lambda`.
 For psychometric applications where accurate ability scoring is the
 goal, select `lambda` with
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 rather than
-[`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md).
+[`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md).
 The PPI++ score objective minimizes the trace of the item-parameter
 covariance matrix;
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 minimizes the propagated ability-score risk `g' Sigma g`, which is the
 quantity that matters for downstream test scoring.
 

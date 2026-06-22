@@ -43,10 +43,10 @@ features such as per-item power tuning available for users to try.
 
 | Goal | Recommended function |
 |----|----|
-| Complete calibration workflow, including cross-fit λ tuning | [`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md) |
-| Complete workflow without cross-fit λ tuning | [`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) |
-| Fitting models with user-specified λ value | [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md) |
-| Experimental item-specific λ tuning | [`tune_lambda_ability_risk_item()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md) |
+| Complete calibration workflow, including cross-fit λ tuning | [`tune_lambda_ability_risk_crossfit()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md) |
+| Complete workflow without cross-fit λ tuning | [`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md) |
+| Fitting models with user-specified λ value | [`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md) |
+| Experimental item-specific λ tuning | [`tune_lambda_ability_risk_item()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_item.md) |
 
 See the [Mixed-Subjects
 Workflow](https://klintkanopka.com/mixedsubjectsirt/articles/mixed-subjects-workflow.html)
@@ -64,7 +64,7 @@ devtools::install_github('klintkanopka/mixedsubjectsirt')
 [^1]: [Broska, D., Howes, M., & van Loon, A. (2025). The mixed subjects
     design: Treating large language models as potentially informative
     observations. *Sociological Methods & Research*, 54(3),
-    1074-1109.](https://journals.sagepub.com/doi/abs/10.1177/00491241251326865)
+    1074-1109.](https://doi.org/10.1177/00491241251326865)
 
 [^2]: [Van Loon, A., & Kanopka, K. (2026). Using large language models
     as a source of human behavioral data in social science experiments.
@@ -72,8 +72,7 @@ devtools::install_github('klintkanopka/mixedsubjectsirt')
 
 [^3]: [Angelopoulos, A. N., Bates, S., Fannjiang, C., Jordan, M. I., &
     Zrnic, T. (2023). Prediction-powered inference. *Science,
-    382*(6671),
-    669-674.](https://www.science.org/doi/abs/10.1126/science.adi6000)
+    382*(6671), 669-674.](https://doi.org/10.1126/science.adi6000)
 
 [^4]: [Angelopoulos, A. N., Duchi, J. C., & Zrnic, T. (2023). Ppi++:
     Efficient prediction-powered inference. *arXiv preprint

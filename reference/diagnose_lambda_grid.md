@@ -1,9 +1,9 @@
 # Diagnose lambda values over a grid
 
 Fits
-[`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
+[`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
 or
-[`fit_mixed_subjects_split()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.md)
+[`fit_mixed_subjects_split()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.md)
 over a set of candidate lambda values. The returned summary reports the
 fitted mixed-subjects objective and the observed human expected-count
 loss for each candidate. This is a sensitivity diagnostic, not a valid
@@ -31,12 +31,12 @@ diagnose_lambda_grid(
 - observed, predicted, generated:
 
   Response matrices passed to
-  [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md).
+  [`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md).
 
 - split:
 
   Logical; if `TRUE`, call
-  [`fit_mixed_subjects_split()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.md).
+  [`fit_mixed_subjects_split()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_split.md).
 
 - ...:
 

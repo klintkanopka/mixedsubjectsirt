@@ -31,7 +31,7 @@ $`L^\mathrm{marg}`$ is the true IRT marginal negative log-likelihood,
 with posteriors recomputed from the current candidate $`\gamma`$ at
 every gradient step. Setting $`\lambda = 0`$ recovers the human-only MML
 calibration. See the [Choosing
-Lambda](http://klintkanopka.com/mixedsubjectsirt/articles/lambda-tuning.md)
+Lambda](https://klintkanopka.com/mixedsubjectsirt/articles/lambda-tuning.md)
 vignette for the specific background on why the MML objective is
 preferred over expected-count based estimators.
 
@@ -79,7 +79,7 @@ human_start <- fit_2pl(observed, technical = list(NCYCLES = 500))
 
 ## Step 2: Fit the MML mixed-subjects model
 
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 uses a MML-based EM procedure for iterative estimation at a given
 $`\lambda`$ value. If you have a value of $`\lambda`$ already (say from
 a pilot study or previous ability tuning), the model can be estimated
@@ -120,7 +120,7 @@ mixed_mml$item_pars
 
 ## Step 3: Select $`\lambda`$ by ability-score risk
 
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 with `fit_fn = fit_mixed_subjects_mml` selects the $`\lambda`$ that
 minimizes propagated ability-score risk
 $`\mathbb{E}\big[g'\Sigma_\gamma g\big]`$ (where $`\Sigma_\gamma`$ is
@@ -157,7 +157,7 @@ below.)
 
 ## Step 3b (recommended workflow): cross-fit $`\lambda`$ tuning
 
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 above estimated an appropriate $`\lambda`$ and fits the final model on
 the same data used for this estimation. Previous analysis of
 prediction-powered inference in finite samples shows that estimating
@@ -165,7 +165,7 @@ $`\lambda`$ on the data you also estimate model parameters with is
 optimistic. Item parameters estimated this are biased in finite samples
 and may undercover true parameter values.[^3]
 
-[`tune_lambda_ability_risk_crossfit()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md)
+[`tune_lambda_ability_risk_crossfit()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md)
 removes this bias by tuning $`\lambda`$ on held-out data: each fold’s
 $`\lambda`$ is chosen using only out of fold item responses, and the
 final fit combines them. Passing `fit_fn = fit_mixed_subjects_mml` for
@@ -217,7 +217,7 @@ cross-fit estimate for operational calibrations or further research.
 
 [`vcov()`](https://rdrr.io/r/stats/vcov.html) on a scalar-lambda MML fit
 automatically uses
-[`vcov_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.md),
+[`vcov_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.md),
 which applies Louis’ observed-information correction.[^4] Here, the
 bread is $`H_\mathrm{comp} - I_\mathrm{miss}`$ rather than the EM
 complete-data Hessian alone.
@@ -318,20 +318,18 @@ intended:
   uninformative.
 
 See the [Simulation
-Validation](http://klintkanopka.com/mixedsubjectsirt/articles/simulation-validation.md)
+Validation](https://klintkanopka.com/mixedsubjectsirt/articles/simulation-validation.md)
 vignette for the full results, and `simulations/` in the source tree for
 the reproduction code.
 
 [^1]: [Chalmers, R. P. (2012). mirt: A multidimensional item response
-    theory package for the R environment.\_Journal of statistical
-    Software\_, 48,
-    1-29.](https://www.jstatsoft.org/article/view/v048i06/0)
+    theory package for the R environment.\_Journal of Statistical
+    Software\_, 48, 1-29.](https://doi.org/10.18637/jss.v048.i06)
 
 [^2]: [Liu, C. W., & Chalmers, R. P. (2021). A note on computing Louis’
     observed information matrix identity for IRT and cognitive
     diagnostic models. *British Journal of Mathematical and Statistical
-    Psychology*, 74(1),
-    118-138.](https://bpspsychub.onlinelibrary.wiley.com/doi/full/10.1111/bmsp.12207)
+    Psychology*, 74(1), 118-138.](https://doi.org/10.1111/bmsp.12207)
 
 [^3]: [Mani, P., Xu, P., Lipton, Z. C., & Oberst, M. (2025). No free
     lunch: Non-asymptotic analysis of prediction-powered inference.
@@ -341,4 +339,4 @@ the reproduction code.
 [^4]: [Louis, T. A. (1982). Finding the observed information matrix when
     using the EM algorithm. *Journal of the Royal Statistical Society
     Series B: Statistical Methodology*, 44(2),
-    226-233.](https://academic.oup.com/jrsssb/article/44/2/226/7027638)
+    226-233.](https://doi.org/10.1111/j.2517-6161.1982.tb01203.x)

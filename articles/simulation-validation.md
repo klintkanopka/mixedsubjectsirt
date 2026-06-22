@@ -48,7 +48,7 @@ selected value; we also report the theoretical PPI++-score $`\lambda`$
 for reference.
 
 Here $`\lambda`$ is selected by
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md),
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md),
 which optimizes the risk directly. We do not bother using the cross-fit
 estimator, as we only are concerned with $`\lambda`$ magnitude.
 
@@ -84,7 +84,7 @@ breaks the identity
 $`\mathbb{E}\big[\nabla L_{gen}\big] = \mathbb{E}\big[\nabla L_{pred}\big]`$
 that makes the PPI loss correction mean-zero. The estimator then becomes
 biased at $`\lambda > 0`$, and at moderate $`\lambda`$ the objective is
-unbounded for discrimination paramaters, causing the fit to diverge.
+unbounded for discrimination parameters, causing the fit to diverge.
 Practically: if you have model-derived probabilities, sample responses
 from them (e.g. `rbinom`) before calibrating.
 
@@ -95,7 +95,7 @@ intervals built from two covariance estimates of the same fit: the
 Louis-corrected marginal sandwich
 ([`vcov()`](https://rdrr.io/r/stats/vcov.html) dispatch) and the EM
 complete-data Hessian bread
-([`vcov_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects.md)).
+([`vcov_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects.md)).
 
 Note that the PPI correction `$\lambda$(L_gen − L_pred)` is mean-zero
 whenever the paired and generated pseudo-responses are drawn from the

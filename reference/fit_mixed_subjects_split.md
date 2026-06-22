@@ -1,7 +1,7 @@
 # Fit a split-sample mixed-subjects 2PL calibration
 
 Fits the same objective as
-[`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md),
+[`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md),
 but constructs labeled expected counts with cross-fitted posterior
 weights. For each split, the initial human 2PL model is fit on the other
 splits and then used to compute posterior weights for the held-out
@@ -114,7 +114,7 @@ fit_mixed_subjects_split(
 - ...:
 
   Additional arguments passed to
-  [`fit_2pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md)
+  [`fit_2pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md)
   when fold-specific initial models are fit.
 
 ## Value

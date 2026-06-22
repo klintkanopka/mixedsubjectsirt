@@ -7,9 +7,9 @@ estimator** (`fit_mixed_subjects`). It explains the gradient asymmetry
 that occurs when the LLM item parameters differ from human parameters
 and evaluates IRT scale-linking methods as a partial remedy. For the
 **recommended workflow**, see the [Mixed-Subjects IRT
-Calibration](http://klintkanopka.com/mixedsubjectsirt/articles/mixed-subjects-workflow.md)
+Calibration](https://klintkanopka.com/mixedsubjectsirt/articles/mixed-subjects-workflow.md)
 vignette, which uses
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 — the marginal-MML estimator that eliminates the gradient asymmetry
 without requiring a linking pre-processing step.
 
@@ -613,12 +613,12 @@ A common misconception is that $`\lambda^*`$ should approach 1 when the
 LLM exactly reproduces the human DGP. This conflates two different
 objectives:
 
-- **[`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)**
+- **[`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)**
   returns the PPI++ Proposition 2 estimate: the $`\lambda`$ that
   minimizes the *trace of the item-parameter covariance matrix*
   $`\text{Tr}(\Sigma_\gamma)`$. This is a measure of item-parameter
   estimation efficiency.
-- **[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)**
+- **[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)**
   returns the $`\lambda`$ that minimizes the *propagated ability-score
   risk* $`\mathbb{E}[g' \Sigma_\gamma g]`$, where $`g`$ is the gradient
   of the ability estimate with respect to item parameters. This is the
@@ -801,7 +801,7 @@ $`\lambda`$ based on scoring accuracy rather than gradient covariance,
 and may choose nonzero $`\lambda`$ even when the PPI++ score gives 0,
 when adding LLM data reduces scoring uncertainty. **For psychometric
 applications, always use
-[`tune_lambda_ability_risk()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
+[`tune_lambda_ability_risk()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk.md)
 to select $`\lambda`$.** The PPI++ score is provided as a method
 diagnostic and implementation validation tool.
 
@@ -814,7 +814,7 @@ $`\lambda = 0`$ — the human-only estimate. This is the expected finding
 when the LLM’s item parameters differ from the human calibration: the
 gradient asymmetry means any positive $`\lambda`$ inflates
 discriminations and increases RMSE(a). The NA rows (Stocking-Lord at
-$`\lambda = 0.5`$) arise when the linked parameters destabilise the
+$`\lambda = 0.5`$) arise when the linked parameters destabilize the
 optimizer before `tryCatch` can catch them at the sweep stage; the
 underlying cause is the same gradient asymmetry at extreme linking
 constants. `tune_lambda_ability_risk` correctly identifies
@@ -862,7 +862,7 @@ estimates close to the human-only baseline.
   ability distribution is compressed (the shifted case), and it is only
   marginally more expensive than mean-mean. It is the recommended
   default **for the frozen EC estimator**. Note that the
-  [`link_item_parameters()`](http://klintkanopka.com/mixedsubjectsirt/reference/link_item_parameters.md)
+  [`link_item_parameters()`](https://klintkanopka.com/mixedsubjectsirt/reference/link_item_parameters.md)
   exported function currently supports only `"mean_mean"` and `"none"`;
   the mean-sigma and Stocking-Lord implementations in this vignette use
   local helper functions defined in the `{r helpers}` chunk.

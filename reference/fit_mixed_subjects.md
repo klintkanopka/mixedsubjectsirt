@@ -94,7 +94,7 @@ fit_mixed_subjects(
 - ...:
 
   Additional arguments passed to
-  [`fit_2pl()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md)
+  [`fit_2pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md)
   when `initial_pars` is omitted.
 
 ## Value

@@ -38,7 +38,7 @@ tune_lambda_ability_risk(
 - observed, predicted, generated:
 
   Response matrices passed to
-  [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md).
+  [`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md).
 
 - target_resp:
 
@@ -63,10 +63,10 @@ tune_lambda_ability_risk(
 - fit_fn:
 
   Fitting function to use. Defaults to
-  [`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md),
+  [`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md),
   the marginal-likelihood PPI++ estimator (recommended). The frozen
   expected-count estimator
-  [`fit_mixed_subjects()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
+  [`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
   is still available by passing it here, but is **discouraged**: it has
   a gradient asymmetry that inflates discriminations and can drive
   `lambda` to 0 even for an informative predictor, and it requires a
@@ -81,7 +81,7 @@ tune_lambda_ability_risk(
 - bounds:
 
   Bounds passed to
-  [`score_theta()`](http://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
+  [`score_theta()`](https://klintkanopka.com/mixedsubjectsirt/reference/score_theta.md).
 
 - max_discrimination:
 
@@ -113,7 +113,7 @@ This function minimizes `E[g' Sigma_gamma g]` — the propagated
 ability-score risk — which is the appropriate objective for IRT
 applications where accurate test scoring is the goal. This is
 **distinct** from
-[`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md),
+[`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md),
 which minimizes the trace of the item-parameter covariance matrix
 `Tr(Sigma_gamma)` (the PPI++ theoretical objective). The two criteria
 generally yield different lambda values:
@@ -122,7 +122,7 @@ generally yield different lambda values:
   accurate ability scores for the target population? Use this for
   operational scoring.
 
-- [`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
+- [`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
   asks: which lambda minimizes item-parameter estimation variance? Use
   this for method validation and diagnostics.
 
@@ -133,7 +133,7 @@ fixed-posterior expected-count implementation. The frozen posteriors
 create a gradient asymmetry that inflates item parameters at any
 `lambda > 0`, increasing ability risk. This is not a bug in the risk
 function; it is a property of the estimating equations. See
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 for a marginal-likelihood implementation that removes this asymmetry.
 
 **Tuning method.** By default (`method = "optimize"`) lambda is selected
@@ -142,17 +142,17 @@ by direct 1-D optimization
 ability-score risk over the interval `range(lambda_grid)` (default
 `[0, 1]`), returning a *continuous* lambda with no grid rounding. With
 `method = "grid"` the risk is evaluated at each value of `lambda_grid`
-and the argmin returned (the previous behaviour; useful for inspecting
+and the argmin returned (the previous behavior; useful for inspecting
 the whole risk surface). Both share the same runaway-discrimination
 guard and the same lambda = 0 (human-only) fallback when no candidate is
 eligible.
 
 ## See also
 
-[`tune_lambda_ppi_score()`](http://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
+[`tune_lambda_ppi_score()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ppi_score.md)
 for the PPI++ theoretical lambda that minimizes the trace of the
 item-parameter covariance matrix;
-[`fit_mixed_subjects_mml()`](http://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
+[`fit_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects_mml.md)
 for the marginal-likelihood estimator.
 
 ## Examples
