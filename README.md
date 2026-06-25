@@ -2,8 +2,9 @@
 # mixedsubjectsirt
 
 <!-- badges: start -->
+[![CRAN status](https://www.r-pkg.org/badges/version/mixedsubjectsirt)](https://CRAN.R-project.org/package=mixedsubjectsirt)
+[![R-CMD-check](https://github.com/klintkanopka/mixedsubjectsirt/actions/workflows/R-CMD-check/badge.svg)](https://github.com/klintkanopka/mixedsubjectsirt/actions/workflows/R-CMD-check)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![R-CMD-check](https://github.com/klintkanopka/mixedsubjectsirt/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/klintkanopka/mixedsubjectsirt/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 `mixedsubjectsirt` is a package that facilitates augmenting human pilot data with LLM-generated item responses in psychometric calibration studies. We do this by implementing the Mixed-Subject Design[^1][^2] for latent variable measurement models. This package ports the Prediction Powered Inference (PPI)[^3] and PPI++[^4] paradigms to EM-based estimation procedures that don't have the clear independent and dependent variables usually thought of in these PPI-based workflows. The goal is item-parameter estimates that retain the human-data target while using synthetic responses only when they appear informative. This works because the estimator is anchored to the human responses and the LLM contribution is down-weighted when it does not help.
@@ -26,7 +27,15 @@ See the [Mixed-Subjects Workflow](https://klintkanopka.com/mixedsubjectsirt/arti
 
 ## Installation
 
-Interested users can install the development version using:
+The most recent CRAN release can be installed using:
+
+```r
+install.packages('mixedsubjectsirt')
+```
+
+## Development version
+
+Adventurous users can install the current development version using:
 
 ``` r
 devtools::install_github('klintkanopka/mixedsubjectsirt')
