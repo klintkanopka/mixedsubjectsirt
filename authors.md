@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/klintkanopka/mixedsubjectsirt/blob/v1.0.0/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/klintkanopka/mixedsubjectsirt/blob/main/DESCRIPTION)
 
 Kanopka K (2026). *mixedsubjectsirt: Item Response Theory Calibration
 with a Mixed Subjects Design*. R package version 1.0.0,

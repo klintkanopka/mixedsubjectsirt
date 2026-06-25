@@ -54,7 +54,16 @@ vignette for the recommended end-to-end pipeline.
 
 ## Installation
 
-Interested users can install the development version using:
+The most recent CRAN release can be installed using:
+
+``` r
+
+install.packages('mixedsubjectsirt')
+```
+
+## Development version
+
+Adventurous users can install the current development version using:
 
 ``` r
 
