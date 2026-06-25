@@ -2,6 +2,8 @@
 
 ## mixedsubjectsirt 1.0.0
 
+CRAN release: 2026-06-25
+
 Initial CRAN release.
 
 - Mixed-subjects 2PL/1PL IRT calibration that augments human responses

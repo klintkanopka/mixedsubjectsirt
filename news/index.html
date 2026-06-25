@@ -45,11 +45,11 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/klintkanopka/mixedsubjectsirt/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/klintkanopka/mixedsubjectsirt/blob/v1.0.0/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="1.0.0" id="mixedsubjectsirt-100">mixedsubjectsirt 1.0.0<a class="anchor" aria-label="anchor" href="#mixedsubjectsirt-100"></a></h2>
+<h2 class="pkg-version" data-toc-text="1.0.0" id="mixedsubjectsirt-100">mixedsubjectsirt 1.0.0<a class="anchor" aria-label="anchor" href="#mixedsubjectsirt-100"></a></h2><p class="text-muted">CRAN release: 2026-06-25</p>
 <p>Initial CRAN release.</p>
 <ul><li>Mixed-subjects 2PL/1PL IRT calibration that augments human responses with LLM-generated responses through a PPI++ marginal-MML estimator (<code><a href="../reference/fit_mixed_subjects_mml.html">fit_mixed_subjects_mml()</a></code> and relatives). The estimator is anchored to the human data and is asymptotically unbiased for the human item parameters at any tuning weight.</li>
 <li>Power tuning by <strong>ability-score risk</strong> (<code><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk()</a></code>), which selects the tuning weight by direct 1-D optimization of propagated ability-recovery risk (pass <code>method = "grid"</code> to scan a grid instead). Also included: a theoretical PPI++ score diagnostic (<code><a href="../reference/tune_lambda_ppi_score.html">tune_lambda_ppi_score()</a></code>), cross-fitted tuning (<code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code>, the recommended workflow for reported analyses), and experimental per-item tuning (<code><a href="../reference/tune_lambda_ability_risk_item.html">tune_lambda_ability_risk_item()</a></code>). All non-experimental tuners use the marginal-MML estimator by default; the frozen expected-count estimator remains available via <code>fit_fn</code> but is discouraged.</li>
