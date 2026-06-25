@@ -3,7 +3,7 @@
 
 <!-- badges: start -->
 [![CRAN status](https://www.r-pkg.org/badges/version/mixedsubjectsirt)](https://CRAN.R-project.org/package=mixedsubjectsirt)
-[![R-CMD-check](https://github.com/klintkanopka/mixedsubjectsirt/actions/workflows/R-CMD-check/badge.svg)](https://github.com/klintkanopka/mixedsubjectsirt/actions/workflows/R-CMD-check)
+[![R-CMD-check](https://github.com/klintkanopka/mixedsubjectsirt/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/klintkanopka/mixedsubjectsirt/actions/workflows/R-CMD-check.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 <!-- badges: end -->
 
