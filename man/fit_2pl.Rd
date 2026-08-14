@@ -4,28 +4,52 @@
 \alias{fit_2pl}
 \title{Fit a unidimensional 2PL IRT model}
 \usage{
-fit_2pl(resp, technical = list(NCYCLES = 1000), verbose = FALSE, ...)
+fit_2pl(
+  resp,
+  n_quad = 31,
+  initial_pars = NULL,
+  quadrature = NULL,
+  slope_lower = 1e-04,
+  slope_upper = NULL,
+  control = list(maxit = 500)
+)
 }
 \arguments{
 \item{resp}{A numeric item response matrix with rows for subjects and columns
 for items. Values must be binary \code{0}/\code{1}; \code{NA} is allowed.}
 
-\item{technical}{A list passed to the \code{technical} argument of
-\code{\link[mirt:mirt]{mirt::mirt()}}.}
+\item{n_quad}{Number of standard-normal quadrature nodes.}
 
-\item{verbose}{Logical; passed to \code{\link[mirt:mirt]{mirt::mirt()}}.}
+\item{initial_pars}{Optional starting item parameters (matrix or data frame
+with \code{a}/\code{a1} and \code{d} columns). If omitted, \code{a_j = 1} and
+\code{d_j = qlogis(p_j)} where \code{p_j} is the observed proportion correct for
+item \code{j}.}
 
-\item{...}{Additional arguments passed to \code{\link[mirt:mirt]{mirt::mirt()}}.}
+\item{quadrature}{Optional quadrature grid with \code{theta} and \code{weight} columns.}
+
+\item{slope_lower, slope_upper}{Bounds on the discriminations. \code{NULL} leaves
+the corresponding side unbounded.}
+
+\item{control}{Control list passed to \code{\link[stats:optim]{stats::optim()}}.}
 }
 \value{
 A list with \code{pars}, a data frame containing \code{item}, \code{a}, \code{d}, and
-\code{b}, and \code{model}, the fitted \code{mirt} model.
+\code{b}; \code{par}, the raw parameter vector; optimizer details (\code{value},
+\code{convergence}, \code{message}); and \code{model}, which is \code{NULL} and retained for
+backward compatibility.
 }
 \description{
-Fits a two-parameter logistic model with \code{mirt} and returns item parameters in
-slope-intercept form. The response probability is
-\code{plogis(d + a * theta)}, where \code{a} is the discrimination and \code{d} is the
-intercept. Difficulty is returned as \code{b = -d / a}.
+Estimates per-item discriminations \code{a_j} and intercepts \code{d_j} by maximizing
+the IRT marginal likelihood under a standard-normal ability prior using
+L-BFGS-B. The response probability is \code{plogis(d + a * theta)}, where \code{a} is
+the discrimination and \code{d} is the intercept. Difficulty is returned as
+\code{b = -d / a}.
+}
+\details{
+This is the 2PL counterpart of \code{\link[=fit_1pl]{fit_1pl()}} and uses the same marginal
+likelihood, quadrature, and gradient machinery as
+\code{\link[=fit_mixed_subjects_mml]{fit_mixed_subjects_mml()}} at \code{lambda = 0}, so a human-only baseline fit and
+the mixed-subjects estimator are optimized on a common objective.
 }
 \examples{
 set.seed(1)
@@ -33,4 +57,7 @@ pars <- data.frame(a = c(1, 1.2, 0.9, 1.1, 0.8), d = c(0, 0.5, -0.5, 0.2, -0.3))
 resp <- simulate_2pl(rnorm(500), pars)
 fit <- fit_2pl(resp)
 fit$pars
+}
+\seealso{
+\code{\link[=fit_1pl]{fit_1pl()}} for the shared-discrimination version.
 }

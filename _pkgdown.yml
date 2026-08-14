@@ -31,7 +31,7 @@ reference:
   desc: >
     Estimators for mixed-subjects IRT calibration. `fit_mixed_subjects_mml()` is
     the recommended marginal-likelihood estimator; `fit_2pl()` and `fit_1pl()`
-    fit human-only baselines using a `mirt` backend
+    fit human-only marginal-likelihood baselines
   contents:
   - starts_with("fit_mixed_subjects")
   - fit_2pl

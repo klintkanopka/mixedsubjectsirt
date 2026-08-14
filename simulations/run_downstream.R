@@ -62,7 +62,7 @@ run_one <- function(task) {
   regime <- task$regime
   rep_id <- task$rep
   dat <- generate_regime(regime, n_human = n_human, n_generated = n_generated)
-  human_start <- fit_2pl(dat$observed, technical = list(NCYCLES = 500))$pars
+  human_start <- fit_2pl(dat$observed)$pars
 
   # Held-out scoring sample (human responses from the TRUE DGP)
   theta_score <- stats::rnorm(n_score)

@@ -77,7 +77,7 @@ run_one <- function(task) {
   set.seed(task$seed)
   regime <- task$regime
   dat <- generate_regime(regime, n_human = n_human, n_generated = n_generated)
-  human_start <- fit_2pl(dat$observed, technical = list(NCYCLES = 500))$pars
+  human_start <- fit_2pl(dat$observed)$pars
 
   fit <- tryCatch(
     fit_mixed_subjects_mml(

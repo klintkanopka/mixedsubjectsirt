@@ -71,7 +71,7 @@ library(ggplot2)
 
 # Apply (A, B) and return a standardised data frame of item parameters.
 # Guards against degenerate linking constants (Inf, NaN, non-positive A) that
-# can arise from unusual mirt fits on different platforms.
+# can arise from unusual calibrations on different platforms.
 apply_link <- function(source, A, B, slope_lower = 1e-4) {
   if (!is.finite(A) || A <= 0 || !is.finite(B)) {
     # Degenerate constants: fall back to identity transform
@@ -98,7 +98,7 @@ link_mean_mean <- function(source, target) {
 
 link_mean_sigma <- function(source, target) {
   sd_src <- sd(source$b)
-  # If source difficulties have no variance (degenerate mirt fit), fall back
+  # If source difficulties have no variance (degenerate fit), fall back
   # to mean-mean linking which does not depend on sd(b).
   if (!is.finite(sd_src) || sd_src < 1e-6) {
     return(link_mean_mean(source, target))
@@ -191,9 +191,9 @@ lower-variance LLM response pattern.
 ## Fitting human and LLM models
 
 ```{r fit-models, message = FALSE}
-human_pars       <- fit_2pl(observed,         technical = list(NCYCLES = 500))$pars
-llm_raw_matched  <- fit_2pl(generated_matched, technical = list(NCYCLES = 500))$pars
-llm_raw_shifted  <- fit_2pl(generated_shifted, technical = list(NCYCLES = 500))$pars
+human_pars       <- fit_2pl(observed)$pars
+llm_raw_matched  <- fit_2pl(generated_matched)$pars
+llm_raw_shifted  <- fit_2pl(generated_shifted)$pars
 ```
 
 ```{r scale-table, echo = FALSE}

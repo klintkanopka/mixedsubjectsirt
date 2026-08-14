@@ -71,8 +71,8 @@ fit_lambda <- function(d, lam, init) {
 
 one_rep <- function(seed) {
   d     <- gen_one(seed)
-  human <- fit_2pl(d$observed, technical = list(NCYCLES = 300))$pars
-  naive <- fit_2pl(rbind(d$observed, d$generated), technical = list(NCYCLES = 300))$pars
+  human <- fit_2pl(d$observed)$pars
+  naive <- fit_2pl(rbind(d$observed, d$generated))$pars
 
   curve <- do.call(rbind, lapply(lam_grid, function(lam) {
     f <- fit_lambda(d, lam, human)

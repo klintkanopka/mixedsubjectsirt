@@ -83,6 +83,12 @@ check_same_items <- function(x, y, x_name = "x", y_name = "y") {
 standardize_item_pars <- function(item_pars, n_items = NULL, item_names = NULL,
                                   name = "item_pars") {
   if (inherits(item_pars, "SingleGroupClass")) {
+    # mirt is only a suggested dependency: it is needed to extract coefficients
+    # from a fitted mirt model, never to fit one (see fit_2pl()).
+    if (!requireNamespace("mirt", quietly = TRUE)) {
+      stop(name, " is a mirt model, but the mirt package is not installed.",
+           call. = FALSE)
+    }
     item_pars <- as.data.frame(mirt::coef(item_pars, simplify = TRUE)$items)
   } else if (is.matrix(item_pars) || is.data.frame(item_pars)) {
     item_pars <- as.data.frame(item_pars)

@@ -69,10 +69,10 @@ generated <- simulate_2pl(rnorm(n_generated), true_pars)
 
 ## Step 1: Fit the human baseline
 
-Baseline models are estimated using `mirt`.[^1]
+Baseline models are estimated by marginal maximum likelihood with `fit_2pl()`, using the same objective and quadrature as the mixed-subjects estimator below.
 
 ```{r human-baseline}
-human_start <- fit_2pl(observed, technical = list(NCYCLES = 500))
+human_start <- fit_2pl(observed)
 ```
 
 ## Step 2: Fit the MML mixed-subjects model
@@ -98,7 +98,7 @@ mixed_mml$item_pars
 
 ## Step 3: Select $\lambda$ by ability-score risk
 
-`tune_lambda_ability_risk()` with `fit_fn = fit_mixed_subjects_mml` selects the $\lambda$ that minimizes propagated ability-score risk $\mathbb{E}\big[g'\Sigma_\gamma g\big]$ (where $\Sigma_\gamma$ is the Louis-corrected marginal sandwich covariance).[^2] By default this is done by direct 1-D optimization over `[0, 1]`. The final fit from this optimal $\lambda$ is also returned as the `best_fit` object within the output list, so the user is not required to call `fit_mixed_subjects_mml` again.
+`tune_lambda_ability_risk()` with `fit_fn = fit_mixed_subjects_mml` selects the $\lambda$ that minimizes propagated ability-score risk $\mathbb{E}\big[g'\Sigma_\gamma g\big]$ (where $\Sigma_\gamma$ is the Louis-corrected marginal sandwich covariance).[^1] By default this is done by direct 1-D optimization over `[0, 1]`. The final fit from this optimal $\lambda$ is also returned as the `best_fit` object within the output list, so the user is not required to call `fit_mixed_subjects_mml` again.
 
 ```{r tune-lambda}
 ability_tuned <- tune_lambda_ability_risk(
@@ -118,7 +118,7 @@ Because the predictor is highly informative, the approach selects a $\lambda$ ne
 
 ## Step 3b (recommended workflow): cross-fit $\lambda$ tuning
 
-`tune_lambda_ability_risk()` above estimated an appropriate $\lambda$ and fits the final model on the same data used for this estimation. Previous analysis of prediction-powered inference in finite samples shows that estimating $\lambda$ on the data you also estimate model parameters with is optimistic. Item parameters estimated this are biased in finite samples and may undercover true parameter values.[^3]
+`tune_lambda_ability_risk()` above estimated an appropriate $\lambda$ and fits the final model on the same data used for this estimation. Previous analysis of prediction-powered inference in finite samples shows that estimating $\lambda$ on the data you also estimate model parameters with is optimistic. Item parameters estimated this are biased in finite samples and may undercover true parameter values.[^2]
 
 `tune_lambda_ability_risk_crossfit()` removes this bias by tuning $\lambda$ on held-out data: each fold's $\lambda$ is chosen using only out of fold item responses, and the final fit combines them. Passing `fit_fn = fit_mixed_subjects_mml` for the per-fold tuning and `final_fit_fn = fit_mixed_subjects_mml` for the final fit produces a single scalar-$\lambda$ mixed subjects calibration fit (the fold-specific $\lambda$'s are averaged, weighted by fold size).
 
@@ -143,7 +143,7 @@ The object `cf_tuned$final_fit` provides the final model fit from calibration, a
 
 ## Step 4: Inspect the covariance
 
-`vcov()` on a scalar-lambda MML fit automatically uses `vcov_mixed_subjects_mml()`, which applies Louis' observed-information correction.[^4] Here, the bread is $H_\mathrm{comp} - I_\mathrm{miss}$ rather than the EM complete-data Hessian alone.
+`vcov()` on a scalar-lambda MML fit automatically uses `vcov_mixed_subjects_mml()`, which applies Louis' observed-information correction.[^3] Here, the bread is $H_\mathrm{comp} - I_\mathrm{miss}$ rather than the EM complete-data Hessian alone.
 
 ```{r covariance}
 Sigma <- vcov(cf_tuned$final_fit)
@@ -215,7 +215,6 @@ A full simulation study confirms the recommended workflow behaves as intended:
 
 See the [Simulation Validation](simulation-validation.html) vignette for the full results, and `simulations/` in the source tree for the reproduction code.
 
-[^1]: [Chalmers, R. P. (2012). mirt: A multidimensional item response theory package for the R environment._Journal of Statistical Software_, 48, 1-29.](https://doi.org/10.18637/jss.v048.i06)
-[^2]: [Liu, C. W., & Chalmers, R. P. (2021). A note on computing Louis’ observed information matrix identity for IRT and cognitive diagnostic models. _British Journal of Mathematical and Statistical Psychology_, 74(1), 118-138.](https://doi.org/10.1111/bmsp.12207)
-[^3]: [Mani, P., Xu, P., Lipton, Z. C., & Oberst, M. (2025). No free lunch: Non-asymptotic analysis of prediction-powered inference. _arXiv preprint arXiv:2505.20178_.](https://arxiv.org/abs/2505.20178)
-[^4]: [Louis, T. A. (1982). Finding the observed information matrix when using the EM algorithm. _Journal of the Royal Statistical Society Series B: Statistical Methodology_, 44(2), 226-233.](https://doi.org/10.1111/j.2517-6161.1982.tb01203.x)
+[^1]: [Liu, C. W., & Chalmers, R. P. (2021). A note on computing Louis’ observed information matrix identity for IRT and cognitive diagnostic models. _British Journal of Mathematical and Statistical Psychology_, 74(1), 118-138.](https://doi.org/10.1111/bmsp.12207)
+[^2]: [Mani, P., Xu, P., Lipton, Z. C., & Oberst, M. (2025). No free lunch: Non-asymptotic analysis of prediction-powered inference. _arXiv preprint arXiv:2505.20178_.](https://arxiv.org/abs/2505.20178)
+[^3]: [Louis, T. A. (1982). Finding the observed information matrix when using the EM algorithm. _Journal of the Royal Statistical Society Series B: Statistical Methodology_, 44(2), 226-233.](https://doi.org/10.1111/j.2517-6161.1982.tb01203.x)

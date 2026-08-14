@@ -73,7 +73,7 @@ run_one <- function(task) {
   set.seed(task$seed)
   regime <- task$regime
   dat <- generate_regime(regime, n_human = n_human, n_generated = n_generated)
-  hs   <- fit_2pl(dat$observed, technical = list(NCYCLES = 500))$pars
+  hs   <- fit_2pl(dat$observed)$pars
   true <- true_vector(dat$true_pars)
   J2   <- length(true)
   na2  <- rep(NA_integer_, J2)

@@ -86,7 +86,7 @@ near-random LLM predictions.
 ## Step 1: Fit 2PL baseline and get global scalar lambda
 
 ```{r baseline}
-human_pars <- fit_2pl(observed, technical = list(NCYCLES = 500))$pars
+human_pars <- fit_2pl(observed)$pars
 
 global_tuned <- tune_lambda_ability_risk(
   lambda_grid  = seq(0, 1, by = 0.1),

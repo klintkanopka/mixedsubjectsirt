@@ -45,7 +45,7 @@ run_one <- function(task) {
   rep_id <- task$rep
   dat <- generate_regime(regime, n_human = n_human, n_generated = n_generated)
 
-  human_start <- fit_2pl(dat$observed, technical = list(NCYCLES = 500))$pars
+  human_start <- fit_2pl(dat$observed)$pars
 
   # PPI++ score lambda (theoretical diagnostic)
   ppi <- tryCatch(
