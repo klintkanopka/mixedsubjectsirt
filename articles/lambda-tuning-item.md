@@ -76,7 +76,7 @@ have near-random LLM predictions.
 
 ``` r
 
-human_pars <- fit_2pl(observed, technical = list(NCYCLES = 500))$pars
+human_pars <- fit_2pl(observed)$pars
 
 global_tuned <- tune_lambda_ability_risk(
   lambda_grid  = seq(0, 1, by = 0.1),
@@ -90,7 +90,7 @@ global_tuned <- tune_lambda_ability_risk(
 )
 
 cat("Global scalar best lambda:", global_tuned$best_lambda, "\n")
-#> Global scalar best lambda: 0.3897205
+#> Global scalar best lambda: 0.3900552
 ```
 
 The global scalar is forced to a compromise — the four poor items
@@ -202,13 +202,13 @@ knitr::kable(comparison, row.names = FALSE,
 | item  | true_a | human_a | scalar_a | item_a |
 |:------|-------:|--------:|---------:|-------:|
 | Item1 |  0.800 |   0.727 |    0.751 |  0.715 |
-| Item2 |  0.914 |   1.256 |    1.161 |  1.109 |
+| Item2 |  0.914 |   1.256 |    1.161 |  1.108 |
 | Item3 |  1.029 |   1.117 |    1.125 |  1.026 |
 | Item4 |  1.143 |   1.091 |    1.040 |  1.038 |
 | Item5 |  1.257 |   1.758 |    1.583 |  1.766 |
 | Item6 |  1.371 |   1.610 |    1.526 |  1.618 |
 | Item7 |  1.486 |   1.369 |    1.457 |  1.371 |
-| Item8 |  1.600 |   1.925 |    2.227 |  1.921 |
+| Item8 |  1.600 |   1.926 |    2.227 |  1.921 |
 
 Discrimination recovery: scalar lambda vs. per-item lambda {.table}
 
@@ -217,15 +217,15 @@ Discrimination recovery: scalar lambda vs. per-item lambda {.table}
 
 cat("RMSE(a) human-only:   ",
     round(rmse(human_pars$a, true_pars$a), 4), "\n")
-#> RMSE(a) human-only:    0.2645
+#> RMSE(a) human-only:    0.2647
 cat("RMSE(a) scalar MML:   ",
     round(rmse(fit_scalar$item_pars$a, true_pars$a), 4), "\n")
-#> RMSE(a) scalar MML:    0.2755
+#> RMSE(a) scalar MML:    0.2756
 if (!is.null(fit_per_item)) {
   cat("RMSE(a) per-item MML: ",
       round(rmse(fit_per_item$item_pars$a, true_pars$a), 4), "\n")
 }
-#> RMSE(a) per-item MML:  0.2479
+#> RMSE(a) per-item MML:  0.248
 ```
 
 ## Important note on initialization

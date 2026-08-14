@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mixedsubjectsirt</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -159,7 +159,7 @@ while items 5–8 get
 <h2 id="step-1-fit-2pl-baseline-and-get-global-scalar-lambda">Step 1: Fit 2PL baseline and get global scalar lambda<a class="anchor" aria-label="anchor" href="#step-1-fit-2pl-baseline-and-get-global-scalar-lambda"></a>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">human_pars</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">observed</span>, technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>NCYCLES <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">pars</span></span>
+<code class="sourceCode R"><span><span class="va">human_pars</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">observed</span><span class="op">)</span><span class="op">$</span><span class="va">pars</span></span>
 <span></span>
 <span><span class="va">global_tuned</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/tune_lambda_ability_risk.html">tune_lambda_ability_risk</a></span><span class="op">(</span></span>
 <span>  lambda_grid  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span>
@@ -173,7 +173,7 @@ while items 5–8 get
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Global scalar best lambda:"</span>, <span class="va">global_tuned</span><span class="op">$</span><span class="va">best_lambda</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Global scalar best lambda: 0.3897205</span></span></code></pre></div>
+<span><span class="co">#&gt; Global scalar best lambda: 0.3900552</span></span></code></pre></div>
 <p>The global scalar is forced to a compromise — the four poor items
 constrain it to a value smaller than what items 1–4 could support.</p>
 </div>
@@ -304,7 +304,7 @@ lambda</caption>
 <td align="right">0.914</td>
 <td align="right">1.256</td>
 <td align="right">1.161</td>
-<td align="right">1.109</td>
+<td align="right">1.108</td>
 </tr>
 <tr class="odd">
 <td align="left">Item3</td>
@@ -344,7 +344,7 @@ lambda</caption>
 <tr class="even">
 <td align="left">Item8</td>
 <td align="right">1.600</td>
-<td align="right">1.925</td>
+<td align="right">1.926</td>
 <td align="right">2.227</td>
 <td align="right">1.921</td>
 </tr>
@@ -354,15 +354,15 @@ lambda</caption>
 <code class="sourceCode R"><span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE(a) human-only:   "</span>,</span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">human_pars</span><span class="op">$</span><span class="va">a</span>, <span class="va">true_pars</span><span class="op">$</span><span class="va">a</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; RMSE(a) human-only:    0.2645</span></span>
+<span><span class="co">#&gt; RMSE(a) human-only:    0.2647</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE(a) scalar MML:   "</span>,</span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">fit_scalar</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">a</span>, <span class="va">true_pars</span><span class="op">$</span><span class="va">a</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; RMSE(a) scalar MML:    0.2755</span></span>
+<span><span class="co">#&gt; RMSE(a) scalar MML:    0.2756</span></span>
 <span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">fit_per_item</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"RMSE(a) per-item MML: "</span>,</span>
 <span>      <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">rmse</span><span class="op">(</span><span class="va">fit_per_item</span><span class="op">$</span><span class="va">item_pars</span><span class="op">$</span><span class="va">a</span>, <span class="va">true_pars</span><span class="op">$</span><span class="va">a</span><span class="op">)</span>, <span class="fl">4</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
-<span><span class="co">#&gt; RMSE(a) per-item MML:  0.2479</span></span></code></pre></div>
+<span><span class="co">#&gt; RMSE(a) per-item MML:  0.248</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="important-note-on-initialization">Important note on initialization<a class="anchor" aria-label="anchor" href="#important-note-on-initialization"></a>

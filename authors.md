@@ -11,13 +11,13 @@ Source:
 [`DESCRIPTION`](https://github.com/klintkanopka/mixedsubjectsirt/blob/main/DESCRIPTION)
 
 Kanopka K (2026). *mixedsubjectsirt: Item Response Theory Calibration
-with a Mixed Subjects Design*. R package version 1.0.0,
+with a Mixed Subjects Design*. R package version 1.1.0,
 <https://klintkanopka.com/mixedsubjectsirt/>.
 
     @Manual{,
       title = {mixedsubjectsirt: Item Response Theory Calibration with a Mixed Subjects Design},
       author = {Klint Kanopka},
       year = {2026},
-      note = {R package version 1.0.0},
+      note = {R package version 1.1.0},
       url = {https://klintkanopka.com/mixedsubjectsirt/},
     }

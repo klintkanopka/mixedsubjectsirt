@@ -70,11 +70,14 @@ generated <- simulate_2pl(rnorm(n_generated), true_pars)
 
 ## Step 1: Fit the human baseline
 
-Baseline models are estimated using `mirt`.[^1]
+Baseline models are estimated by marginal maximum likelihood with
+[`fit_2pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md),
+using the same objective and quadrature as the mixed-subjects estimator
+below.
 
 ``` r
 
-human_start <- fit_2pl(observed, technical = list(NCYCLES = 500))
+human_start <- fit_2pl(observed)
 ```
 
 ## Step 2: Fit the MML mixed-subjects model
@@ -108,14 +111,14 @@ mixed_mml
 
 mixed_mml$item_pars
 #>    item         a          d          b
-#> 1 Item1 0.7431515 -1.0825772  1.4567382
-#> 2 Item2 1.0067308 -0.7278419  0.7229757
-#> 3 Item3 0.8547961 -0.4113346  0.4812078
-#> 4 Item4 1.0999070 -0.1453192  0.1321195
-#> 5 Item5 1.1673630  0.1875514 -0.1606624
-#> 6 Item6 1.2566356  0.4923054 -0.3917646
-#> 7 Item7 1.5526271  0.8477928 -0.5460376
-#> 8 Item8 1.5472343  1.1508445 -0.7438075
+#> 1 Item1 0.7431516 -1.0825771  1.4567379
+#> 2 Item2 1.0067305 -0.7278416  0.7229756
+#> 3 Item3 0.8547961 -0.4113343  0.4812075
+#> 4 Item4 1.0999070 -0.1453191  0.1321195
+#> 5 Item5 1.1673633  0.1875515 -0.1606625
+#> 6 Item6 1.2566354  0.4923056 -0.3917648
+#> 7 Item7 1.5526282  0.8477934 -0.5460376
+#> 8 Item8 1.5472382  1.1508463 -0.7438068
 ```
 
 ## Step 3: Select $`\lambda`$ by ability-score risk
@@ -124,7 +127,7 @@ mixed_mml$item_pars
 with `fit_fn = fit_mixed_subjects_mml` selects the $`\lambda`$ that
 minimizes propagated ability-score risk
 $`\mathbb{E}\big[g'\Sigma_\gamma g\big]`$ (where $`\Sigma_\gamma`$ is
-the Louis-corrected marginal sandwich covariance).[^2] By default this
+the Louis-corrected marginal sandwich covariance).[^1] By default this
 is done by direct 1-D optimization over `[0, 1]`. The final fit from
 this optimal $`\lambda`$ is also returned as the `best_fit` object
 within the output list, so the user is not required to call
@@ -143,7 +146,7 @@ ability_tuned <- tune_lambda_ability_risk(
 )
 
 ability_tuned$best_lambda
-#> [1] 0.7924548
+#> [1] 0.792456
 ```
 
 Because the predictor is highly informative, the approach selects a
@@ -163,7 +166,7 @@ the same data used for this estimation. Previous analysis of
 prediction-powered inference in finite samples shows that estimating
 $`\lambda`$ on the data you also estimate model parameters with is
 optimistic. Item parameters estimated this are biased in finite samples
-and may undercover true parameter values.[^3]
+and may undercover true parameter values.[^2]
 
 [`tune_lambda_ability_risk_crossfit()`](https://klintkanopka.com/mixedsubjectsirt/reference/tune_lambda_ability_risk_crossfit.md)
 removes this bias by tuning $`\lambda`$ on held-out data: each fold’s
@@ -188,9 +191,9 @@ cf_tuned <- tune_lambda_ability_risk_crossfit(
 )
 
 cf_tuned$lambda_by_split   # one tuned lambda per held-out fold
-#> [1] 0.8758023 0.8896977
+#> [1] 0.8758023 0.8896980
 cf_tuned$lambda_final      # fold-size-weighted scalar used for the final fit
-#> [1] 0.88275
+#> [1] 0.8827501
 ```
 
 The object `cf_tuned$final_fit` provides the final model fit from
@@ -218,7 +221,7 @@ cross-fit estimate for operational calibrations or further research.
 [`vcov()`](https://rdrr.io/r/stats/vcov.html) on a scalar-lambda MML fit
 automatically uses
 [`vcov_mixed_subjects_mml()`](https://klintkanopka.com/mixedsubjectsirt/reference/vcov_mixed_subjects_mml.md),
-which applies Louis’ observed-information correction.[^4] Here, the
+which applies Louis’ observed-information correction.[^3] Here, the
 bread is $`H_\mathrm{comp} - I_\mathrm{miss}`$ rather than the EM
 complete-data Hessian alone.
 
@@ -289,7 +292,7 @@ tuned_bad <- tune_lambda_ability_risk(
 )
 
 tuned_bad$best_lambda   # expect ~0: the useless LLM is correctly ignored
-#> [1] 0.03332212
+#> [1] 0.03332135
 ```
 
 The criterion drives $`\lambda \to 0`$, recovering the human-only item
@@ -322,21 +325,17 @@ Validation](https://klintkanopka.com/mixedsubjectsirt/articles/simulation-valida
 vignette for the full results, and `simulations/` in the source tree for
 the reproduction code.
 
-[^1]: [Chalmers, R. P. (2012). mirt: A multidimensional item response
-    theory package for the R environment.\_Journal of Statistical
-    Software\_, 48, 1-29.](https://doi.org/10.18637/jss.v048.i06)
-
-[^2]: [Liu, C. W., & Chalmers, R. P. (2021). A note on computing Louis’
+[^1]: [Liu, C. W., & Chalmers, R. P. (2021). A note on computing Louis’
     observed information matrix identity for IRT and cognitive
     diagnostic models. *British Journal of Mathematical and Statistical
     Psychology*, 74(1), 118-138.](https://doi.org/10.1111/bmsp.12207)
 
-[^3]: [Mani, P., Xu, P., Lipton, Z. C., & Oberst, M. (2025). No free
+[^2]: [Mani, P., Xu, P., Lipton, Z. C., & Oberst, M. (2025). No free
     lunch: Non-asymptotic analysis of prediction-powered inference.
     *arXiv preprint
     arXiv:2505.20178*.](https://arxiv.org/abs/2505.20178)
 
-[^4]: [Louis, T. A. (1982). Finding the observed information matrix when
+[^3]: [Louis, T. A. (1982). Finding the observed information matrix when
     using the EM algorithm. *Journal of the Royal Statistical Society
     Series B: Statistical Methodology*, 44(2),
     226-233.](https://doi.org/10.1111/j.2517-6161.1982.tb01203.x)

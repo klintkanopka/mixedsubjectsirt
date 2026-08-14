@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mixedsubjectsirt</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -159,7 +159,7 @@ and
 <span></span>
 <span><span class="co"># Apply (A, B) and return a standardised data frame of item parameters.</span></span>
 <span><span class="co"># Guards against degenerate linking constants (Inf, NaN, non-positive A) that</span></span>
-<span><span class="co"># can arise from unusual mirt fits on different platforms.</span></span>
+<span><span class="co"># can arise from unusual calibrations on different platforms.</span></span>
 <span><span class="va">apply_link</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">source</span>, <span class="va">A</span>, <span class="va">B</span>, <span class="va">slope_lower</span> <span class="op">=</span> <span class="fl">1e-4</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">A</span><span class="op">)</span> <span class="op">||</span> <span class="va">A</span> <span class="op">&lt;=</span> <span class="fl">0</span> <span class="op">||</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">B</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="co"># Degenerate constants: fall back to identity transform</span></span>
@@ -186,7 +186,7 @@ and
 <span></span>
 <span><span class="va">link_mean_sigma</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">source</span>, <span class="va">target</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">sd_src</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">source</span><span class="op">$</span><span class="va">b</span><span class="op">)</span></span>
-<span>  <span class="co"># If source difficulties have no variance (degenerate mirt fit), fall back</span></span>
+<span>  <span class="co"># If source difficulties have no variance (degenerate fit), fall back</span></span>
 <span>  <span class="co"># to mean-mean linking which does not depend on sd(b).</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">sd_src</span><span class="op">)</span> <span class="op">||</span> <span class="va">sd_src</span> <span class="op">&lt;</span> <span class="fl">1e-6</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu">link_mean_mean</span><span class="op">(</span><span class="va">source</span>, <span class="va">target</span><span class="op">)</span><span class="op">)</span></span>
@@ -276,9 +276,9 @@ representing a higher-ability, lower-variance LLM response pattern.</p>
 <h2 id="fitting-human-and-llm-models">Fitting human and LLM models<a class="anchor" aria-label="anchor" href="#fitting-human-and-llm-models"></a>
 </h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">human_pars</span>       <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">observed</span>,         technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>NCYCLES <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">pars</span></span>
-<span><span class="va">llm_raw_matched</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">generated_matched</span>, technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>NCYCLES <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">pars</span></span>
-<span><span class="va">llm_raw_shifted</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">generated_shifted</span>, technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>NCYCLES <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">pars</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">human_pars</span>       <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">observed</span><span class="op">)</span><span class="op">$</span><span class="va">pars</span></span>
+<span><span class="va">llm_raw_matched</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">generated_matched</span><span class="op">)</span><span class="op">$</span><span class="va">pars</span></span>
+<span><span class="va">llm_raw_shifted</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">generated_shifted</span><span class="op">)</span><span class="op">$</span><span class="va">pars</span></span></code></pre></div>
 <table class="table">
 <caption>Item parameter summary before linking</caption>
 <thead><tr class="header">
@@ -374,37 +374,37 @@ perfectly align every item.</p>
 <tr class="odd">
 <td align="left">matched</td>
 <td align="left">mean_mean</td>
-<td align="right">0.7951</td>
+<td align="right">0.7950</td>
 <td align="right">0.1592</td>
 </tr>
 <tr class="even">
 <td align="left">matched</td>
 <td align="left">mean_sigma</td>
-<td align="right">0.8123</td>
+<td align="right">0.8122</td>
 <td align="right">0.1600</td>
 </tr>
 <tr class="odd">
 <td align="left">matched</td>
 <td align="left">stocking_lord</td>
 <td align="right">0.7846</td>
-<td align="right">0.1585</td>
+<td align="right">0.1584</td>
 </tr>
 <tr class="even">
 <td align="left">shifted</td>
 <td align="left">mean_mean</td>
-<td align="right">0.7392</td>
-<td align="right">0.3993</td>
+<td align="right">0.7391</td>
+<td align="right">0.3992</td>
 </tr>
 <tr class="odd">
 <td align="left">shifted</td>
 <td align="left">mean_sigma</td>
-<td align="right">0.7797</td>
-<td align="right">0.4144</td>
+<td align="right">0.7795</td>
+<td align="right">0.4143</td>
 </tr>
 <tr class="even">
 <td align="left">shifted</td>
 <td align="left">stocking_lord</td>
-<td align="right">0.7481</td>
+<td align="right">0.7480</td>
 <td align="right">0.3741</td>
 </tr>
 </tbody>
@@ -451,50 +451,50 @@ MLE</caption>
 <tr class="odd">
 <td align="left">matched</td>
 <td align="left">mean_mean</td>
-<td align="right">0.3395</td>
+<td align="right">0.3396</td>
 <td align="right">0.2262</td>
-<td align="right">0.7025</td>
-<td align="right">0.3936</td>
+<td align="right">0.7027</td>
+<td align="right">0.3935</td>
 </tr>
 <tr class="even">
 <td align="left">matched</td>
 <td align="left">mean_sigma</td>
-<td align="right">0.3349</td>
-<td align="right">0.2282</td>
-<td align="right">0.7248</td>
-<td align="right">0.4134</td>
+<td align="right">0.3350</td>
+<td align="right">0.2281</td>
+<td align="right">0.7250</td>
+<td align="right">0.4133</td>
 </tr>
 <tr class="odd">
 <td align="left">matched</td>
 <td align="left">stocking_lord</td>
-<td align="right">0.3438</td>
+<td align="right">0.3439</td>
 <td align="right">0.2254</td>
-<td align="right">0.6884</td>
-<td align="right">0.3812</td>
+<td align="right">0.6886</td>
+<td align="right">0.3811</td>
 </tr>
 <tr class="even">
 <td align="left">shifted</td>
 <td align="left">mean_mean</td>
-<td align="right">0.2150</td>
+<td align="right">0.2151</td>
 <td align="right">0.1481</td>
-<td align="right">0.3379</td>
-<td align="right">0.2246</td>
+<td align="right">0.3380</td>
+<td align="right">0.2245</td>
 </tr>
 <tr class="odd">
 <td align="left">shifted</td>
 <td align="left">mean_sigma</td>
-<td align="right">0.2288</td>
+<td align="right">0.2290</td>
 <td align="right">0.1480</td>
-<td align="right">0.4116</td>
-<td align="right">0.2655</td>
+<td align="right">0.4117</td>
+<td align="right">0.2653</td>
 </tr>
 <tr class="even">
 <td align="left">shifted</td>
 <td align="left">stocking_lord</td>
-<td align="right">0.2161</td>
+<td align="right">0.2163</td>
 <td align="right">0.1501</td>
-<td align="right">0.3547</td>
-<td align="right">0.2392</td>
+<td align="right">0.3549</td>
+<td align="right">0.2391</td>
 </tr>
 </tbody>
 </table>
@@ -619,14 +619,14 @@ upward.</caption>
 <td align="right">-6e-04</td>
 <td align="right">0.0381</td>
 <td align="right">0.1304</td>
-<td align="right">-0.0468</td>
+<td align="right">-0.0467</td>
 </tr>
 <tr class="even">
 <td align="left">unlinked</td>
 <td align="left">Item8</td>
 <td align="right">2e-04</td>
 <td align="right">-0.0068</td>
-<td align="right">0.1158</td>
+<td align="right">0.1159</td>
 <td align="right">-0.0611</td>
 </tr>
 <tr class="odd">
@@ -635,14 +635,14 @@ upward.</caption>
 <td align="right">-6e-04</td>
 <td align="right">0.0769</td>
 <td align="right">0.1304</td>
-<td align="right">-0.0274</td>
+<td align="right">-0.0273</td>
 </tr>
 <tr class="even">
 <td align="left">mean_mean</td>
 <td align="left">Item8</td>
 <td align="right">2e-04</td>
 <td align="right">-0.0183</td>
-<td align="right">0.1158</td>
+<td align="right">0.1159</td>
 <td align="right">-0.0668</td>
 </tr>
 <tr class="odd">
@@ -658,7 +658,7 @@ upward.</caption>
 <td align="left">Item8</td>
 <td align="right">2e-04</td>
 <td align="right">-0.0167</td>
-<td align="right">0.1158</td>
+<td align="right">0.1159</td>
 <td align="right">-0.0660</td>
 </tr>
 <tr class="odd">
@@ -674,7 +674,7 @@ upward.</caption>
 <td align="left">Item8</td>
 <td align="right">2e-04</td>
 <td align="right">-0.0192</td>
-<td align="right">0.1158</td>
+<td align="right">0.1159</td>
 <td align="right">-0.0673</td>
 </tr>
 </tbody>
@@ -784,142 +784,142 @@ distribution</caption>
 <tr class="odd">
 <td align="left">Unlinked</td>
 <td align="right">0.00</td>
-<td align="right">0.2667</td>
+<td align="right">0.2668</td>
 <td align="right">0.1447</td>
 <td align="right">1.921</td>
 </tr>
 <tr class="even">
 <td align="left">Unlinked</td>
 <td align="right">0.05</td>
-<td align="right">0.3071</td>
-<td align="right">0.1481</td>
-<td align="right">2.014</td>
+<td align="right">0.3072</td>
+<td align="right">0.1482</td>
+<td align="right">2.015</td>
 </tr>
 <tr class="odd">
 <td align="left">Unlinked</td>
 <td align="right">0.10</td>
-<td align="right">0.3528</td>
-<td align="right">0.1530</td>
+<td align="right">0.3530</td>
+<td align="right">0.1531</td>
 <td align="right">2.117</td>
 </tr>
 <tr class="even">
 <td align="left">Unlinked</td>
 <td align="right">0.20</td>
-<td align="right">0.4606</td>
+<td align="right">0.4608</td>
 <td align="right">0.1676</td>
-<td align="right">2.352</td>
+<td align="right">2.353</td>
 </tr>
 <tr class="odd">
 <td align="left">Unlinked</td>
 <td align="right">0.50</td>
-<td align="right">0.9663</td>
-<td align="right">0.2579</td>
-<td align="right">3.480</td>
+<td align="right">0.9667</td>
+<td align="right">0.2580</td>
+<td align="right">3.482</td>
 </tr>
 <tr class="even">
 <td align="left">Mean-mean</td>
 <td align="right">0.00</td>
-<td align="right">0.2667</td>
+<td align="right">0.2668</td>
 <td align="right">0.1447</td>
 <td align="right">1.921</td>
 </tr>
 <tr class="odd">
 <td align="left">Mean-mean</td>
 <td align="right">0.05</td>
-<td align="right">0.3008</td>
+<td align="right">0.3009</td>
 <td align="right">0.1481</td>
 <td align="right">2.024</td>
 </tr>
 <tr class="even">
 <td align="left">Mean-mean</td>
 <td align="right">0.10</td>
-<td align="right">0.3411</td>
+<td align="right">0.3413</td>
 <td align="right">0.1531</td>
-<td align="right">2.137</td>
+<td align="right">2.138</td>
 </tr>
 <tr class="odd">
 <td align="left">Mean-mean</td>
 <td align="right">0.20</td>
-<td align="right">0.4408</td>
-<td align="right">0.1685</td>
-<td align="right">2.401</td>
+<td align="right">0.4410</td>
+<td align="right">0.1686</td>
+<td align="right">2.402</td>
 </tr>
 <tr class="even">
 <td align="left">Mean-mean</td>
 <td align="right">0.50</td>
-<td align="right">0.9569</td>
-<td align="right">0.2665</td>
-<td align="right">3.767</td>
+<td align="right">0.9575</td>
+<td align="right">0.2666</td>
+<td align="right">3.769</td>
 </tr>
 <tr class="odd">
 <td align="left">Mean-sigma</td>
 <td align="right">0.00</td>
-<td align="right">0.2667</td>
+<td align="right">0.2668</td>
 <td align="right">0.1447</td>
 <td align="right">1.921</td>
 </tr>
 <tr class="even">
 <td align="left">Mean-sigma</td>
 <td align="right">0.05</td>
-<td align="right">0.3000</td>
-<td align="right">0.1481</td>
+<td align="right">0.3001</td>
+<td align="right">0.1482</td>
 <td align="right">2.023</td>
 </tr>
 <tr class="odd">
 <td align="left">Mean-sigma</td>
 <td align="right">0.10</td>
-<td align="right">0.3393</td>
+<td align="right">0.3395</td>
 <td align="right">0.1532</td>
 <td align="right">2.135</td>
 </tr>
 <tr class="even">
 <td align="left">Mean-sigma</td>
 <td align="right">0.20</td>
-<td align="right">0.4365</td>
+<td align="right">0.4367</td>
 <td align="right">0.1686</td>
-<td align="right">2.395</td>
+<td align="right">2.396</td>
 </tr>
 <tr class="odd">
 <td align="left">Mean-sigma</td>
 <td align="right">0.50</td>
-<td align="right">0.9351</td>
-<td align="right">0.2658</td>
-<td align="right">3.722</td>
+<td align="right">0.9357</td>
+<td align="right">0.2659</td>
+<td align="right">3.724</td>
 </tr>
 <tr class="even">
 <td align="left">Stocking-Lord</td>
 <td align="right">0.00</td>
-<td align="right">0.2667</td>
+<td align="right">0.2668</td>
 <td align="right">0.1447</td>
 <td align="right">1.921</td>
 </tr>
 <tr class="odd">
 <td align="left">Stocking-Lord</td>
 <td align="right">0.05</td>
-<td align="right">0.3013</td>
+<td align="right">0.3014</td>
 <td align="right">0.1481</td>
-<td align="right">2.024</td>
+<td align="right">2.025</td>
 </tr>
 <tr class="even">
 <td align="left">Stocking-Lord</td>
 <td align="right">0.10</td>
-<td align="right">0.3422</td>
+<td align="right">0.3424</td>
 <td align="right">0.1531</td>
-<td align="right">2.138</td>
+<td align="right">2.139</td>
 </tr>
 <tr class="odd">
 <td align="left">Stocking-Lord</td>
 <td align="right">0.20</td>
-<td align="right">0.4435</td>
+<td align="right">0.4437</td>
 <td align="right">0.1685</td>
-<td align="right">2.405</td>
+<td align="right">2.406</td>
 </tr>
 <tr class="even">
 <td align="left">Stocking-Lord</td>
 <td align="right">0.50</td>
-<td align="right">0.9707</td>
-<td align="right">0.2669</td>
-<td align="right">3.795</td>
+<td align="right">0.9713</td>
+<td align="right">0.2671</td>
+<td align="right">3.797</td>
 </tr>
 </tbody>
 </table>
@@ -1024,33 +1024,33 @@ matched case</caption>
 <tbody>
 <tr class="odd">
 <td align="right">0.00</td>
-<td align="right">0.2667</td>
+<td align="right">0.2668</td>
 <td align="right">0.015323</td>
 </tr>
 <tr class="even">
 <td align="right">0.05</td>
-<td align="right">0.3000</td>
+<td align="right">0.3001</td>
 <td align="right">0.015655</td>
 </tr>
 <tr class="odd">
 <td align="right">0.10</td>
-<td align="right">0.3393</td>
+<td align="right">0.3395</td>
 <td align="right">0.016227</td>
 </tr>
 <tr class="even">
 <td align="right">0.20</td>
-<td align="right">0.4365</td>
+<td align="right">0.4367</td>
 <td align="right">0.018147</td>
 </tr>
 <tr class="odd">
 <td align="right">0.30</td>
-<td align="right">0.5610</td>
-<td align="right">0.021256</td>
+<td align="right">0.5613</td>
+<td align="right">0.021257</td>
 </tr>
 <tr class="even">
 <td align="right">0.50</td>
-<td align="right">0.9351</td>
-<td align="right">0.032166</td>
+<td align="right">0.9357</td>
+<td align="right">0.032167</td>
 </tr>
 </tbody>
 </table>
@@ -1212,7 +1212,7 @@ tracks prediction quality.</p>
 <span>  n_quad      <span class="op">=</span> <span class="va">n_quad</span>,</span>
 <span>  control     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">200</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Ability-risk lambda* ="</span>, <span class="va">risk_B</span><span class="op">$</span><span class="va">best_lambda</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Ability-risk lambda* = 0.4041133</span></span></code></pre></div>
+<span><span class="co">#&gt;   Ability-risk lambda* = 0.4041125</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="test-c-stochastic-llm-predictions-practical-baseline">Test C — Stochastic LLM predictions (practical baseline)<a class="anchor" aria-label="anchor" href="#test-c-stochastic-llm-predictions-practical-baseline"></a>
@@ -1255,7 +1255,7 @@ population?</p>
 <span>  n_quad      <span class="op">=</span> <span class="va">n_quad</span>,</span>
 <span>  control     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>maxit <span class="op">=</span> <span class="fl">200</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"  Ability-risk lambda* ="</span>, <span class="va">risk_C</span><span class="op">$</span><span class="va">best_lambda</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   Ability-risk lambda* = 0.1697308</span></span></code></pre></div>
+<span><span class="co">#&gt;   Ability-risk lambda* = 0.1697327</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="summary-ppi-score-vs--ability-risk">Summary: PPI++ score vs. ability risk<a class="anchor" aria-label="anchor" href="#summary-ppi-score-vs--ability-risk"></a>
@@ -1286,13 +1286,13 @@ Sigma_gamma g].</caption>
 <tr class="even">
 <td align="left">B: 50% overlap</td>
 <td align="right">0.258</td>
-<td align="right">0.4041133</td>
+<td align="right">0.4041125</td>
 <td align="left">0 &lt; lambda &lt; N/(n+N)</td>
 </tr>
 <tr class="odd">
 <td align="left">C: independent LLM draws</td>
 <td align="right">0.000</td>
-<td align="right">0.1697308</td>
+<td align="right">0.1697327</td>
 <td align="left">~0 (no gradient covariance)</td>
 </tr>
 </tbody>
@@ -1354,25 +1354,25 @@ ability case</caption>
 <tr class="odd">
 <td align="left">unlinked</td>
 <td align="right">0</td>
-<td align="right">0.2667</td>
+<td align="right">0.2668</td>
 <td align="right">1.921</td>
 </tr>
 <tr class="even">
 <td align="left">mean_mean</td>
 <td align="right">0</td>
-<td align="right">0.2667</td>
+<td align="right">0.2668</td>
 <td align="right">1.921</td>
 </tr>
 <tr class="odd">
 <td align="left">mean_sigma</td>
 <td align="right">0</td>
-<td align="right">0.2667</td>
+<td align="right">0.2668</td>
 <td align="right">1.921</td>
 </tr>
 <tr class="even">
 <td align="left">stocking_lord</td>
 <td align="right">0</td>
-<td align="right">0.2667</td>
+<td align="right">0.2668</td>
 <td align="right">1.921</td>
 </tr>
 </tbody>
@@ -1501,7 +1501,7 @@ at lambda=0.2</caption>
 <tr class="odd">
 <td align="left">Item3</td>
 <td align="right">1.0285714</td>
-<td align="right">1.199</td>
+<td align="right">1.200</td>
 <td align="right">1.120</td>
 </tr>
 <tr class="even">
@@ -1531,7 +1531,7 @@ at lambda=0.2</caption>
 <tr class="even">
 <td align="left">Item8</td>
 <td align="right">1.6000000</td>
-<td align="right">2.352</td>
+<td align="right">2.353</td>
 <td align="right">2.084</td>
 </tr>
 </tbody>

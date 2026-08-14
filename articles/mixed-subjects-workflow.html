@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mixedsubjectsirt</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -160,11 +160,11 @@ based estimators.</p>
 <div class="section level2">
 <h2 id="step-1-fit-the-human-baseline">Step 1: Fit the human baseline<a class="anchor" aria-label="anchor" href="#step-1-fit-the-human-baseline"></a>
 </h2>
-<p>Baseline models are estimated using <code>mirt</code>.<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://doi.org/10.18637/jss.v048.i06" class="external-link"&gt;Chalmers, R. P. (2012).
-mirt: A multidimensional item response theory package for the R
-environment._Journal of Statistical Software_, 48, 1-29.&lt;/a&gt;&lt;/p&gt;'><sup>1</sup></a></p>
+<p>Baseline models are estimated by marginal maximum likelihood with
+<code><a href="../reference/fit_2pl.html">fit_2pl()</a></code>, using the same objective and quadrature as the
+mixed-subjects estimator below.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">human_start</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">observed</span>, technical <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>NCYCLES <span class="op">=</span> <span class="fl">500</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">human_start</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fit_2pl.html">fit_2pl</a></span><span class="op">(</span><span class="va">observed</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-2-fit-the-mml-mixed-subjects-model">Step 2: Fit the MML mixed-subjects model<a class="anchor" aria-label="anchor" href="#step-2-fit-the-mml-mixed-subjects-model"></a>
@@ -195,14 +195,14 @@ can be estimated directly here.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mixed_mml</span><span class="op">$</span><span class="va">item_pars</span></span>
 <span><span class="co">#&gt;    item         a          d          b</span></span>
-<span><span class="co">#&gt; 1 Item1 0.7431515 -1.0825772  1.4567382</span></span>
-<span><span class="co">#&gt; 2 Item2 1.0067308 -0.7278419  0.7229757</span></span>
-<span><span class="co">#&gt; 3 Item3 0.8547961 -0.4113346  0.4812078</span></span>
-<span><span class="co">#&gt; 4 Item4 1.0999070 -0.1453192  0.1321195</span></span>
-<span><span class="co">#&gt; 5 Item5 1.1673630  0.1875514 -0.1606624</span></span>
-<span><span class="co">#&gt; 6 Item6 1.2566356  0.4923054 -0.3917646</span></span>
-<span><span class="co">#&gt; 7 Item7 1.5526271  0.8477928 -0.5460376</span></span>
-<span><span class="co">#&gt; 8 Item8 1.5472343  1.1508445 -0.7438075</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 Item1 0.7431516 -1.0825771  1.4567379</span></span>
+<span><span class="co">#&gt; 2 Item2 1.0067305 -0.7278416  0.7229756</span></span>
+<span><span class="co">#&gt; 3 Item3 0.8547961 -0.4113343  0.4812075</span></span>
+<span><span class="co">#&gt; 4 Item4 1.0999070 -0.1453191  0.1321195</span></span>
+<span><span class="co">#&gt; 5 Item5 1.1673633  0.1875515 -0.1606625</span></span>
+<span><span class="co">#&gt; 6 Item6 1.2566354  0.4923056 -0.3917648</span></span>
+<span><span class="co">#&gt; 7 Item7 1.5526282  0.8477934 -0.5460376</span></span>
+<span><span class="co">#&gt; 8 Item8 1.5472382  1.1508463 -0.7438068</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-3-select-lambda-by-ability-score-risk">Step 3: Select
@@ -220,7 +220,7 @@ is the Louis-corrected marginal sandwich covariance).<a class="footnote-ref" tab
 &amp;amp; Chalmers, R. P. (2021). A note on computing Louis’ observed
 information matrix identity for IRT and cognitive diagnostic models.
 &lt;em&gt;British Journal of Mathematical and Statistical Psychology&lt;/em&gt;,
-74(1), 118-138.&lt;/a&gt;&lt;/p&gt;'><sup>2</sup></a> By default this is
+74(1), 118-138.&lt;/a&gt;&lt;/p&gt;'><sup>1</sup></a> By default this is
 done by direct 1-D optimization over <code>[0, 1]</code>. The final fit
 from this optimal
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
@@ -239,7 +239,7 @@ list, so the user is not required to call
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ability_tuned</span><span class="op">$</span><span class="va">best_lambda</span></span>
-<span><span class="co">#&gt; [1] 0.7924548</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.792456</span></span></code></pre></div>
 <p>Because the predictor is highly informative, the approach selects a
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
 near the theoretical maximum
@@ -270,7 +270,7 @@ parameters estimated this are biased in finite samples and may
 undercover true parameter values.<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://arxiv.org/abs/2505.20178" class="external-link"&gt;Mani, P., Xu,
 P., Lipton, Z. C., &amp;amp; Oberst, M. (2025). No free lunch:
 Non-asymptotic analysis of prediction-powered inference. &lt;em&gt;arXiv
-preprint arXiv:2505.20178&lt;/em&gt;.&lt;/a&gt;&lt;/p&gt;'><sup>3</sup></a></p>
+preprint arXiv:2505.20178&lt;/em&gt;.&lt;/a&gt;&lt;/p&gt;'><sup>2</sup></a></p>
 <p><code><a href="../reference/tune_lambda_ability_risk_crossfit.html">tune_lambda_ability_risk_crossfit()</a></code> removes this bias by
 tuning
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>λ</mi><annotation encoding="application/x-tex">\lambda</annotation></semantics></math>
@@ -298,9 +298,9 @@ are averaged, weighted by fold size).</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">cf_tuned</span><span class="op">$</span><span class="va">lambda_by_split</span>   <span class="co"># one tuned lambda per held-out fold</span></span>
-<span><span class="co">#&gt; [1] 0.8758023 0.8896977</span></span>
+<span><span class="co">#&gt; [1] 0.8758023 0.8896980</span></span>
 <span><span class="va">cf_tuned</span><span class="op">$</span><span class="va">lambda_final</span>      <span class="co"># fold-size-weighted scalar used for the final fit</span></span>
-<span><span class="co">#&gt; [1] 0.88275</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.8827501</span></span></code></pre></div>
 <p>The object <code>cf_tuned$final_fit</code> provides the final model
 fit from calibration, and <code>vcov(cf_tuned$final_fit)</code> gives
 its Louis-corrected covariance. We suggest use of the default
@@ -349,7 +349,7 @@ estimate for operational calibrations or further research.</p>
 observed-information correction.<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content='&lt;p&gt;&lt;a href="https://doi.org/10.1111/j.2517-6161.1982.tb01203.x" class="external-link"&gt;Louis, T. A.
 (1982). Finding the observed information matrix when using the EM
 algorithm. &lt;em&gt;Journal of the Royal Statistical Society Series B:
-Statistical Methodology&lt;/em&gt;, 44(2), 226-233.&lt;/a&gt;&lt;/p&gt;'><sup>4</sup></a> Here, the bread is
+Statistical Methodology&lt;/em&gt;, 44(2), 226-233.&lt;/a&gt;&lt;/p&gt;'><sup>3</sup></a> Here, the bread is
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>H</mi><mrow><mi mathvariant="normal">c</mi><mi mathvariant="normal">o</mi><mi mathvariant="normal">m</mi><mi mathvariant="normal">p</mi></mrow></msub><mo>−</mo><msub><mi>I</mi><mrow><mi mathvariant="normal">m</mi><mi mathvariant="normal">i</mi><mi mathvariant="normal">s</mi><mi mathvariant="normal">s</mi></mrow></msub></mrow><annotation encoding="application/x-tex">H_\mathrm{comp} - I_\mathrm{miss}</annotation></semantics></math>
 rather than the EM complete-data Hessian alone.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
@@ -414,7 +414,7 @@ so the paired correction between <code>observed</code> and
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">tuned_bad</span><span class="op">$</span><span class="va">best_lambda</span>   <span class="co"># expect ~0: the useless LLM is correctly ignored</span></span>
-<span><span class="co">#&gt; [1] 0.03332212</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.03332135</span></span></code></pre></div>
 <p>The criterion drives
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>λ</mi><mo>→</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">\lambda \to 0</annotation></semantics></math>,
 recovering the human-only item parameters. As such, the same

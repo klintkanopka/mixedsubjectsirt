@@ -59,7 +59,7 @@ library(ggplot2)
 
 # Apply (A, B) and return a standardised data frame of item parameters.
 # Guards against degenerate linking constants (Inf, NaN, non-positive A) that
-# can arise from unusual mirt fits on different platforms.
+# can arise from unusual calibrations on different platforms.
 apply_link <- function(source, A, B, slope_lower = 1e-4) {
   if (!is.finite(A) || A <= 0 || !is.finite(B)) {
     # Degenerate constants: fall back to identity transform
@@ -86,7 +86,7 @@ link_mean_mean <- function(source, target) {
 
 link_mean_sigma <- function(source, target) {
   sd_src <- sd(source$b)
-  # If source difficulties have no variance (degenerate mirt fit), fall back
+  # If source difficulties have no variance (degenerate fit), fall back
   # to mean-mean linking which does not depend on sd(b).
   if (!is.finite(sd_src) || sd_src < 1e-6) {
     return(link_mean_mean(source, target))
@@ -181,9 +181,9 @@ representing a higher-ability, lower-variance LLM response pattern.
 
 ``` r
 
-human_pars       <- fit_2pl(observed,         technical = list(NCYCLES = 500))$pars
-llm_raw_matched  <- fit_2pl(generated_matched, technical = list(NCYCLES = 500))$pars
-llm_raw_shifted  <- fit_2pl(generated_shifted, technical = list(NCYCLES = 500))$pars
+human_pars       <- fit_2pl(observed)$pars
+llm_raw_matched  <- fit_2pl(generated_matched)$pars
+llm_raw_shifted  <- fit_2pl(generated_shifted)$pars
 ```
 
 | Source            | mean(a) | sd(a) | mean(b) | sd(b) |
@@ -237,12 +237,12 @@ knitr::kable(const_tab, row.names = FALSE,
 
 | case    | method        |      A |      B |
 |:--------|:--------------|-------:|-------:|
-| matched | mean_mean     | 0.7951 | 0.1592 |
-| matched | mean_sigma    | 0.8123 | 0.1600 |
-| matched | stocking_lord | 0.7846 | 0.1585 |
-| shifted | mean_mean     | 0.7392 | 0.3993 |
-| shifted | mean_sigma    | 0.7797 | 0.4144 |
-| shifted | stocking_lord | 0.7481 | 0.3741 |
+| matched | mean_mean     | 0.7950 | 0.1592 |
+| matched | mean_sigma    | 0.8122 | 0.1600 |
+| matched | stocking_lord | 0.7846 | 0.1584 |
+| shifted | mean_mean     | 0.7391 | 0.3992 |
+| shifted | mean_sigma    | 0.7795 | 0.4143 |
+| shifted | stocking_lord | 0.7480 | 0.3741 |
 
 Linking constants (A, B) {.table}
 
@@ -269,12 +269,12 @@ knitr::kable(param_tab, row.names = FALSE,
 
 | Case    | Method        | RMSE(a) | RMSE(b) | max\|Δa\| | max\|Δb\| |
 |:--------|:--------------|--------:|--------:|----------:|----------:|
-| matched | mean_mean     |  0.3395 |  0.2262 |    0.7025 |    0.3936 |
-| matched | mean_sigma    |  0.3349 |  0.2282 |    0.7248 |    0.4134 |
-| matched | stocking_lord |  0.3438 |  0.2254 |    0.6884 |    0.3812 |
-| shifted | mean_mean     |  0.2150 |  0.1481 |    0.3379 |    0.2246 |
-| shifted | mean_sigma    |  0.2288 |  0.1480 |    0.4116 |    0.2655 |
-| shifted | stocking_lord |  0.2161 |  0.1501 |    0.3547 |    0.2392 |
+| matched | mean_mean     |  0.3396 |  0.2262 |    0.7027 |    0.3935 |
+| matched | mean_sigma    |  0.3350 |  0.2281 |    0.7250 |    0.4133 |
+| matched | stocking_lord |  0.3439 |  0.2254 |    0.6886 |    0.3811 |
+| shifted | mean_mean     |  0.2151 |  0.1481 |    0.3380 |    0.2245 |
+| shifted | mean_sigma    |  0.2290 |  0.1480 |    0.4117 |    0.2653 |
+| shifted | stocking_lord |  0.2163 |  0.1501 |    0.3549 |    0.2391 |
 
 Discrepancy between linked LLM parameters and human MLE {.table}
 
@@ -385,14 +385,14 @@ knitr::kable(grad_items, row.names = FALSE,
 
 | Config        | Item  | ∇L_obs |  ∇L_gen | ∇L_pred | Combined (λ=0.5) |
 |:--------------|:------|-------:|--------:|--------:|-----------------:|
-| unlinked      | Item5 | -6e-04 |  0.0381 |  0.1304 |          -0.0468 |
-| unlinked      | Item8 |  2e-04 | -0.0068 |  0.1158 |          -0.0611 |
-| mean_mean     | Item5 | -6e-04 |  0.0769 |  0.1304 |          -0.0274 |
-| mean_mean     | Item8 |  2e-04 | -0.0183 |  0.1158 |          -0.0668 |
+| unlinked      | Item5 | -6e-04 |  0.0381 |  0.1304 |          -0.0467 |
+| unlinked      | Item8 |  2e-04 | -0.0068 |  0.1159 |          -0.0611 |
+| mean_mean     | Item5 | -6e-04 |  0.0769 |  0.1304 |          -0.0273 |
+| mean_mean     | Item8 |  2e-04 | -0.0183 |  0.1159 |          -0.0668 |
 | mean_sigma    | Item5 | -6e-04 |  0.0793 |  0.1304 |          -0.0262 |
-| mean_sigma    | Item8 |  2e-04 | -0.0167 |  0.1158 |          -0.0660 |
+| mean_sigma    | Item8 |  2e-04 | -0.0167 |  0.1159 |          -0.0660 |
 | stocking_lord | Item5 | -6e-04 |  0.0755 |  0.1304 |          -0.0281 |
-| stocking_lord | Item8 |  2e-04 | -0.0192 |  0.1158 |          -0.0673 |
+| stocking_lord | Item8 |  2e-04 | -0.0192 |  0.1159 |          -0.0673 |
 
 Gradient of discrimination a for the two problematic items at starting
 parameters. Negative combined gradient pushes a upward. {.table}
@@ -479,26 +479,26 @@ sweep_results$method_f <- factor(sweep_results$method,
 
 | Method        |    λ | RMSE(a) | RMSE(d) | max(a) |
 |:--------------|-----:|--------:|--------:|-------:|
-| Unlinked      | 0.00 |  0.2667 |  0.1447 |  1.921 |
-| Unlinked      | 0.05 |  0.3071 |  0.1481 |  2.014 |
-| Unlinked      | 0.10 |  0.3528 |  0.1530 |  2.117 |
-| Unlinked      | 0.20 |  0.4606 |  0.1676 |  2.352 |
-| Unlinked      | 0.50 |  0.9663 |  0.2579 |  3.480 |
-| Mean-mean     | 0.00 |  0.2667 |  0.1447 |  1.921 |
-| Mean-mean     | 0.05 |  0.3008 |  0.1481 |  2.024 |
-| Mean-mean     | 0.10 |  0.3411 |  0.1531 |  2.137 |
-| Mean-mean     | 0.20 |  0.4408 |  0.1685 |  2.401 |
-| Mean-mean     | 0.50 |  0.9569 |  0.2665 |  3.767 |
-| Mean-sigma    | 0.00 |  0.2667 |  0.1447 |  1.921 |
-| Mean-sigma    | 0.05 |  0.3000 |  0.1481 |  2.023 |
-| Mean-sigma    | 0.10 |  0.3393 |  0.1532 |  2.135 |
-| Mean-sigma    | 0.20 |  0.4365 |  0.1686 |  2.395 |
-| Mean-sigma    | 0.50 |  0.9351 |  0.2658 |  3.722 |
-| Stocking-Lord | 0.00 |  0.2667 |  0.1447 |  1.921 |
-| Stocking-Lord | 0.05 |  0.3013 |  0.1481 |  2.024 |
-| Stocking-Lord | 0.10 |  0.3422 |  0.1531 |  2.138 |
-| Stocking-Lord | 0.20 |  0.4435 |  0.1685 |  2.405 |
-| Stocking-Lord | 0.50 |  0.9707 |  0.2669 |  3.795 |
+| Unlinked      | 0.00 |  0.2668 |  0.1447 |  1.921 |
+| Unlinked      | 0.05 |  0.3072 |  0.1482 |  2.015 |
+| Unlinked      | 0.10 |  0.3530 |  0.1531 |  2.117 |
+| Unlinked      | 0.20 |  0.4608 |  0.1676 |  2.353 |
+| Unlinked      | 0.50 |  0.9667 |  0.2580 |  3.482 |
+| Mean-mean     | 0.00 |  0.2668 |  0.1447 |  1.921 |
+| Mean-mean     | 0.05 |  0.3009 |  0.1481 |  2.024 |
+| Mean-mean     | 0.10 |  0.3413 |  0.1531 |  2.138 |
+| Mean-mean     | 0.20 |  0.4410 |  0.1686 |  2.402 |
+| Mean-mean     | 0.50 |  0.9575 |  0.2666 |  3.769 |
+| Mean-sigma    | 0.00 |  0.2668 |  0.1447 |  1.921 |
+| Mean-sigma    | 0.05 |  0.3001 |  0.1482 |  2.023 |
+| Mean-sigma    | 0.10 |  0.3395 |  0.1532 |  2.135 |
+| Mean-sigma    | 0.20 |  0.4367 |  0.1686 |  2.396 |
+| Mean-sigma    | 0.50 |  0.9357 |  0.2659 |  3.724 |
+| Stocking-Lord | 0.00 |  0.2668 |  0.1447 |  1.921 |
+| Stocking-Lord | 0.05 |  0.3014 |  0.1481 |  2.025 |
+| Stocking-Lord | 0.10 |  0.3424 |  0.1531 |  2.139 |
+| Stocking-Lord | 0.20 |  0.4437 |  0.1685 |  2.406 |
+| Stocking-Lord | 0.50 |  0.9713 |  0.2671 |  3.797 |
 
 Parameter recovery at selected λ values — matched ability distribution
 {.table}
@@ -586,12 +586,12 @@ knitr::kable(risk_tab, row.names = FALSE,
 
 |    λ | RMSE(a) | Mean ability-score risk |
 |-----:|--------:|------------------------:|
-| 0.00 |  0.2667 |                0.015323 |
-| 0.05 |  0.3000 |                0.015655 |
-| 0.10 |  0.3393 |                0.016227 |
-| 0.20 |  0.4365 |                0.018147 |
-| 0.30 |  0.5610 |                0.021256 |
-| 0.50 |  0.9351 |                0.032166 |
+| 0.00 |  0.2668 |                0.015323 |
+| 0.05 |  0.3001 |                0.015655 |
+| 0.10 |  0.3395 |                0.016227 |
+| 0.20 |  0.4367 |                0.018147 |
+| 0.30 |  0.5613 |                0.021257 |
+| 0.50 |  0.9357 |                0.032167 |
 
 Ability-score risk and parameter recovery — mean-sigma linking, matched
 case {.table}
@@ -730,7 +730,7 @@ risk_B <- tune_lambda_ability_risk(
   n_quad      = n_quad,
   control     = list(maxit = 200))
 cat("  Ability-risk lambda* =", risk_B$best_lambda, "\n")
-#>   Ability-risk lambda* = 0.4041133
+#>   Ability-risk lambda* = 0.4041125
 ```
 
 ### Test C — Stochastic LLM predictions (practical baseline)
@@ -775,7 +775,7 @@ risk_C <- tune_lambda_ability_risk(
   n_quad      = n_quad,
   control     = list(maxit = 200))
 cat("  Ability-risk lambda* =", risk_C$best_lambda, "\n")
-#>   Ability-risk lambda* = 0.1697308
+#>   Ability-risk lambda* = 0.1697327
 ```
 
 ### Summary: PPI++ score vs. ability risk
@@ -783,8 +783,8 @@ cat("  Ability-risk lambda* =", risk_C$best_lambda, "\n")
 | Test | PPI++ lambda\* | Ability-risk lambda\* | Theory |
 |:---|---:|---:|:---|
 | A: F=Y (upper bound) | 0.750 | 0.7553858 | N/(n+N) = 0.75 |
-| B: 50% overlap | 0.258 | 0.4041133 | 0 \< lambda \< N/(n+N) |
-| C: independent LLM draws | 0.000 | 0.1697308 | ~0 (no gradient covariance) |
+| B: 50% overlap | 0.258 | 0.4041125 | 0 \< lambda \< N/(n+N) |
+| C: independent LLM draws | 0.000 | 0.1697327 | ~0 (no gradient covariance) |
 
 PPI++ score lambda vs. ability-risk lambda. PPI++ lambda minimizes
 Tr(Sigma_gamma). Ability-risk lambda minimizes E\[g’ Sigma_gamma g\].
@@ -822,10 +822,10 @@ $`\lambda = 0`$ as optimal for all methods in this scenario.
 
 | Method        | Best λ | RMSE(a) at best λ | max(a) at best λ |
 |:--------------|-------:|------------------:|-----------------:|
-| unlinked      |      0 |            0.2667 |            1.921 |
-| mean_mean     |      0 |            0.2667 |            1.921 |
-| mean_sigma    |      0 |            0.2667 |            1.921 |
-| stocking_lord |      0 |            0.2667 |            1.921 |
+| unlinked      |      0 |            0.2668 |            1.921 |
+| mean_mean     |      0 |            0.2668 |            1.921 |
+| mean_sigma    |      0 |            0.2668 |            1.921 |
+| stocking_lord |      0 |            0.2668 |            1.921 |
 
 Best achievable RMSE(a) and the λ that achieves it — matched ability
 case {.table}
@@ -927,12 +927,12 @@ knitr::kable(comp, row.names = FALSE,
 |:------|----------:|---------:|------:|
 | Item1 | 0.8000000 |    0.790 | 0.654 |
 | Item2 | 0.9142857 |    1.425 | 1.193 |
-| Item3 | 1.0285714 |    1.199 | 1.120 |
+| Item3 | 1.0285714 |    1.200 | 1.120 |
 | Item4 | 1.1428571 |    1.212 | 1.064 |
 | Item5 | 1.2571429 |    2.055 | 1.688 |
 | Item6 | 1.3714286 |    1.820 | 1.629 |
 | Item7 | 1.4857143 |    1.504 | 1.366 |
-| Item8 | 1.6000000 |    2.352 | 2.084 |
+| Item8 | 1.6000000 |    2.353 | 2.084 |
 
 Item discrimination: true vs. frozen-EC (slope_upper=4) vs. MML at
 lambda=0.2 {.table}

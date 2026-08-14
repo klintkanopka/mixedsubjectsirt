@@ -198,7 +198,7 @@ fit_2pl_mml <- fit_mixed_subjects_mml(
   predicted    = predicted,
   generated    = generated,
   lambda       = tuned_1pl$best_lambda,
-  initial_pars = fit_2pl(observed, technical = list(NCYCLES = 500))$pars,
+  initial_pars = fit_2pl(observed)$pars,
   n_quad       = 15,
   control      = list(maxit = 300)
 )

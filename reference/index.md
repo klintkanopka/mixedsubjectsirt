@@ -8,7 +8,7 @@ is the recommended marginal-likelihood estimator;
 [`fit_2pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_2pl.md)
 and
 [`fit_1pl()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_1pl.md)
-fit human-only baselines using a `mirt` backend
+fit human-only marginal-likelihood baselines
 
 - [`fit_mixed_subjects()`](https://klintkanopka.com/mixedsubjectsirt/reference/fit_mixed_subjects.md)
   : Fit a mixed-subjects 2PL calibration
